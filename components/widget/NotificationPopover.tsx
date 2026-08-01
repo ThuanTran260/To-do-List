@@ -35,7 +35,7 @@ export function NotificationPopover() {
 
   const vitalTasks = todos.filter((t) => {
     if (t.is_completed || dismissedIds.includes(t.id)) return false;
-    return t.priority === 'high' || (t as any).is_vital;
+    return t.priority === 'high' || t.is_vital;
   });
 
   const totalUnread = overdueTasks.length + dueSoonTasks.length + vitalTasks.length;

@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { KeyRound, CheckCircle2, Loader2, Lock } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-
 export default function ChangePasswordPage() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');

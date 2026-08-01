@@ -17,6 +17,9 @@ export interface TodoItemData {
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
+  is_vital?: boolean;
+  category_id?: string | null;
+  image_url?: string | null;
 }
 
 // Fetch active (non-deleted) todos

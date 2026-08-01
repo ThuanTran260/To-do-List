@@ -4,11 +4,9 @@ import { useTodos } from '@/hooks/useTodos';
 import { TodoItem } from '@/components/todo/TodoItem';
 import { AlertOctagon, Sparkles } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-
 export default function VitalTasksPage() {
   const { data, isLoading } = useTodos(1, 100);
-  const vitalTodos = data?.todos.filter((t) => t.priority === 'high' || (t as any).is_vital) || [];
+  const vitalTodos = data?.todos.filter((t) => t.priority === 'high' || t.is_vital) || [];
 
   return (
     <div className="space-y-6">

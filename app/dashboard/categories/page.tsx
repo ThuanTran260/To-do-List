@@ -7,8 +7,6 @@ import { EmptyState } from '@/components/ui/state/EmptyState';
 import { ErrorState } from '@/components/ui/state/ErrorState';
 import { FolderKanban, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-
 export default function CategoriesPage() {
   const { data: categories = [], isLoading, isError, error, refetch } = useCategories();
   const createMutation = useCreateCategory();

@@ -5,8 +5,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { Shield, User, Mail, CheckCircle2, Loader2, Camera, UploadCloud, AlertCircle } from 'lucide-react';
 
-export const dynamic = 'force-dynamic';
-
 export default function AccountSettingsPage() {
   const { user } = useAuth();
   const [displayName, setDisplayName] = useState(
