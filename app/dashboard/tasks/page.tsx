@@ -1,7 +1,6 @@
 import { TodoForm } from '@/components/todo/TodoForm';
 import { TodoList } from '@/components/todo/TodoList';
-
-export const dynamic = 'force-dynamic';
+import { TaskDetailView } from '@/components/todo/TaskDetailView';
 
 export default function MyTasksPage() {
   return (
@@ -17,6 +16,7 @@ export default function MyTasksPage() {
 
       <TodoForm />
       <TodoList />
+      <TaskDetailView />
     </div>
   );
 }

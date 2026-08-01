@@ -2,6 +2,7 @@
 
 import { useTodos } from '@/hooks/useTodos';
 import { TodoItem } from '@/components/todo/TodoItem';
+import { TaskDetailView } from '@/components/todo/TaskDetailView';
 import { AlertOctagon, Sparkles } from 'lucide-react';
 
 export default function VitalTasksPage() {
@@ -53,6 +54,8 @@ export default function VitalTasksPage() {
           ))}
         </div>
       )}
+
+      <TaskDetailView />
     </div>
   );
 }

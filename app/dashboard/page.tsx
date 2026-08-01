@@ -1,8 +1,7 @@
 import { TodoForm } from '@/components/todo/TodoForm';
 import { TodoList } from '@/components/todo/TodoList';
 import { InsightsCard } from '@/components/todo/InsightsCard';
-
-export const dynamic = 'force-dynamic';
+import { TaskDetailView } from '@/components/todo/TaskDetailView';
 
 export default function DashboardPage() {
   return (
@@ -21,6 +20,8 @@ export default function DashboardPage() {
       <section className="space-y-3">
         <TodoList />
       </section>
+
+      <TaskDetailView />
     </div>
   );
 }
