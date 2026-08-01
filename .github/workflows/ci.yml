@@ -7,12 +7,10 @@ on:
     branches: [ main, master ]
 
 # Giới hạn quyền GITHUB_TOKEN theo nguyên tắc least-privilege.
-# Chỉ cần đọc code, không cần ghi vào repo/PR/issue nào cả.
 permissions:
   contents: read
 
-# Hủy các run cũ khi có push/PR mới trên cùng branch, tránh lãng phí
-# phút CI và tránh race-condition giữa các run song song.
+# Hủy các run cũ khi có push/PR mới trên cùng branch, tránh lãng phí phút CI
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,16 +18,16 @@ concurrency:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-    timeout-minutes: 15 # tránh job treo vô thời hạn
+    timeout-minutes: 15
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js 20.x
+      - name: Setup Node.js 22.x
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install Dependencies
