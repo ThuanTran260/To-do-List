@@ -6,25 +6,48 @@ on:
   pull_request:
     branches: [ main, master ]
 
+# Giới hạn quyền GITHUB_TOKEN theo nguyên tắc least-privilege.
+# Chỉ cần đọc code, không cần ghi vào repo/PR/issue nào cả.
+permissions:
+  contents: read
+
+# Hủy các run cũ khi có push/PR mới trên cùng branch, tránh lãng phí
+# phút CI và tránh race-condition giữa các run song song.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15 # tránh job treo vô thời hạn
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Node.js 20.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@0a44ba7841725637a19e28fa30b79a866c81b0a # v4.0.4
         with:
           node-version: '20'
           cache: 'npm'
 
       - name: Install Dependencies
-        run: npm install
+        # --ignore-scripts: chặn postinstall script chạy mã tùy ý từ
+        # dependency (kể cả dependency-của-dependency) trong lúc cài.
+        # Nếu project có package cần postinstall hợp lệ (sharp, prisma...),
+        # bỏ flag này đi và xử lý riêng bước đó.
+        run: npm ci --ignore-scripts
 
-      - name: Verify Production Next.js Build & Type Check
+      - name: Audit Dependencies (cảnh báo, không chặn build)
+        run: npm audit --audit-level=high
+        continue-on-error: true
+
+      - name: TypeScript Type Check
+        run: npx tsc --noEmit
+
+      - name: Verify Production Next.js Build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key' }}
         run: npm run build
