@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
+import { LayoutGroup, motion } from 'framer-motion';
+import { springPillMotion } from '@/lib/motion';
 import {
   LayoutDashboard,
   AlertOctagon,
@@ -47,7 +49,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   ];
 
   return (
-    <>
+    <LayoutGroup id="sidebar-nav">
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
@@ -106,7 +108,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
           {/* Main Navigation Group */}
           <div className="space-y-1 relative">
-            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
               Menu chính
             </p>
             {navItems.map((item) => {
@@ -119,12 +121,20 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   prefetch
                   onClick={onClose}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                  className={`relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/80 hover:text-slate-900 dark:hover:text-slate-100'
+                      ? 'text-white font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                   }`}
                 >
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-pill"
+                      transition={springPillMotion}
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 shadow-lg shadow-indigo-500/25 z-0"
+                    />
+                  )}
+
                   <div className="flex items-center gap-3 relative z-10">
                     <Icon className="w-4 h-4" />
                     <span>{item.label}</span>
@@ -140,8 +150,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </div>
 
           {/* Settings Section */}
-          <div className="space-y-1">
-            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+          <div className="space-y-1 relative">
+            <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
               Cài đặt & Tài khoản
             </p>
             {settingItems.map((item) => {
@@ -154,14 +164,23 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   prefetch
                   onClick={onClose}
                   aria-current={isActive ? 'page' : undefined}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                  className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/25'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-900/80 hover:text-slate-900 dark:hover:text-slate-100'
+                      ? 'text-white font-bold'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-100/60 dark:hover:bg-slate-900/60'
                   }`}
                 >
-                  <Icon className="w-4 h-4" />
-                  <span>{item.label}</span>
+                  {isActive && (
+                    <motion.div
+                      layoutId="sidebar-active-pill"
+                      transition={springPillMotion}
+                      className="absolute inset-0 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 shadow-lg shadow-indigo-500/25 z-0"
+                    />
+                  )}
+                  <div className="flex items-center gap-3 relative z-10">
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </div>
                 </Link>
               );
             })}
@@ -179,6 +198,6 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           </button>
         </div>
       </aside>
-    </>
+    </LayoutGroup>
   );
 }

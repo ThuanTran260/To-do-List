@@ -1,12 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useTodos, useToggleTodo } from '@/hooks/useTodos';
 import { useDropdownManager } from '@/hooks/useDropdownManager';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
-import { Bell, AlertOctagon, Clock, Check, EyeOff, Sparkles, CheckCheck } from 'lucide-react';
+import { Bell, AlertOctagon, Clock, Check, EyeOff, Sparkles, CheckCheck, Eye } from 'lucide-react';
 
-export function NotificationPopover() {
+function NotificationPopoverContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { activePanel, togglePanel, closeAll } = useDropdownManager();
   const isOpen = activePanel === 'notifications';
 
@@ -39,6 +42,13 @@ export function NotificationPopover() {
   });
 
   const totalUnread = overdueTasks.length + dueSoonTasks.length + vitalTasks.length;
+
+  const handleOpenTaskDetail = (id: string) => {
+    closeAll();
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('task', id);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
 
   const handleDismiss = (id: string, title: string) => {
     setDismissedIds((prev) => [...prev, id]);
@@ -79,7 +89,7 @@ export function NotificationPopover() {
       </button>
 
       <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 sm:w-96 p-4 space-y-3">
-        {/* Header Bulk Action */}
+        {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
           <div className="flex items-center gap-2">
             <Bell className="w-4 h-4 text-amber-500" />
@@ -98,7 +108,7 @@ export function NotificationPopover() {
           )}
         </div>
 
-        {/* Undo Toast Banner */}
+        {/* Toast Notification */}
         {toastMessage && (
           <div className="p-2.5 rounded-xl bg-slate-800 text-white text-xs flex items-center justify-between shadow-lg">
             <span className="truncate">{toastMessage}</span>
@@ -111,8 +121,9 @@ export function NotificationPopover() {
           </div>
         )}
 
+        {/* Notifications List */}
         <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
-          {/* Overdue Tasks Section */}
+          {/* Overdue Section */}
           {overdueTasks.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider flex items-center gap-1">
@@ -124,21 +135,30 @@ export function NotificationPopover() {
                   key={t.id}
                   className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs flex items-center justify-between gap-2"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{t.title}</p>
-                    <p className="text-[10px] text-rose-500 font-medium">Hạn: {new Date(t.due_date!).toLocaleString('vi-VN')}</p>
+                  <div
+                    onClick={() => handleOpenTaskDetail(t.id)}
+                    className="min-w-0 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate hover:underline flex items-center gap-1">
+                      <span>{t.title}</span>
+                      <Eye className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                    </p>
+                    <p className="text-[10px] text-rose-500 font-medium">
+                      Hạn: {new Date(t.due_date!).toLocaleString('vi-VN')}
+                    </p>
                   </div>
+
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
-                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500"
+                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
                       title="Đã xong"
                     >
                       <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDismiss(t.id, t.title)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       title="Ẩn thông báo"
                     >
                       <EyeOff className="w-3 h-3" />
@@ -149,7 +169,7 @@ export function NotificationPopover() {
             </div>
           )}
 
-          {/* Due Soon Tasks Section */}
+          {/* Due Soon Section */}
           {dueSoonTasks.length > 0 && (
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
@@ -161,21 +181,30 @@ export function NotificationPopover() {
                   key={t.id}
                   className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs flex items-center justify-between gap-2"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{t.title}</p>
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">Hạn: {new Date(t.due_date!).toLocaleString('vi-VN')}</p>
+                  <div
+                    onClick={() => handleOpenTaskDetail(t.id)}
+                    className="min-w-0 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate hover:underline flex items-center gap-1">
+                      <span>{t.title}</span>
+                      <Eye className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                    </p>
+                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                      Hạn: {new Date(t.due_date!).toLocaleString('vi-VN')}
+                    </p>
                   </div>
+
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
-                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500"
+                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
                       title="Đã xong"
                     >
                       <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDismiss(t.id, t.title)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       title="Ẩn thông báo"
                     >
                       <EyeOff className="w-3 h-3" />
@@ -191,28 +220,35 @@ export function NotificationPopover() {
             <div className="space-y-1.5">
               <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                <span>⭐ Công việc quan trọng (Vital Tasks) ({vitalTasks.length})</span>
+                <span>⭐ Công việc quan trọng ({vitalTasks.length})</span>
               </p>
               {vitalTasks.map((t) => (
                 <div
                   key={t.id}
                   className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs flex items-center justify-between gap-2"
                 >
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate">{t.title}</p>
+                  <div
+                    onClick={() => handleOpenTaskDetail(t.id)}
+                    className="min-w-0 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
+                  >
+                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate hover:underline flex items-center gap-1">
+                      <span>{t.title}</span>
+                      <Eye className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                    </p>
                     <p className="text-[10px] text-indigo-500 font-medium">Ưu tiên Cao</p>
                   </div>
+
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
-                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500"
+                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
                       title="Đã xong"
                     >
                       <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDismiss(t.id, t.title)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                       title="Ẩn thông báo"
                     >
                       <EyeOff className="w-3 h-3" />
@@ -233,5 +269,13 @@ export function NotificationPopover() {
         </div>
       </FloatingPanel>
     </div>
+  );
+}
+
+export function NotificationPopover() {
+  return (
+    <Suspense fallback={null}>
+      <NotificationPopoverContent />
+    </Suspense>
   );
 }

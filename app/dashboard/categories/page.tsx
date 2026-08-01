@@ -1,20 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useCategories, useCreateCategory, useDeleteCategory, getReadableTextColor } from '@/hooks/useCategories';
+import { useTodos } from '@/hooks/useTodos';
 import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/state/EmptyState';
 import { ErrorState } from '@/components/ui/state/ErrorState';
-import { FolderKanban, Plus, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { FolderKanban, Plus, Trash2, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 
 export default function CategoriesPage() {
+  const router = useRouter();
   const { data: categories = [], isLoading, isError, error, refetch } = useCategories();
+  const { data: todosData } = useTodos(1, 100);
   const createMutation = useCreateCategory();
   const deleteMutation = useDeleteCategory();
 
   const [newCatName, setNewCatName] = useState('');
   const [newCatColor, setNewCatColor] = useState('#6366f1');
   const [errorMsg, setErrorMsg] = useState('');
+
+  const todos = todosData?.todos || [];
+
+  const getTaskCountForCategory = (catId: string) => {
+    return todos.filter((t) => t.category_id === catId).length;
+  };
 
   const handleAddCategory = (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +46,22 @@ export default function CategoriesPage() {
         },
       }
     );
+  };
+
+  const handleDeleteCategory = (catId: string, catName: string) => {
+    const taskCount = getTaskCountForCategory(catId);
+    const warningMsg =
+      taskCount > 0
+        ? `⚠️ Danh mục "${catName}" đang chứa ${taskCount} công việc.\n\nBạn có chắc muốn xóa? Các công việc này sẽ chuyển về trạng thái "Chưa phân loại".`
+        : `Xóa danh mục "${catName}"?`;
+
+    if (confirm(warningMsg)) {
+      deleteMutation.mutate(catId);
+    }
+  };
+
+  const handleCategoryCardClick = (catId: string) => {
+    router.push(`/dashboard/tasks?category=${catId}`);
   };
 
   return (
@@ -72,7 +98,7 @@ export default function CategoriesPage() {
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="Tên danh mục (ví dụ: Marketing, Học tập, UI/UX...)"
-            className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 px-3.5 py-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 px-3.5 py-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
           />
           <div className="flex items-center gap-2">
             <span className="text-xs font-medium text-slate-500">Màu sắc:</span>
@@ -85,66 +111,76 @@ export default function CategoriesPage() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1 disabled:opacity-50"
             >
               {createMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
-                <Plus className="w-4 h-4 stroke-[3]" />
+                <Plus className="w-4 h-4" />
               )}
-              <span>Thêm danh mục</span>
+              <span>Tạo danh mục</span>
             </button>
           </div>
         </div>
       </form>
 
-      {/* Category Grid */}
-      {isLoading ? (
-        <LoadingSkeleton variant="card" count={3} />
-      ) : isError ? (
-        <ErrorState message="Không thể tải danh sách danh mục" onRetry={refetch} />
-      ) : categories.length === 0 ? (
-        <EmptyState
-          icon={FolderKanban}
-          title="Chưa có danh mục nào"
-          description="Hãy tạo danh mục đầu tiên phía trên để phân loại công việc tốt hơn."
-        />
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {categories.map((cat) => {
-            const textColor = getReadableTextColor(cat.color);
-            return (
-              <div
-                key={cat.id}
-                className="p-4 rounded-2xl glass-panel bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between shadow-md transition-all hover:scale-[1.01]"
-              >
-                <div className="flex items-center gap-3">
-                  <div
-                    className="w-5 h-5 rounded-full shadow-sm flex items-center justify-center font-bold text-[10px]"
-                    style={{ backgroundColor: cat.color, color: textColor }}
-                  >
-                    ●
+      {/* Categories Grid */}
+      <div className="space-y-3">
+        <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+          Danh sách danh mục hiện có ({categories.length})
+        </h3>
+
+        {isLoading ? (
+          <LoadingSkeleton variant="card" count={3} />
+        ) : isError ? (
+          <ErrorState message={(error as Error).message} onRetry={refetch} />
+        ) : categories.length === 0 ? (
+          <EmptyState
+            icon={FolderKanban}
+            title="Chưa có danh mục nào"
+            description="Tạo danh mục mới ở trên để bắt đầu phân loại công việc."
+          />
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+            {categories.map((cat) => {
+              const textColor = getReadableTextColor(cat.color);
+              const taskCount = getTaskCountForCategory(cat.id);
+
+              return (
+                <div
+                  key={cat.id}
+                  onClick={() => handleCategoryCardClick(cat.id)}
+                  style={{ backgroundColor: cat.color, color: textColor }}
+                  className="p-5 rounded-2xl shadow-lg transition-all hover:scale-[1.02] flex items-center justify-between group cursor-pointer relative"
+                >
+                  <div className="space-y-1 min-w-0 pr-2">
+                    <h4 className="font-extrabold text-base truncate">{cat.name}</h4>
+                    <p className="text-xs font-medium opacity-85">
+                      {taskCount} công việc
+                    </p>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {cat.name}
-                    </h4>
-                    <p className="text-[10px] text-slate-400 font-medium">Realtime Category</p>
+
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteCategory(cat.id, cat.name);
+                      }}
+                      className="p-2 rounded-xl bg-black/10 hover:bg-black/20 text-current transition-colors"
+                      title="Xóa danh mục"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    <div className="p-2 rounded-xl bg-black/10 text-current group-hover:translate-x-1 transition-transform">
+                      <ArrowRight className="w-4 h-4" />
+                    </div>
                   </div>
                 </div>
-                <button
-                  onClick={() => deleteMutation.mutate(cat.id)}
-                  disabled={deleteMutation.isPending}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors disabled:opacity-50"
-                  title="Xóa danh mục"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToggleTodo, useDeleteTodo, type TodoItemData } from '@/hooks/useTodos';
+import { useCategories } from '@/hooks/useCategories';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { Check, Edit3, Trash2, Calendar, Clock, Eye } from 'lucide-react';
@@ -11,17 +12,29 @@ interface TodoItemProps {
   item: TodoItemData;
 }
 
-export function TodoItem({ item }: TodoItemProps) {
+function TodoItemContent({ item }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
+  const { data: categories = [] } = useCategories();
+
+  const itemCategory = item.category_id
+    ? categories.find((c) => c.id === item.category_id)
+    : null;
 
   const handleOpenDetail = () => {
     const params = new URLSearchParams(searchParams.toString());
     params.set('task', item.id);
+    router.push(`?${params.toString()}`, { scroll: false });
+  };
+
+  const handleSelectCategoryFilter = (e: React.MouseEvent, catId: string) => {
+    e.stopPropagation();
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('category', catId);
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
@@ -81,7 +94,22 @@ export function TodoItem({ item }: TodoItemProps) {
                 >
                   {item.title}
                 </span>
+
                 <PriorityBadge priority={item.priority} />
+
+                {itemCategory && (
+                  <button
+                    onClick={(e) => handleSelectCategoryFilter(e, itemCategory.id)}
+                    className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-700 transition-colors"
+                  >
+                    <span
+                      className="w-2 h-2 rounded-full shadow-xs"
+                      style={{ backgroundColor: itemCategory.color }}
+                    />
+                    <span>{itemCategory.name}</span>
+                  </button>
+                )}
+
                 {item.is_completed ? (
                   <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
                     Status: Done
@@ -168,5 +196,13 @@ export function TodoItem({ item }: TodoItemProps) {
 
       <EditTodoModal todo={item} isOpen={isEditing} onClose={() => setIsEditing(false)} />
     </>
+  );
+}
+
+export function TodoItem(props: TodoItemProps) {
+  return (
+    <Suspense fallback={null}>
+      <TodoItemContent {...props} />
+    </Suspense>
   );
 }
