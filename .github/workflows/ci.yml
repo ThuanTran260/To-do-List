@@ -23,10 +23,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: TypeScript Type Check
-        run: npx tsc --noEmit
-
-      - name: Verify Production Next.js Build
+      - name: Verify Production Next.js Build & Type Check
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key' }}
