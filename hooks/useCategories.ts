@@ -12,14 +12,18 @@ export interface CategoryItemData {
   created_at: string;
 }
 
-export function useCategories() {
+/**
+ * Supabase Realtime Subscription hook for categories.
+ * Call this once in top-level list components.
+ */
+export function useRealtimeCategories() {
   const queryClient = useQueryClient();
 
-  // Supabase Realtime Subscription for categories
   useEffect(() => {
     const supabase = createClient();
+    const channelId = `categories_realtime_${Math.random().toString(36).substring(2, 7)}`;
     const channel = supabase
-      .channel('categories_realtime')
+      .channel(channelId)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'categories' },
@@ -33,7 +37,12 @@ export function useCategories() {
       supabase.removeChannel(channel);
     };
   }, [queryClient]);
+}
 
+/**
+ * Fetches categories list via React Query.
+ */
+export function useCategories() {
   return useQuery({
     queryKey: ['categories'],
     queryFn: async () => {

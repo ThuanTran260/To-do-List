@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, useRealtimeCategories } from '@/hooks/useCategories';
 import { LayoutGroup, motion } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import { Layers } from 'lucide-react';
@@ -11,6 +11,9 @@ function CategoryFilterBarContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeCategoryId = searchParams.get('category');
+
+  // Realtime subscription for categories
+  useRealtimeCategories();
 
   const { data: categories = [] } = useCategories();
 
