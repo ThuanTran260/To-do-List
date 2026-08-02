@@ -38,9 +38,14 @@ function TodoItemContent({ item }: TodoItemProps) {
   const handleSelectCategoryFilter = (e: React.MouseEvent, catId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const params = new URLSearchParams(searchParams.toString());
+
+    const params = new URLSearchParams(window.location.search);
     params.set('category', catId);
-    router.push(`?${params.toString()}`, { scroll: false });
+    params.delete('page');
+
+    const newUrl = `?${params.toString()}`;
+    window.history.replaceState(null, '', newUrl);
+    window.dispatchEvent(new Event('popstate'));
   };
 
   // Due date formatting & status calculation

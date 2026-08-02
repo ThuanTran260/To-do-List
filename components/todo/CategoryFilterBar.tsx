@@ -1,16 +1,23 @@
 'use client';
 
-import { Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useCategories, useRealtimeCategories } from '@/hooks/useCategories';
 import { LayoutGroup, motion } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import { Layers } from 'lucide-react';
 
 function CategoryFilterBarContent() {
-  const router = useRouter();
   const searchParams = useSearchParams();
-  const activeCategoryId = searchParams.get('category');
+  const initialCategory = searchParams.get('category');
+
+  // Local state for 0ms instant active tab switching & 60fps Framer Motion slide
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(initialCategory);
+
+  // Sync state if URL searchParams change externally
+  useEffect(() => {
+    setActiveCategoryId(searchParams.get('category'));
+  }, [searchParams]);
 
   // Realtime subscription for categories
   useRealtimeCategories();
@@ -18,13 +25,23 @@ function CategoryFilterBarContent() {
   const { data: categories = [] } = useCategories();
 
   const handleSelectCategory = (catId: string | null) => {
-    const params = new URLSearchParams(searchParams.toString());
+    // 1. Instant 60fps local state update (prevents Framer Motion layoutId reset)
+    setActiveCategoryId(catId);
+
+    // 2. In-place URL update without triggering Next.js App Router Suspense unmounting
+    const params = new URLSearchParams(window.location.search);
     if (catId) {
       params.set('category', catId);
     } else {
       params.delete('category');
     }
-    router.push(`?${params.toString()}`, { scroll: false });
+    params.delete('page'); // Reset page to 1 on category change
+
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+
+    // Dispatch popstate event so searchParams listeners update instantly
+    window.dispatchEvent(new Event('popstate'));
   };
 
   const handleKeyDown = (e: React.KeyboardEvent, index: number, totalItems: number) => {
@@ -74,17 +91,17 @@ function CategoryFilterBarContent() {
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => handleSelectCategory(item.id)}
                 onKeyDown={(e) => handleKeyDown(e, index, items.length)}
-                className={`relative px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 flex-shrink-0 border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 ${
+                className={`relative px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 flex-shrink-0 border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${
                   isActive
-                    ? 'text-white border-transparent shadow-md shadow-indigo-500/20'
-                    : 'bg-white/80 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    ? 'text-white border-transparent shadow-md shadow-indigo-500/20 font-black'
+                    : 'bg-white/80 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="category-filter-active-pill"
                     transition={springPillMotion}
-                    className="absolute inset-0 rounded-xl bg-indigo-600 dark:bg-indigo-600 z-0"
+                    className="absolute inset-0 rounded-xl bg-indigo-600 dark:bg-indigo-600 z-0 shadow-md shadow-indigo-500/30"
                   />
                 )}
 
