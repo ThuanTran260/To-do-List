@@ -61,7 +61,7 @@ export default function CategoriesPage() {
   };
 
   const handleCategoryCardClick = (catId: string) => {
-    router.push(`/dashboard/tasks?category=${catId}`);
+    router.push(`/dashboard/tasks?category=${catId}`, { scroll: false });
   };
 
   return (
@@ -111,7 +111,7 @@ export default function CategoriesPage() {
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1 disabled:opacity-50"
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
             >
               {createMutation.isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -166,7 +166,7 @@ export default function CategoriesPage() {
                         e.stopPropagation();
                         handleDeleteCategory(cat.id, cat.name);
                       }}
-                      className="p-2 rounded-xl bg-black/10 hover:bg-black/20 text-current transition-colors"
+                      className="p-2 rounded-xl bg-black/10 hover:bg-black/20 text-current transition-colors cursor-pointer"
                       title="Xóa danh mục"
                     >
                       <Trash2 className="w-4 h-4" />

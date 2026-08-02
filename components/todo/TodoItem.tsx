@@ -3,7 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToggleTodo, useDeleteTodo, type TodoItemData } from '@/hooks/useTodos';
-import { useCategories } from '@/hooks/useCategories';
+import { useCategories, getReadableTextColor } from '@/hooks/useCategories';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { Check, Edit3, Trash2, Calendar, Clock, Eye } from 'lucide-react';
@@ -25,13 +25,18 @@ function TodoItemContent({ item }: TodoItemProps) {
     ? categories.find((c) => c.id === item.category_id)
     : null;
 
-  const handleOpenDetail = () => {
+  const handleOpenDetail = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const params = new URLSearchParams(searchParams.toString());
     params.set('task', item.id);
     router.push(`?${params.toString()}`, { scroll: false });
   };
 
   const handleSelectCategoryFilter = (e: React.MouseEvent, catId: string) => {
+    e.preventDefault();
     e.stopPropagation();
     const params = new URLSearchParams(searchParams.toString());
     params.set('category', catId);
@@ -53,6 +58,8 @@ function TodoItemContent({ item }: TodoItemProps) {
     });
   }
 
+  const categoryTextColor = itemCategory ? getReadableTextColor(itemCategory.color) : '#ffffff';
+
   return (
     <>
       <div
@@ -72,7 +79,7 @@ function TodoItemContent({ item }: TodoItemProps) {
                 toggleMutation.mutate({ id: item.id, is_completed: !item.is_completed })
               }
               disabled={toggleMutation.isPending}
-              className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-all flex-shrink-0 ${
+              className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
                 item.is_completed
                   ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-500/30'
                   : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 bg-white dark:bg-slate-800'
@@ -99,13 +106,12 @@ function TodoItemContent({ item }: TodoItemProps) {
 
                 {itemCategory && (
                   <button
+                    type="button"
                     onClick={(e) => handleSelectCategoryFilter(e, itemCategory.id)}
-                    className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-[10px] font-bold flex items-center gap-1.5 border border-slate-200/60 dark:border-slate-700 transition-colors"
+                    style={{ backgroundColor: itemCategory.color, color: categoryTextColor }}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1.5 shadow-2xs border border-white/20 transition-transform active:scale-95 cursor-pointer"
                   >
-                    <span
-                      className="w-2 h-2 rounded-full shadow-xs"
-                      style={{ backgroundColor: itemCategory.color }}
-                    />
+                    <span>📁</span>
                     <span>{itemCategory.name}</span>
                   </button>
                 )}
@@ -143,8 +149,9 @@ function TodoItemContent({ item }: TodoItemProps) {
                 )}
 
                 <button
+                  type="button"
                   onClick={handleOpenDetail}
-                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>Xem chi tiết</span>
@@ -173,7 +180,7 @@ function TodoItemContent({ item }: TodoItemProps) {
           <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setIsEditing(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Chỉnh sửa"
             >
               <Edit3 className="w-4 h-4" />
@@ -185,7 +192,7 @@ function TodoItemContent({ item }: TodoItemProps) {
                 }
               }}
               disabled={deleteMutation.isPending}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Xóa công việc"
             >
               <Trash2 className="w-4 h-4" />

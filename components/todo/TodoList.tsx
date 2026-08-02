@@ -1,71 +1,87 @@
 'use client';
 
-import { useState, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useMemo, useDeferredValue, Suspense } from 'react';
 import { useTodos } from '@/hooks/useTodos';
 import { useCategories } from '@/hooks/useCategories';
 import { useRealtimeTodos } from '@/hooks/useRealtimeTodos';
+import { useSearchParams } from 'next/navigation';
 import { TodoItem } from '@/components/todo/TodoItem';
 import { CategoryFilterBar } from '@/components/todo/CategoryFilterBar';
-import { Search, Filter, CheckCircle2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
+import { EmptyState } from '@/components/ui/state/EmptyState';
+import { ErrorState } from '@/components/ui/state/ErrorState';
+import { SearchAutocomplete } from '@/components/widget/SearchAutocomplete';
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+} from 'lucide-react';
 
 function TodoListContent() {
-  const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
-  const [priorityFilter, setPriorityFilter] = useState<'all' | 'low' | 'medium' | 'high'>('all');
-
   const searchParams = useSearchParams();
+
+  // Read URL query parameters
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const search = searchParams.get('search') || '';
+  const statusFilter = (searchParams.get('status') || 'all') as 'all' | 'active' | 'completed';
+  const priorityFilter = (searchParams.get('priority') || 'all') as 'all' | 'low' | 'medium' | 'high';
   const categoryParam = searchParams.get('category');
 
-  // Realtime subscription
+  // Deferred search query for smooth 60fps typing without rendering stutter
+  const deferredSearch = useDeferredValue(search);
+
+  // Subscribe to Supabase Realtime updates
   useRealtimeTodos();
 
-  const { data, isLoading, isError, error } = useTodos(page);
+  const pageSize = 100;
+  const { data, isLoading, isError, error, refetch } = useTodos(page, pageSize);
   const { data: categories = [] } = useCategories();
 
   const todoList = data?.todos || [];
   const total = data?.total || 0;
-  const pageSize = data?.pageSize || 30;
   const totalPages = Math.ceil(total / pageSize) || 1;
 
-  // Validate category ownership & existence (Graceful Fallback)
-  let activeCategoryFilter: string | null = null;
-  if (categoryParam === 'uncategorized') {
-    activeCategoryFilter = 'uncategorized';
-  } else if (categoryParam && categories.some((c) => c.id === categoryParam)) {
-    activeCategoryFilter = categoryParam;
-  }
+  // Validate category ownership & existence
+  const activeCategoryFilter = useMemo(() => {
+    if (categoryParam === 'uncategorized') return 'uncategorized';
+    if (categoryParam && categories.some((c) => c.id === categoryParam)) return categoryParam;
+    return null;
+  }, [categoryParam, categories]);
 
-  // Client-side filtering for search, status, priority, and category
-  const filteredTodos = todoList.filter((item) => {
-    const matchesSearch =
-      !search ||
-      item.title.toLowerCase().includes(search.toLowerCase()) ||
-      (item.description && item.description.toLowerCase().includes(search.toLowerCase()));
+  // Client-side memoized filtering for 60fps search and filters
+  const filteredTodos = useMemo(() => {
+    const searchLower = deferredSearch.toLowerCase();
 
-    const matchesStatus =
-      statusFilter === 'all'
-        ? true
-        : statusFilter === 'active'
-        ? !item.is_completed
-        : item.is_completed;
+    return todoList.filter((item) => {
+      const matchesSearch =
+        !deferredSearch ||
+        item.title.toLowerCase().includes(searchLower) ||
+        (item.description && item.description.toLowerCase().includes(searchLower));
 
-    const matchesPriority =
-      priorityFilter === 'all' ? true : item.priority === priorityFilter;
+      const matchesStatus =
+        statusFilter === 'all'
+          ? true
+          : statusFilter === 'active'
+          ? !item.is_completed
+          : item.is_completed;
 
-    let matchesCategory = true;
-    if (activeCategoryFilter === 'uncategorized') {
-      matchesCategory = !item.category_id;
-    } else if (activeCategoryFilter) {
-      matchesCategory = item.category_id === activeCategoryFilter;
-    }
+      const matchesPriority =
+        priorityFilter === 'all' ? true : item.priority === priorityFilter;
 
-    return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
-  });
+      let matchesCategory = true;
+      if (activeCategoryFilter === 'uncategorized') {
+        matchesCategory = !item.category_id;
+      } else if (activeCategoryFilter) {
+        matchesCategory = item.category_id === activeCategoryFilter;
+      }
 
-  const activeCount = todoList.filter((t) => !t.is_completed).length;
-  const completedCount = todoList.filter((t) => t.is_completed).length;
+      return matchesSearch && matchesStatus && matchesPriority && matchesCategory;
+    });
+  }, [todoList, deferredSearch, statusFilter, priorityFilter, activeCategoryFilter]);
+
+  const activeCount = useMemo(() => todoList.filter((t) => !t.is_completed).length, [todoList]);
+  const completedCount = useMemo(() => todoList.filter((t) => t.is_completed).length, [todoList]);
 
   return (
     <div className="space-y-4">
@@ -73,98 +89,96 @@ function TodoListContent() {
       <CategoryFilterBar />
 
       {/* Controls Bar: Search & Filters */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 p-3 rounded-2xl glass-panel bg-white/60 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/60">
-        {/* Search Bar */}
-        <div className="relative flex-1">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm kiếm công việc..."
-            className="w-full bg-slate-100/80 dark:bg-slate-800/80 pl-9 pr-3 py-1.5 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-medium"
-          />
+      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+        {/* Search Autocomplete Bar */}
+        <div className="flex-1 max-w-md">
+          <SearchAutocomplete />
         </div>
 
         {/* Status Filter Tabs */}
-        <div className="flex items-center gap-1 bg-slate-100/80 dark:bg-slate-800/80 p-1 rounded-xl text-xs font-semibold">
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 no-scrollbar">
           <button
-            onClick={() => setStatusFilter('all')}
-            className={`px-3 py-1 rounded-lg transition-all ${
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.delete('status');
+              window.history.replaceState(null, '', `?${params.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
               statusFilter === 'all'
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
+                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             Tất cả ({total})
           </button>
           <button
-            onClick={() => setStatusFilter('active')}
-            className={`px-3 py-1 rounded-lg transition-all ${
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('status', 'active');
+              window.history.replaceState(null, '', `?${params.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
               statusFilter === 'active'
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
+                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             Đang làm ({activeCount})
           </button>
           <button
-            onClick={() => setStatusFilter('completed')}
-            className={`px-3 py-1 rounded-lg transition-all ${
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set('status', 'completed');
+              window.history.replaceState(null, '', `?${params.toString()}`);
+            }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
               statusFilter === 'completed'
-                ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
+                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
             }`}
           >
             Đã xong ({completedCount})
           </button>
-        </div>
 
-        {/* Priority Filter */}
-        <div className="flex items-center gap-1 text-xs">
-          <Filter className="w-3.5 h-3.5 text-slate-400 hidden sm:inline" />
-          <select
-            value={priorityFilter}
-            onChange={(e) => setPriorityFilter(e.target.value as any)}
-            className="bg-slate-100/80 dark:bg-slate-800/80 px-2.5 py-1.5 rounded-xl text-xs text-slate-700 dark:text-slate-300 border-0 focus:outline-none focus:ring-1 focus:ring-indigo-500 font-semibold"
-          >
-            <option value="all">Tất cả ưu tiên</option>
-            <option value="high">Cao (High)</option>
-            <option value="medium">Trung bình (Medium)</option>
-            <option value="low">Thấp (Low)</option>
-          </select>
+          {/* Priority Select Filter */}
+          <div className="flex items-center gap-1 pl-1">
+            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <select
+              value={priorityFilter}
+              onChange={(e) => {
+                const params = new URLSearchParams(searchParams.toString());
+                if (e.target.value === 'all') params.delete('priority');
+                else params.set('priority', e.target.value);
+                window.history.replaceState(null, '', `?${params.toString()}`);
+              }}
+              className="bg-white/60 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 focus:outline-none cursor-pointer"
+            >
+              <option value="all">Tất cả ưu tiên</option>
+              <option value="high">Cao (High)</option>
+              <option value="medium">Trung bình (Medium)</option>
+              <option value="low">Thấp (Low)</option>
+            </select>
+          </div>
         </div>
       </div>
 
-      {/* Todo List Content */}
+      {/* Task List Rendering */}
       {isLoading ? (
         <div className="space-y-3">
-          {[1, 2, 3, 4].map((n) => (
-            <div
-              key={n}
-              className="h-20 rounded-2xl bg-slate-200/60 dark:bg-slate-800/40 animate-pulse"
-            />
-          ))}
+          <LoadingSkeleton variant="card" count={3} />
         </div>
       ) : isError ? (
-        <div className="p-6 rounded-2xl glass-panel bg-rose-500/10 border border-rose-500/20 text-center space-y-2">
-          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto" />
-          <p className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-            Không thể tải danh sách todo: {(error as Error).message}
-          </p>
-        </div>
+        <ErrorState message={(error as Error).message} onRetry={refetch} />
       ) : filteredTodos.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl glass-panel bg-white/40 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-800 space-y-3">
-          <CheckCircle2 className="w-10 h-10 text-slate-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-            Không tìm thấy công việc nào
-          </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
-            {search || statusFilter !== 'all' || priorityFilter !== 'all' || activeCategoryFilter
-              ? 'Thử thay đổi từ khóa hoặc bộ lọc danh mục của bạn.'
-              : 'Hãy bắt đầu bằng cách thêm công việc mới ở trên!'}
-          </p>
-        </div>
+        <EmptyState
+          icon={CheckCircle2}
+          title={search ? 'Không tìm thấy công việc phù hợp' : 'Chưa có công việc nào'}
+          description={
+            search
+              ? `Không tìm thấy kết quả nào với từ khóa "${search}". Thử từ khóa khác.`
+              : 'Hãy bắt đầu tạo công việc mới ở form phía trên.'
+          }
+        />
       ) : (
         <div className="space-y-3">
           {filteredTodos.map((item) => (
@@ -173,27 +187,36 @@ function TodoListContent() {
         </div>
       )}
 
-      {/* Pagination Controls */}
+      {/* Pagination Bar (If needed) */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-2 text-xs">
-          <span className="text-slate-500 dark:text-slate-400">
+        <div className="flex items-center justify-between pt-4 border-t border-slate-200/60 dark:border-slate-800/60 text-xs font-semibold text-slate-500">
+          <span>
             Trang {page} / {totalPages} (Tổng {total} công việc)
           </span>
-
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800"
+              disabled={page <= 1}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', String(page - 1));
+                window.history.replaceState(null, '', `?${params.toString()}`);
+              }}
+              className="px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Trước</span>
             </button>
             <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400 disabled:opacity-40 hover:bg-slate-100 dark:hover:bg-slate-800"
+              disabled={page >= totalPages}
+              onClick={() => {
+                const params = new URLSearchParams(searchParams.toString());
+                params.set('page', String(page + 1));
+                window.history.replaceState(null, '', `?${params.toString()}`);
+              }}
+              className="px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <ChevronRight className="w-4 h-4" />
+              <span>Sau</span>
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -204,7 +227,7 @@ function TodoListContent() {
 
 export function TodoList() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={<LoadingSkeleton variant="card" count={3} />}>
       <TodoListContent />
     </Suspense>
   );
