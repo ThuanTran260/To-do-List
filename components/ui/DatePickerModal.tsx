@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
+import { useWheelYearScroll } from '@/hooks/useWheelYearScroll';
 import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import {
@@ -74,7 +75,6 @@ export function DatePickerModal({
   const nextMonth = nextMonthDate.getMonth();
 
   // Determine whether to expand to 2 months dynamically
-  // Expands if startDate and endDate belong to different months/years, or user manually toggles
   const isMultiMonth = Boolean(
     startDate &&
       endDate &&
@@ -83,6 +83,17 @@ export function DatePickerModal({
 
   const [forceDualMonth, setForceDualMonth] = useState(false);
   const showDualMonth = isMultiMonth || forceDualMonth;
+
+  // Smooth mouse wheel year scroll momentum hook
+  const { handleWheel: handleYearScrollWheel } = useWheelYearScroll({
+    onYearChange: (deltaYears) => {
+      setCurrentMonthDate((prev) => {
+        const next = new Date(prev);
+        next.setFullYear(prev.getFullYear() + deltaYears);
+        return next;
+      });
+    },
+  });
 
   // Navigation handlers
   const handlePrevMonth = () => {
@@ -166,15 +177,6 @@ export function DatePickerModal({
     onClose();
   };
 
-  // Isolated Wheel Scroll Handler (Prevents parent page scrolling completely)
-  const handleCalendarWheel = (e: React.WheelEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    // Do not scroll window body
-    if (e.currentTarget) {
-      e.currentTarget.scrollTop += e.deltaY * 0.2;
-    }
-  };
-
   // Month grid renderer
   const renderMonthGrid = (targetYear: number, targetMonth: number) => {
     const firstDay = new Date(targetYear, targetMonth, 1).getDay();
@@ -184,7 +186,7 @@ export function DatePickerModal({
     });
 
     return (
-      <div className="space-y-3 min-w-[240px]">
+      <div className="space-y-3 min-w-0 flex-1">
         {/* Month Header */}
         <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-100">
           <span className="capitalize">{monthName}</span>
@@ -276,7 +278,12 @@ export function DatePickerModal({
   ];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={title}>
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={title}
+      maxWidth={showDualMonth ? 'max-w-3xl' : 'max-w-xl'}
+    >
       <div className="space-y-4 pt-1">
         {/* Value Display Bar */}
         <div className="p-3 rounded-2xl bg-indigo-50/60 dark:bg-slate-900/60 border border-indigo-200/60 dark:border-slate-800 text-center">
@@ -324,22 +331,20 @@ export function DatePickerModal({
             </div>
           </LayoutGroup>
 
-          {/* Right Calendar Container with Isolated Wheel Scroll & Smooth Layout Extension */}
+          {/* Right Calendar Container with Smooth Year Wheel Scroll */}
           <motion.div
             layout
             transition={springPillMotion}
-            onWheel={handleCalendarWheel}
+            onWheel={handleYearScrollWheel}
             className="flex-1 w-full space-y-4 bg-white/40 dark:bg-slate-900/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none overscroll-contain"
           >
             {/* Header Navigation Controls & Dual-Month Toggle */}
             <div className="flex items-center justify-between pb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <span>Lịch chọn thời gian</span>
-                {showDualMonth && (
-                  <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 text-[9px] font-black">
-                    2 Tháng
-                  </span>
-                )}
+                <span className="text-[10px] text-indigo-500 font-normal hidden sm:inline">
+                  (Cuộn chuột để chuyển năm)
+                </span>
               </span>
 
               <div className="flex items-center gap-1.5">
@@ -370,29 +375,17 @@ export function DatePickerModal({
               </div>
             </div>
 
-            {/* Dynamic Grid: 1 Month vs 2 Months Layout Animation */}
+            {/* Dynamic Grid: 1 Month vs 2 Months Layout */}
             <motion.div
               layout
               transition={springPillMotion}
-              className={`grid gap-4 ${
-                showDualMonth ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'
+              className={`flex flex-col md:flex-row gap-6 w-full ${
+                showDualMonth ? '' : ''
               }`}
             >
               {renderMonthGrid(year, month)}
 
-              <AnimatePresence>
-                {showDualMonth && (
-                  <motion.div
-                    key="second-month-grid"
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    transition={springPillMotion}
-                  >
-                    {renderMonthGrid(nextYear, nextMonth)}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              {showDualMonth && renderMonthGrid(nextYear, nextMonth)}
             </motion.div>
 
             {/* Apple iOS Glassmorphic Time Picker Trigger Bar */}
