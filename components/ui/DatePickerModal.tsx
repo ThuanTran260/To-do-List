@@ -334,20 +334,16 @@ export function DatePickerModal({
             </div>
           </LayoutGroup>
 
-          {/* Right Calendar Container with Isolated Wheel Month Scroll */}
+          {/* Right Calendar Container */}
           <motion.div
             layout
             transition={springPillMotion}
-            onWheel={handleMonthScrollWheel}
-            className="flex-1 w-full space-y-4 bg-white/40 dark:bg-slate-900/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none overscroll-contain overflow-hidden"
+            className="flex-1 w-full space-y-4 bg-white/40 dark:bg-slate-900/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none overflow-hidden"
           >
             {/* Header Navigation Controls & Dual-Month Toggle */}
             <div className="flex items-center justify-between pb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <span>Lịch chọn thời gian</span>
-                <span className="text-[10px] text-indigo-500 font-normal hidden sm:inline">
-                  (Cuộn chuột để đổi tháng)
-                </span>
               </span>
 
               <div className="flex items-center gap-1.5">
@@ -378,21 +374,23 @@ export function DatePickerModal({
               </div>
             </div>
 
-            {/* Motion UI Smooth Horizontal Slide Transition between Months */}
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={`${year}-${month}-${showDualMonth}`}
-                initial={{ opacity: 0, x: slideDirection * 30 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -slideDirection * 30 }}
-                transition={springPillMotion}
-                className="flex flex-col md:flex-row gap-6 w-full"
-              >
-                {renderMonthGrid(year, month)}
+            {/* Calendar Grid Container (Month scroll triggers ONLY when hovering directly inside this grid!) */}
+            <div onWheel={handleMonthScrollWheel} className="overscroll-contain">
+              <AnimatePresence mode="wait" initial={false}>
+                <motion.div
+                  key={`${year}-${month}-${showDualMonth}`}
+                  initial={{ opacity: 0, x: slideDirection * 30 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -slideDirection * 30 }}
+                  transition={springPillMotion}
+                  className="flex flex-col md:flex-row gap-6 w-full"
+                >
+                  {renderMonthGrid(year, month)}
 
-                {showDualMonth && renderMonthGrid(nextYear, nextMonth)}
-              </motion.div>
-            </AnimatePresence>
+                  {showDualMonth && renderMonthGrid(nextYear, nextMonth)}
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
             {/* Apple iOS Glassmorphic Time Picker Trigger Bar */}
             <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-3 text-xs relative">
@@ -410,7 +408,7 @@ export function DatePickerModal({
                 <span>{endHours} : {endMinutes}</span>
               </button>
 
-              {/* Apple iOS 3D Glassmorphic Time Wheel Picker Popover */}
+              {/* Apple iOS 3D Glassmorphic Time Wheel Picker Popover (Opaque background to prevent number bleed) */}
               <AnimatePresence>
                 {isTimePickerOpen && (
                   <motion.div
@@ -418,16 +416,17 @@ export function DatePickerModal({
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                     transition={springPillMotion}
-                    className="absolute bottom-12 right-0 z-50 p-4 rounded-3xl glass-panel bg-white/95 dark:bg-slate-950/95 border border-slate-200 dark:border-slate-800 shadow-2xl space-y-3 w-64"
+                    onWheel={(e) => e.stopPropagation()}
+                    className="absolute bottom-12 right-0 z-50 p-4 rounded-3xl bg-slate-900 dark:bg-slate-950 border border-slate-700 shadow-2xl space-y-3 w-64 text-slate-100"
                   >
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
-                        <span>Chọn giờ Apple iOS</span>
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+                      <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-200 flex items-center gap-1">
+                        <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Chọn giờ</span>
                       </span>
                       <button
                         onClick={() => setIsTimePickerOpen(false)}
-                        className="px-2 py-0.5 rounded-lg bg-indigo-600 text-white text-[10px] font-extrabold"
+                        className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-[10px] font-extrabold transition-colors"
                       >
                         Xác nhận
                       </button>
@@ -436,7 +435,7 @@ export function DatePickerModal({
                     {/* Apple iOS Dual Wheel Columns */}
                     <div className="flex items-center justify-center gap-3 relative h-36 overflow-hidden">
                       {/* Glass Lens Highlight Bar */}
-                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-9 rounded-xl bg-indigo-500/20 dark:bg-indigo-500/30 border border-indigo-500/40 pointer-events-none z-0" />
+                      <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 h-9 rounded-xl bg-indigo-500/30 border border-indigo-500/50 pointer-events-none z-0" />
 
                       {/* Hours Wheel */}
                       <div className="w-20 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory space-y-1 py-14 text-center z-10 font-mono">
@@ -449,8 +448,8 @@ export function DatePickerModal({
                               onClick={() => setEndHours(val)}
                               className={`h-8 flex items-center justify-center snap-center text-sm font-bold cursor-pointer transition-all ${
                                 isSel
-                                  ? 'text-indigo-600 dark:text-indigo-300 scale-110 font-black'
-                                  : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                  ? 'text-indigo-300 scale-110 font-black'
+                                  : 'text-slate-400 hover:text-slate-200'
                               }`}
                             >
                               {val}
@@ -459,7 +458,7 @@ export function DatePickerModal({
                         })}
                       </div>
 
-                      <span className="font-mono text-base font-black text-indigo-500 z-10">:</span>
+                      <span className="font-mono text-base font-black text-indigo-400 z-10">:</span>
 
                       {/* Minutes Wheel */}
                       <div className="w-20 h-full overflow-y-auto no-scrollbar snap-y snap-mandatory space-y-1 py-14 text-center z-10 font-mono">
@@ -472,8 +471,8 @@ export function DatePickerModal({
                               onClick={() => setEndMinutes(val)}
                               className={`h-8 flex items-center justify-center snap-center text-sm font-bold cursor-pointer transition-all ${
                                 isSel
-                                  ? 'text-indigo-600 dark:text-indigo-300 scale-110 font-black'
-                                  : 'text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                                  ? 'text-indigo-300 scale-110 font-black'
+                                  : 'text-slate-400 hover:text-slate-200'
                               }`}
                             >
                               {val}
