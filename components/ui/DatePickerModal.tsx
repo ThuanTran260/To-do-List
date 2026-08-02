@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { useWheelYearScroll } from '@/hooks/useWheelYearScroll';
-import { motion, AnimatePresence } from 'framer-motion';
+import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
+import { springPillMotion, popoverMotion, overlayMotion } from '@/lib/motion';
 import {
   Calendar as CalendarIcon,
   ChevronLeft,
@@ -11,6 +11,7 @@ import {
   Clock,
   Check,
   RotateCcw,
+  X,
 } from 'lucide-react';
 
 interface DatePickerModalProps {
@@ -30,47 +31,44 @@ export function DatePickerModal({
   onApply,
   title = 'Cập nhật hạn hoàn thành',
 }: DatePickerModalProps) {
-  const initial = selectedDate ? new Date(selectedDate) : new Date();
-  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(initial);
+  // CRITICAL BUG FIX (frontend.md Rule 8 & 29-31):
+  // When modal opens, ALWAYS set viewMonth to the month/year of selectedDate (or current date if null).
+  const [currentMonthDate, setCurrentMonthDate] = useState<Date>(() =>
+    selectedDate ? new Date(selectedDate) : new Date()
+  );
   const [startDate, setStartDate] = useState<Date | null>(selectedDate ? new Date(selectedDate) : null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [activeShortcut, setActiveShortcut] = useState<ShortcutType>('custom');
 
-  // Time states (00:00 to 23:59)
-  const [startHours, setStartHours] = useState<string>(
-    selectedDate ? String(new Date(selectedDate).getHours()).padStart(2, '0') : '09'
-  );
-  const [startMinutes, setStartMinutes] = useState<string>(
-    selectedDate ? String(new Date(selectedDate).getMinutes()).padStart(2, '0') : '00'
-  );
+  // Time state (Hour 00-23, Minute 00-59) for deadline
   const [endHours, setEndHours] = useState<string>('23');
   const [endMinutes, setEndMinutes] = useState<string>('59');
 
+  // Sync state whenever modal opens or selectedDate changes
   useEffect(() => {
-    if (selectedDate) {
-      const d = new Date(selectedDate);
-      setStartDate(d);
-      setCurrentMonthDate(d);
-      setStartHours(String(d.getHours()).padStart(2, '0'));
-      setStartMinutes(String(d.getMinutes()).padStart(2, '0'));
+    if (isOpen) {
+      if (selectedDate) {
+        const d = new Date(selectedDate);
+        setStartDate(d);
+        setCurrentMonthDate(d);
+        setEndHours(String(d.getHours()).padStart(2, '0'));
+        setEndMinutes(String(d.getMinutes()).padStart(2, '0'));
+      } else {
+        const now = new Date();
+        setStartDate(null);
+        setEndDate(null);
+        setCurrentMonthDate(now);
+        setEndHours('23');
+        setEndMinutes('59');
+      }
+      setActiveShortcut('custom');
     }
-  }, [selectedDate]);
-
-  // Smooth mouse wheel scroll handler to change years/months smoothly
-  const { handleWheel } = useWheelYearScroll({
-    onYearChange: (deltaYears) => {
-      setCurrentMonthDate((prev) => {
-        const next = new Date(prev);
-        next.setFullYear(prev.getFullYear() + deltaYears);
-        return next;
-      });
-    },
-  });
+  }, [isOpen, selectedDate]);
 
   const year = currentMonthDate.getFullYear();
   const month = currentMonthDate.getMonth();
 
-  // Next month calculation for dual-month view
+  // Next month calculation for dual-month view on desktop
   const nextMonthDate = new Date(year, month + 1, 1);
   const nextYear = nextMonthDate.getFullYear();
   const nextMonth = nextMonthDate.getMonth();
@@ -81,6 +79,10 @@ export function DatePickerModal({
   };
   const handleNextMonth = () => {
     setCurrentMonthDate(new Date(year, month + 1, 1));
+  };
+
+  const handleYearSelect = (newYear: number) => {
+    setCurrentMonthDate(new Date(newYear, month, 1));
   };
 
   // Preset Shortcut handlers
@@ -117,6 +119,21 @@ export function DatePickerModal({
     }
   };
 
+  // Keyboard navigation for presets (Arrow Up/Down, Enter)
+  const handlePresetKeyDown = (e: React.KeyboardEvent, index: number, presetsList: ShortcutType[]) => {
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      const nextIndex = (index + 1) % presetsList.length;
+      applyShortcut(presetsList[nextIndex]);
+      document.getElementById(`date-preset-${presetsList[nextIndex]}`)?.focus();
+    } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+      e.preventDefault();
+      const prevIndex = (index - 1 + presetsList.length) % presetsList.length;
+      applyShortcut(presetsList[prevIndex]);
+      document.getElementById(`date-preset-${presetsList[prevIndex]}`)?.focus();
+    }
+  };
+
   // Date selection click
   const handleDateClick = (date: Date) => {
     setActiveShortcut('custom');
@@ -132,39 +149,60 @@ export function DatePickerModal({
     }
   };
 
+  const handleReset = () => {
+    setStartDate(null);
+    setEndDate(null);
+    setActiveShortcut('custom');
+  };
+
   const handleApply = () => {
-    if (!startDate) {
-      onApply(null);
-      onClose();
-      return;
-    }
+    if (!startDate) return;
 
-    const finalDate = new Date(startDate);
-    finalDate.setHours(parseInt(startHours, 10) || 0);
-    finalDate.setMinutes(parseInt(startMinutes, 10) || 0);
-    finalDate.setSeconds(0);
+    // Use selected date (or end date if range) with specified end hours & minutes
+    const targetDate = endDate ? new Date(endDate) : new Date(startDate);
+    const hrs = Math.min(23, Math.max(0, parseInt(endHours, 10) || 0));
+    const mins = Math.min(59, Math.max(0, parseInt(endMinutes, 10) || 0));
 
-    onApply(finalDate.toISOString());
+    targetDate.setHours(hrs, mins, 0, 0);
+
+    onApply(targetDate.toISOString());
     onClose();
   };
 
-  // Month grid helper
+  // Month grid renderer with WCAG 2.1 AA compliant contrast
   const renderMonthGrid = (targetYear: number, targetMonth: number) => {
     const firstDay = new Date(targetYear, targetMonth, 1).getDay();
     const daysInM = new Date(targetYear, targetMonth + 1, 0).getDate();
-    const monthName = new Date(targetYear, targetMonth, 1).toLocaleString('en-US', {
-      month: 'short',
+    const monthName = new Date(targetYear, targetMonth, 1).toLocaleString('vi-VN', {
+      month: 'long',
     });
 
     return (
       <div className="space-y-3">
-        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-          {monthName} {targetYear}
+        {/* Month Header with Accessible Year Dropdown */}
+        <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-100">
+          <span className="capitalize">
+            {monthName}
+          </span>
+          <select
+            value={targetYear}
+            onChange={(e) => handleYearSelect(parseInt(e.target.value, 10))}
+            className="bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-xs font-bold text-indigo-600 dark:text-indigo-400 border border-slate-200 dark:border-slate-700 cursor-pointer focus:outline-none"
+          >
+            {Array.from({ length: 16 }).map((_, idx) => {
+              const y = 2020 + idx;
+              return (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              );
+            })}
+          </select>
         </div>
 
-        {/* Day Names Header */}
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, idx) => (
+        {/* Day Names Header (WCAG AA 4.5:1 contrast) */}
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-bold text-slate-600 dark:text-slate-300">
+          {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map((d, idx) => (
             <div key={`${d}-${idx}`}>{d}</div>
           ))}
         </div>
@@ -193,14 +231,14 @@ export function DatePickerModal({
               <button
                 key={dayNum}
                 onClick={() => handleDateClick(current)}
-                className={`h-8 w-full rounded-xl flex items-center justify-center font-semibold transition-all relative ${
+                className={`h-8 w-full rounded-xl flex items-center justify-center font-bold transition-all relative ${
                   isStart || isEnd
-                    ? 'bg-indigo-600 text-white font-bold shadow-md scale-105 z-10'
+                    ? 'bg-indigo-600 text-white font-black shadow-md scale-105 z-10'
                     : isInRange
-                    ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-bold'
+                    ? 'bg-indigo-100 dark:bg-indigo-950/80 text-indigo-700 dark:text-indigo-300 font-extrabold'
                     : isToday
-                    ? 'border border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    ? 'border-2 border-indigo-500 text-indigo-600 dark:text-indigo-400 font-bold'
+                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200'
                 }`}
               >
                 <span>{dayNum}</span>
@@ -212,137 +250,174 @@ export function DatePickerModal({
     );
   };
 
-  // Formatting date range header text
+  // Formatting date range display bar in vi-VN locale
   const formatHeaderRange = () => {
     if (startDate && endDate) {
-      return `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
-        month: 'short',
-      })} ${startDate.getFullYear()} - ${endDate.getDate()} ${endDate.toLocaleString('en-US', {
-        month: 'short',
-      })} ${endDate.getFullYear()}`;
+      const s = startDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      const e = endDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      return `${s} ➔ ${e}`;
     }
     if (startDate) {
-      return `${startDate.getDate()} ${startDate.toLocaleString('en-US', {
-        month: 'short',
-      })} ${startDate.getFullYear()}`;
+      return startDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
     }
     return 'Chưa chọn hạn';
   };
 
+  const presetList: { id: ShortcutType; label: string }[] = [
+    { id: 'today', label: 'Hôm nay' },
+    { id: 'yesterday', label: 'Hôm qua' },
+    { id: '7days', label: '7 ngày qua' },
+    { id: '15days', label: '15 ngày qua' },
+    { id: 'lastMonth', label: 'Tháng trước' },
+    { id: 'custom', label: 'Tùy chỉnh' },
+  ];
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title}>
       <div className="space-y-4 pt-1">
-        {/* Header Display Range */}
-        <div className="p-3 rounded-2xl bg-slate-100/80 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-center">
-          <span className="text-xs font-extrabold text-slate-800 dark:text-slate-100 flex items-center justify-center gap-2">
+        {/* Value Display Bar (Locale vi-VN) */}
+        <div className="p-3 rounded-2xl bg-indigo-50/60 dark:bg-slate-900/60 border border-indigo-200/60 dark:border-slate-800 text-center">
+          <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100 flex items-center justify-center gap-2">
             <CalendarIcon className="w-4 h-4 text-indigo-500" />
             <span>{formatHeaderRange()}</span>
           </span>
         </div>
 
-        {/* Main Grid: Left Shortcuts + Right Calendar Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-          {/* Left Sidebar Shortcuts */}
-          <div className="space-y-1.5 md:col-span-1 border-r border-slate-200/60 dark:border-slate-800/60 pr-3">
-            {[
-              { id: 'today', label: 'Today' },
-              { id: 'yesterday', label: 'Yesterday' },
-              { id: '7days', label: 'Last 7 days' },
-              { id: '15days', label: 'Last 15 days' },
-              { id: 'lastMonth', label: 'Last Month' },
-              { id: 'custom', label: 'Custom' },
-            ].map((shortcut) => {
-              const isActive = activeShortcut === shortcut.id;
-              return (
-                <button
-                  key={shortcut.id}
-                  onClick={() => applyShortcut(shortcut.id as ShortcutType)}
-                  className={`w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 shadow-xs'
-                      : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`}
-                >
-                  {shortcut.label}
-                </button>
-              );
-            })}
-
-            {/* Left Primary Apply Button */}
-            <div className="pt-4">
-              <button
-                onClick={handleApply}
-                className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/25 transition-all flex items-center justify-center gap-1.5"
-              >
-                <Check className="w-4 h-4" />
-                <span>Apply</span>
-              </button>
+        {/* Main Grid: Left Presets + Right Calendar */}
+        <div className="flex flex-col md:flex-row gap-4 items-start">
+          {/* Left Presets Sidebar / Top Scrollbar on Mobile */}
+          <LayoutGroup id="date-preset">
+            <div
+              role="radiogroup"
+              aria-label="Preset Date Ranges"
+              className="flex flex-row md:flex-col overflow-x-auto md:overflow-visible w-full md:w-36 space-x-1.5 md:space-x-0 md:space-y-1.5 border-b md:border-b-0 md:border-r border-slate-200/60 dark:border-slate-800/60 pb-3 md:pb-0 md:pr-3 flex-shrink-0 no-scrollbar"
+            >
+              {presetList.map((shortcut, index) => {
+                const isActive = activeShortcut === shortcut.id;
+                return (
+                  <button
+                    key={shortcut.id}
+                    id={`date-preset-${shortcut.id}`}
+                    role="radio"
+                    aria-checked={isActive}
+                    tabIndex={isActive ? 0 : -1}
+                    onClick={() => applyShortcut(shortcut.id)}
+                    onKeyDown={(e) =>
+                      handlePresetKeyDown(
+                        e,
+                        index,
+                        presetList.map((p) => p.id)
+                      )
+                    }
+                    className={`relative w-auto md:w-full text-left px-3 py-2 rounded-xl text-xs font-bold transition-all flex-shrink-0 ${
+                      isActive
+                        ? 'text-indigo-600 dark:text-indigo-300 font-extrabold'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="date-preset-pill"
+                        transition={springPillMotion}
+                        className="absolute inset-0 rounded-xl bg-indigo-100 dark:bg-indigo-950/80 border border-indigo-300 dark:border-indigo-700 z-0"
+                      />
+                    )}
+                    <span className="relative z-10">{shortcut.label}</span>
+                  </button>
+                );
+              })}
             </div>
-          </div>
+          </LayoutGroup>
 
-          {/* Right Calendar Container with Smooth Wheel Scroll */}
-          <div
-            onWheel={handleWheel}
-            className="md:col-span-3 space-y-4 bg-white/40 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none relative"
-          >
-            {/* Header Navigation Controls */}
+          {/* Right Calendar Container */}
+          <div className="flex-1 w-full space-y-4 bg-white/40 dark:bg-slate-900/40 p-3 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none">
+            {/* Navigation Controls */}
             <div className="flex items-center justify-between pb-1">
-              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1">
-                <span>Cuộn chuột để đổi năm</span>
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                Lịch chọn thời gian
               </span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={handlePrevMonth}
                   className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                  title="Tháng trước"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleNextMonth}
                   className="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors"
+                  title="Tháng sau"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             </div>
 
-            {/* Dual Month Layout */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Desktop: Dual Month / Mobile: Single Month */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {renderMonthGrid(year, month)}
-              {renderMonthGrid(nextYear, nextMonth)}
+              <div className="hidden md:block">
+                {renderMonthGrid(nextYear, nextMonth)}
+              </div>
             </div>
 
-            {/* Bottom Time Selector Bar (00:00 - 23:59) */}
+            {/* End Time Picker (Hours 00-23, Minutes 00-59) */}
             <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 font-bold border border-slate-200/60 dark:border-slate-700">
-                <Clock className="w-3.5 h-3.5" />
-                <input
-                  type="number"
-                  min="0"
-                  max="23"
-                  value={startHours}
-                  onChange={(e) => setStartHours(e.target.value.padStart(2, '0'))}
-                  className="w-6 text-center bg-transparent border-0 focus:outline-none"
-                />
-                <span>:</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="59"
-                  value={startMinutes}
-                  onChange={(e) => setStartMinutes(e.target.value.padStart(2, '0'))}
-                  className="w-6 text-center bg-transparent border-0 focus:outline-none"
-                />
-              </div>
-
-              <div className="flex-1 h-1 bg-slate-200 dark:bg-slate-800 rounded-full relative">
-                <div className="absolute inset-y-0 left-0 right-0 bg-indigo-500 rounded-full opacity-60" />
-              </div>
-
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl font-mono text-slate-500 font-bold border border-slate-200/60 dark:border-slate-700">
-                <span>{endHours}:{endMinutes}</span>
+              <span className="font-bold text-slate-600 dark:text-slate-400 text-[11px]">
+                Giờ hết hạn (End Time):
+              </span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-1.5 rounded-xl font-mono text-indigo-600 dark:text-indigo-400 font-bold border border-slate-200 dark:border-slate-700">
+                  <Clock className="w-3.5 h-3.5" />
+                  <input
+                    type="number"
+                    min="0"
+                    max="23"
+                    value={endHours}
+                    onChange={(e) => setEndHours(e.target.value.padStart(2, '0'))}
+                    className="w-7 text-center bg-transparent border-0 focus:outline-none font-bold"
+                  />
+                  <span>:</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="59"
+                    value={endMinutes}
+                    onChange={(e) => setEndMinutes(e.target.value.padStart(2, '0'))}
+                    className="w-7 text-center bg-transparent border-0 focus:outline-none font-bold"
+                  />
+                </div>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* Footer Actions: Reset & Apply */}
+        <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+          <button
+            onClick={handleReset}
+            className="px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-center gap-1"
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Reset</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            >
+              Hủy
+            </button>
+            <button
+              onClick={handleApply}
+              disabled={!startDate}
+              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-500/25 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              <Check className="w-4 h-4" />
+              <span>Áp dụng (Apply)</span>
+            </button>
           </div>
         </div>
       </div>
