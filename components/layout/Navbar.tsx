@@ -4,20 +4,17 @@ import { useState } from 'react';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { useRouter } from 'next/navigation';
 import { LogOut, Trash2, CheckCircle2, User as UserIcon, Sparkles } from 'lucide-react';
 import { TrashModal } from '@/components/todo/TrashModal';
 
 export function Navbar() {
   const { user } = useAuth();
-  const router = useRouter();
   const [isTrashOpen, setIsTrashOpen] = useState(false);
 
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/login';
   };
 
   return (
@@ -47,7 +44,7 @@ export function Navbar() {
             {/* Trash Button */}
             <button
               onClick={() => setIsTrashOpen(true)}
-              className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 transition-all flex items-center gap-1.5 text-xs font-semibold hover:border-indigo-300 dark:hover:border-indigo-700 active:scale-95"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-800 transition-all flex items-center gap-1.5 text-xs font-semibold hover:border-indigo-300 dark:hover:border-indigo-700 active:scale-95 cursor-pointer"
               title="Thùng rác"
             >
               <Trash2 className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
@@ -62,7 +59,7 @@ export function Navbar() {
                 </div>
                 <button
                   onClick={handleSignOut}
-                  className="p-2 rounded-xl text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all active:scale-95"
+                  className="p-2 rounded-xl text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-all active:scale-95 cursor-pointer"
                   title="Đăng xuất"
                 >
                   <LogOut className="w-4 h-4" />

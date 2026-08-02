@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { loginSchema } from '@/lib/validations/auth';
 import { Mail, Lock, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
@@ -12,7 +11,6 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,8 +34,8 @@ export function LoginForm() {
       setErrorMsg(error.message === 'Invalid login credentials' ? 'Email hoặc mật khẩu không chính xác' : error.message);
       setLoading(false);
     } else {
-      router.push('/dashboard');
-      router.refresh();
+      // Full session refresh redirect to clear React Query & client memory cache completely
+      window.location.href = '/dashboard';
     }
   };
 
@@ -99,7 +97,7 @@ export function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50"
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
         >
           {loading ? (
             <Loader2 className="w-5 h-5 animate-spin" />

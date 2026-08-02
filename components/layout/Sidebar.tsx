@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
 import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
@@ -26,7 +26,6 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
   const { user } = useAuth();
 
   // Optimistic active path for 0ms visual feedback on click
@@ -52,8 +51,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    window.location.href = '/login';
   };
 
   const navItems = [
