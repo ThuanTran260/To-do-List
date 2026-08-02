@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useTodos, useCreateTodo } from '@/hooks/useTodos';
 import { useDropdownManager } from '@/hooks/useDropdownManager';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
-import { useWheelYearScroll } from '@/hooks/useWheelYearScroll';
+import { useWheelMonthScroll } from '@/hooks/useWheelYearScroll';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Sparkles, Clock, Check } from 'lucide-react';
 
 export function CalendarPopover() {
@@ -23,12 +23,11 @@ export function CalendarPopover() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Smooth mouse wheel scroll handler to change years smoothly
-  const { handleWheel } = useWheelYearScroll({
-    onYearChange: (deltaYears) => {
+  // Smooth mouse wheel scroll handler to change months smoothly
+  const { handleWheel } = useWheelMonthScroll({
+    onMonthChange: (deltaMonths: number) => {
       setCurrentDate((prev) => {
-        const next = new Date(prev);
-        next.setFullYear(prev.getFullYear() + deltaYears);
+        const next = new Date(prev.getFullYear(), prev.getMonth() + deltaMonths, 1);
         return next;
       });
     },
@@ -137,7 +136,7 @@ export function CalendarPopover() {
           ))}
         </div>
 
-        {/* Days Grid with Smooth Mouse Wheel Scroll */}
+        {/* Days Grid with Smooth Mouse Wheel Month Scroll */}
         <div
           onWheel={handleWheel}
           className="grid grid-cols-7 gap-1 text-center text-xs font-semibold select-none"

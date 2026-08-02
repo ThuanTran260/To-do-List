@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Modal } from '@/components/ui/Modal';
-import { useWheelYearScroll } from '@/hooks/useWheelYearScroll';
+import { useWheelMonthScroll } from '@/hooks/useWheelYearScroll';
 import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import {
@@ -38,6 +38,7 @@ export function DatePickerModal({
   const [startDate, setStartDate] = useState<Date | null>(selectedDate ? new Date(selectedDate) : null);
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [activeShortcut, setActiveShortcut] = useState<ShortcutType>('custom');
+  const [slideDirection, setSlideDirection] = useState<number>(1); // 1 = right (next), -1 = left (prev)
 
   // Apple iOS Time Picker State
   const [endHours, setEndHours] = useState<string>('23');
@@ -84,25 +85,27 @@ export function DatePickerModal({
   const [forceDualMonth, setForceDualMonth] = useState(false);
   const showDualMonth = isMultiMonth || forceDualMonth;
 
-  // Smooth mouse wheel year scroll momentum hook
-  const { handleWheel: handleYearScrollWheel } = useWheelYearScroll({
-    onYearChange: (deltaYears) => {
-      setCurrentMonthDate((prev) => {
-        const next = new Date(prev);
-        next.setFullYear(prev.getFullYear() + deltaYears);
-        return next;
-      });
+  // Month navigation helper with slide direction
+  const changeMonth = (deltaMonths: number) => {
+    setSlideDirection(deltaMonths > 0 ? 1 : -1);
+    setCurrentMonthDate((prev) => {
+      const next = new Date(prev.getFullYear(), prev.getMonth() + deltaMonths, 1);
+      return next;
+    });
+  };
+
+  // Smooth mouse wheel month scroll momentum hook
+  const { handleWheel: handleMonthScrollWheel } = useWheelMonthScroll({
+    onMonthChange: (deltaMonths) => {
+      changeMonth(deltaMonths);
     },
   });
 
-  // Navigation handlers
-  const handlePrevMonth = () => {
-    setCurrentMonthDate(new Date(year, month - 1, 1));
-  };
-  const handleNextMonth = () => {
-    setCurrentMonthDate(new Date(year, month + 1, 1));
-  };
+  const handlePrevMonth = () => changeMonth(-1);
+  const handleNextMonth = () => changeMonth(1);
+
   const handleYearSelect = (newYear: number) => {
+    setSlideDirection(newYear > year ? 1 : -1);
     setCurrentMonthDate(new Date(newYear, month, 1));
   };
 
@@ -331,19 +334,19 @@ export function DatePickerModal({
             </div>
           </LayoutGroup>
 
-          {/* Right Calendar Container with Smooth Year Wheel Scroll */}
+          {/* Right Calendar Container with Isolated Wheel Month Scroll */}
           <motion.div
             layout
             transition={springPillMotion}
-            onWheel={handleYearScrollWheel}
-            className="flex-1 w-full space-y-4 bg-white/40 dark:bg-slate-900/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none overscroll-contain"
+            onWheel={handleMonthScrollWheel}
+            className="flex-1 w-full space-y-4 bg-white/40 dark:bg-slate-900/40 p-3.5 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 select-none overscroll-contain overflow-hidden"
           >
             {/* Header Navigation Controls & Dual-Month Toggle */}
             <div className="flex items-center justify-between pb-1">
               <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                 <span>Lịch chọn thời gian</span>
                 <span className="text-[10px] text-indigo-500 font-normal hidden sm:inline">
-                  (Cuộn chuột để chuyển năm)
+                  (Cuộn chuột để đổi tháng)
                 </span>
               </span>
 
@@ -375,18 +378,21 @@ export function DatePickerModal({
               </div>
             </div>
 
-            {/* Dynamic Grid: 1 Month vs 2 Months Layout */}
-            <motion.div
-              layout
-              transition={springPillMotion}
-              className={`flex flex-col md:flex-row gap-6 w-full ${
-                showDualMonth ? '' : ''
-              }`}
-            >
-              {renderMonthGrid(year, month)}
+            {/* Motion UI Smooth Horizontal Slide Transition between Months */}
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={`${year}-${month}-${showDualMonth}`}
+                initial={{ opacity: 0, x: slideDirection * 30 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -slideDirection * 30 }}
+                transition={springPillMotion}
+                className="flex flex-col md:flex-row gap-6 w-full"
+              >
+                {renderMonthGrid(year, month)}
 
-              {showDualMonth && renderMonthGrid(nextYear, nextMonth)}
-            </motion.div>
+                {showDualMonth && renderMonthGrid(nextYear, nextMonth)}
+              </motion.div>
+            </AnimatePresence>
 
             {/* Apple iOS Glassmorphic Time Picker Trigger Bar */}
             <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between gap-3 text-xs relative">
@@ -394,7 +400,7 @@ export function DatePickerModal({
                 Giờ hết hạn (End Time):
               </span>
 
-              {/* Apple iOS Style Time Button Trigger (No spinner arrows!) */}
+              {/* Apple iOS Style Time Button Trigger */}
               <button
                 type="button"
                 onClick={() => setIsTimePickerOpen(!isTimePickerOpen)}

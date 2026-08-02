@@ -2,20 +2,19 @@
 
 import { useRef, useCallback } from 'react';
 
-interface UseWheelYearScrollProps {
-  onYearChange: (delta: number) => void;
+interface UseWheelMonthScrollProps {
+  onMonthChange: (deltaMonths: number) => void;
   debounceMs?: number;
 }
 
 /**
  * Custom hook to handle mouse wheel scrolling inside date/calendar containers.
- * Implements smooth debounced momentum decay to navigate between years/months
- * without chaotic jumping during rapid scrolling.
+ * Navigates smoothly month by month with debounced momentum decay.
  */
-export function useWheelYearScroll({
-  onYearChange,
-  debounceMs = 120,
-}: UseWheelYearScrollProps) {
+export function useWheelMonthScroll({
+  onMonthChange,
+  debounceMs = 100,
+}: UseWheelMonthScrollProps) {
   const lastScrollTime = useRef<number>(0);
   const accumulatedDelta = useRef<number>(0);
 
@@ -28,16 +27,19 @@ export function useWheelYearScroll({
       accumulatedDelta.current += e.deltaY;
 
       if (now - lastScrollTime.current > debounceMs) {
-        if (Math.abs(accumulatedDelta.current) > 20) {
-          const deltaYears = accumulatedDelta.current > 0 ? 1 : -1;
-          onYearChange(deltaYears);
+        if (Math.abs(accumulatedDelta.current) > 15) {
+          const deltaMonths = accumulatedDelta.current > 0 ? 1 : -1;
+          onMonthChange(deltaMonths);
           lastScrollTime.current = now;
           accumulatedDelta.current = 0;
         }
       }
     },
-    [onYearChange, debounceMs]
+    [onMonthChange, debounceMs]
   );
 
   return { handleWheel };
 }
+
+// Retain alias for backwards compatibility
+export const useWheelYearScroll = useWheelMonthScroll;
