@@ -1,7 +1,8 @@
 'use client';
 
 import { useTodos } from '@/hooks/useTodos';
-import { TrendingUp, CheckCircle2, Flame, Clock, Award } from 'lucide-react';
+import { RealtimeStreakBadge } from '@/components/widget/RealtimeStreakBadge';
+import { TrendingUp, CheckCircle2, Clock, Award } from 'lucide-react';
 
 export function InsightsCard() {
   const { data } = useTodos(1, 100);
@@ -13,7 +14,7 @@ export function InsightsCard() {
 
   return (
     <div className="p-5 rounded-3xl glass-panel bg-white/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800/80 space-y-4 shadow-xl transition-all">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <div className="flex items-center gap-2.5">
           <div className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20 shadow-sm">
             <TrendingUp className="w-5 h-5 stroke-[2.5]" />
@@ -23,10 +24,9 @@ export function InsightsCard() {
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">Hiệu suất & Tiến độ công việc</p>
           </div>
         </div>
-        <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 text-xs font-bold border border-emerald-200/80 dark:border-emerald-500/20 flex items-center gap-1.5 shadow-sm">
-          <Flame className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500 dark:fill-emerald-400" />
-          <span>Flow Streak: 5 Ngày</span>
-        </span>
+
+        {/* Real-time Dynamic Streak Badge */}
+        <RealtimeStreakBadge />
       </div>
 
       {/* Progress Bar */}
