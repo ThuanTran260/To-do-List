@@ -7,17 +7,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { uploadTaskImage } from '@/lib/storage';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DatePickerModal } from '@/components/ui/DatePickerModal';
+import { CustomPrioritySelect } from '@/components/ui/CustomPrioritySelect';
+import { CustomCategorySelect } from '@/components/ui/CustomCategorySelect';
 import { motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import {
   Plus,
   Calendar,
   AlertCircle,
-  FolderKanban,
   Sparkles,
   AlignLeft,
   Loader2,
-  CheckCircle2,
   Clock,
 } from 'lucide-react';
 
@@ -162,7 +162,7 @@ export function TodoForm() {
               <button
                 type="button"
                 onClick={() => setIsDatePickerOpen(true)}
-                className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3 py-2 rounded-xl text-xs text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 hover:border-indigo-500 focus:outline-none font-semibold flex items-center justify-between transition-colors"
+                className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3 py-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 hover:border-indigo-500 focus:outline-none font-semibold flex items-center justify-between transition-colors cursor-pointer"
               >
                 <div className="flex items-center gap-2 truncate">
                   <Calendar className="w-4 h-4 text-indigo-500 flex-shrink-0" />
@@ -176,19 +176,14 @@ export function TodoForm() {
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Priority (Mức ưu tiên)
               </label>
-              <select
+              <CustomPrioritySelect
                 value={priority}
-                onChange={(e) => setPriority(e.target.value as any)}
-                className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3 py-2 rounded-xl text-xs text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
-              >
-                <option value="low">Thấp (Low)</option>
-                <option value="medium">Trung bình (Medium)</option>
-                <option value="high">Cao (High)</option>
-              </select>
+                onChange={(val) => setPriority(val)}
+              />
             </div>
           </div>
 
-          {/* Framer Motion Smooth Accordion Slide-Out Panel (0ms lag, zero stutter) */}
+          {/* Framer Motion Smooth Accordion Slide-Out Panel */}
           <AnimatePresence initial={false}>
             {(showExtra || description || categoryId || selectedFile) && (
               <motion.div
@@ -197,25 +192,18 @@ export function TodoForm() {
                 animate={{ height: 'auto', opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={springPillMotion}
-                className="overflow-hidden"
+                className="overflow-visible"
               >
                 <div className="space-y-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                       Category (Danh mục)
                     </label>
-                    <select
+                    <CustomCategorySelect
+                      categories={categories}
                       value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                      className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3 py-2 rounded-xl text-xs text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
-                    >
-                      <option value="">Chưa chọn danh mục</option>
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          📁 {c.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(id) => setCategoryId(id)}
+                    />
                   </div>
 
                   <div>
@@ -247,7 +235,7 @@ export function TodoForm() {
           <button
             type="submit"
             disabled={isSubmitting || createMutation.isPending}
-            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50"
+            className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all flex items-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
           >
             {isSubmitting || createMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
