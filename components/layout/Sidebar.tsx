@@ -5,8 +5,8 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { createClient } from '@/lib/supabase/client';
-import { LayoutGroup, motion } from 'framer-motion';
-import { springPillMotion } from '@/lib/motion';
+import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
+import { springPillMotion, overlayMotion } from '@/lib/motion';
 import {
   LayoutDashboard,
   AlertOctagon,
@@ -38,6 +38,18 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     setPendingPath(null);
   }, [pathname]);
 
+  // Lock body scroll on mobile when Sidebar is open
+  useEffect(() => {
+    if (isOpen && typeof window !== 'undefined' && window.innerWidth < 1024) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isOpen]);
+
   const handleSignOut = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
@@ -59,13 +71,19 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   return (
     <LayoutGroup id="sidebar-nav">
-      {/* Mobile Backdrop */}
-      {isOpen && (
-        <div
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden transition-opacity duration-300"
-        />
-      )}
+      {/* Mobile Backdrop with Smooth AnimatePresence Fade In/Out */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={overlayMotion}
+            onClick={onClose}
+            className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden cursor-pointer"
+          />
+        )}
+      </AnimatePresence>
 
       <aside
         className={`fixed top-0 left-0 z-50 h-full w-64 glass-panel bg-white/95 dark:bg-slate-950/95 border-r border-slate-200/80 dark:border-slate-800/80 flex flex-col justify-between p-4 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
