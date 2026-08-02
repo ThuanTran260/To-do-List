@@ -132,8 +132,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </div>
           )}
 
-          {/* Main Navigation Group - Isolated LayoutGroup Boundary */}
-          <LayoutGroup id="sidebar-main-group">
+          {/* Main Navigation Group - Completely Independent Layout Scope */}
+          <LayoutGroup id="sidebar-main-group" inherit={false}>
             <div className="space-y-1 relative">
               <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                 Menu chính
@@ -179,8 +179,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </div>
           </LayoutGroup>
 
-          {/* Settings Section - Isolated LayoutGroup Boundary */}
-          <LayoutGroup id="sidebar-settings-group">
+          {/* Settings Section - Completely Independent Layout Scope */}
+          <LayoutGroup id="sidebar-settings-group" inherit={false}>
             <div className="space-y-1 relative">
               <p className="px-3 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
                 Cài đặt & Tài khoản

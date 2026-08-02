@@ -11,6 +11,8 @@ import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/state/EmptyState';
 import { ErrorState } from '@/components/ui/state/ErrorState';
 import { SearchAutocomplete } from '@/components/widget/SearchAutocomplete';
+import { motion, AnimatePresence } from 'framer-motion';
+import { springPillMotion } from '@/lib/motion';
 import {
   CheckCircle2,
   ChevronLeft,
@@ -84,7 +86,7 @@ function TodoListContent() {
   const completedCount = useMemo(() => todoList.filter((t) => t.is_completed).length, [todoList]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-h-[420px]">
       {/* Category Filter Pills Bar */}
       <CategoryFilterBar />
 
@@ -162,30 +164,42 @@ function TodoListContent() {
         </div>
       </div>
 
-      {/* Task List Rendering */}
-      {isLoading ? (
-        <div className="space-y-3">
-          <LoadingSkeleton variant="card" count={3} />
-        </div>
-      ) : isError ? (
-        <ErrorState message={(error as Error).message} onRetry={refetch} />
-      ) : filteredTodos.length === 0 ? (
-        <EmptyState
-          icon={CheckCircle2}
-          title={search ? 'Không tìm thấy công việc phù hợp' : 'Chưa có công việc nào'}
-          description={
-            search
-              ? `Không tìm thấy kết quả nào với từ khóa "${search}". Thử từ khóa khác.`
-              : 'Hãy bắt đầu tạo công việc mới ở form phía trên.'
-          }
-        />
-      ) : (
-        <div className="space-y-3">
-          {filteredTodos.map((item) => (
-            <TodoItem key={item.id} item={item} />
-          ))}
-        </div>
-      )}
+      {/* Task List Rendering with Framer Motion Smooth Height Expansion */}
+      <motion.div layout transition={springPillMotion}>
+        {isLoading ? (
+          <div className="space-y-3">
+            <LoadingSkeleton variant="card" count={3} />
+          </div>
+        ) : isError ? (
+          <ErrorState message={(error as Error).message} onRetry={refetch} />
+        ) : filteredTodos.length === 0 ? (
+          <EmptyState
+            icon={CheckCircle2}
+            title={search ? 'Không tìm thấy công việc phù hợp' : 'Chưa có công việc nào'}
+            description={
+              search
+                ? `Không tìm thấy kết quả nào với từ khóa "${search}". Thử từ khóa khác.`
+                : 'Hãy bắt đầu tạo công việc mới ở form phía trên.'
+            }
+          />
+        ) : (
+          <div className="space-y-3">
+            <AnimatePresence initial={false}>
+              {filteredTodos.map((item) => (
+                <motion.div
+                  key={item.id}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={springPillMotion}
+                >
+                  <TodoItem item={item} />
+                </motion.div>
+              ))}
+            </AnimatePresence>
+          </div>
+        )}
+      </motion.div>
 
       {/* Pagination Bar (If needed) */}
       {totalPages > 1 && (
