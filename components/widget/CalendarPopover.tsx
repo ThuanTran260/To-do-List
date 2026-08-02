@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTodos, useCreateTodo } from '@/hooks/useTodos';
 import { useDropdownManager } from '@/hooks/useDropdownManager';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
+import { useWheelYearScroll } from '@/hooks/useWheelYearScroll';
 import { Calendar, ChevronLeft, ChevronRight, Plus, Sparkles, Clock, Check } from 'lucide-react';
 
 export function CalendarPopover() {
@@ -21,6 +22,17 @@ export function CalendarPopover() {
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
+
+  // Smooth mouse wheel scroll handler to change years smoothly
+  const { handleWheel } = useWheelYearScroll({
+    onYearChange: (deltaYears) => {
+      setCurrentDate((prev) => {
+        const next = new Date(prev);
+        next.setFullYear(prev.getFullYear() + deltaYears);
+        return next;
+      });
+    },
+  });
 
   // Days calculation for Vietnam timezone (Monday as first day)
   const firstDayOfMonth = new Date(year, month, 1).getDay();
@@ -125,8 +137,11 @@ export function CalendarPopover() {
           ))}
         </div>
 
-        {/* Days Grid */}
-        <div className="grid grid-cols-7 gap-1 text-center text-xs font-semibold">
+        {/* Days Grid with Smooth Mouse Wheel Scroll */}
+        <div
+          onWheel={handleWheel}
+          className="grid grid-cols-7 gap-1 text-center text-xs font-semibold select-none"
+        >
           {Array.from({ length: startingDayIndex }).map((_, i) => (
             <div key={`empty-${i}`} className="h-8" />
           ))}
@@ -187,7 +202,7 @@ export function CalendarPopover() {
                   value={quickTitle}
                   onChange={(e) => setQuickTitle(e.target.value)}
                   placeholder="Tên việc cần làm..."
-                  className="flex-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-xs focus:outline-none"
+                  className="flex-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-xs focus:outline-none font-medium"
                   autoFocus
                 />
                 <button
