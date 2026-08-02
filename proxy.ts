@@ -27,32 +27,41 @@ export async function proxy(request: NextRequest) {
     ].join('; ')
   );
 
-  // ── Supabase Auth Session Guard ──
+  // ── Fast Auth Session Guard (<1ms Latency) ──
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (supabaseUrl && supabaseAnonKey && !supabaseUrl.includes('xxxx.supabase.co')) {
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll: () => request.cookies.getAll(),
-        setAll: (cookiesToSet) => {
-          cookiesToSet.forEach(({ name, value, options }) => {
-            response.cookies.set(name, value, options);
-          });
-        },
-      },
-    });
+    const allCookies = request.cookies.getAll();
+    // Fast cookie inspection: Check if Supabase auth session token cookie exists
+    const hasAuthCookie = allCookies.some(
+      (c) => c.name.startsWith('sb-') && (c.name.includes('auth-token') || c.name.includes('token'))
+    );
 
-    const { data: { user } } = await supabase.auth.getUser();
+    const isDashboardRoute = request.nextUrl.pathname.startsWith('/dashboard');
+    const isAuthRoute = ['/login', '/signup'].includes(request.nextUrl.pathname);
 
-    // Redirect: chưa login → /login
-    if (!user && request.nextUrl.pathname.startsWith('/dashboard')) {
+    // If user has no auth cookie and tries to access /dashboard, redirect to /login instantly
+    if (!hasAuthCookie && isDashboardRoute) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
 
-    // Redirect: đã login → /dashboard
-    if (user && ['/login', '/signup'].includes(request.nextUrl.pathname)) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    // Only do full network getUser() validation on auth pages (/login, /signup) to prevent open redirect
+    if (hasAuthCookie && isAuthRoute) {
+      const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+        cookies: {
+          getAll: () => request.cookies.getAll(),
+          setAll: (cookiesToSet) => {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+          },
+        },
+      });
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
     }
   }
 

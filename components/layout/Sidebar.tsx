@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +29,14 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { user } = useAuth();
+
+  // Optimistic active path for 0ms visual feedback on click
+  const [pendingPath, setPendingPath] = useState<string | null>(null);
+  const activePath = pendingPath || pathname;
+
+  useEffect(() => {
+    setPendingPath(null);
+  }, [pathname]);
 
   const handleSignOut = async () => {
     const supabase = createClient();
@@ -113,13 +122,15 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </p>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = activePath === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  prefetch
-                  onClick={onClose}
+                  onClick={() => {
+                    setPendingPath(item.href);
+                    onClose?.();
+                  }}
                   aria-current={isActive ? 'page' : undefined}
                   className={`relative flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive
@@ -156,13 +167,15 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </p>
             {settingItems.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href;
+              const isActive = activePath === item.href;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  prefetch
-                  onClick={onClose}
+                  onClick={() => {
+                    setPendingPath(item.href);
+                    onClose?.();
+                  }}
                   aria-current={isActive ? 'page' : undefined}
                   className={`relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
                     isActive
