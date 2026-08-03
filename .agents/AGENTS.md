@@ -1,6 +1,24 @@
-# Context Engineering: Hệ thống Todo List (Google Stitch + Supabase)
+# Context Engineering & AI Execution Rules: Flow State (Next.js + Supabase + Superpowers)
 
-> Tài liệu này dùng làm "bộ não" tham chiếu xuyên suốt quá trình build — dán vào Google Stitch, dán vào Claude Code/Cursor, hoặc dùng làm checklist cá nhân đều được.
+> Tài liệu này vừa là "bộ nào" tham chiếu kiến trúc, vừa chứa các QUY TẮC BẮT BUỘC (System Rules) dành cho AI Agent khi làm việc với dự án này.
+
+---
+
+## 0. Quy Tắc Bắt Buộc Sử Dụng Superpowers Skills (Superpowers Mandatory Execution Rules)
+
+AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải áp dụng bộ quy trình kỹ năng trong thư mục `.agents/skills/superpowers/skills/`:
+
+1. **BẮT BUỘC ÁP DỤNG `systematic-debugging` KHI CÓ LỖI / BUG:**
+   - Tuân thủ nghiêm ngặt **The Iron Law**: **KHÔNG BAO GIỜ SỬA CODE KHI CHƯA TÌM RA NGUYÊN NHÂN GỐC RỄ (ROOT CAUSE ANALYSIS - RCA)**.
+   - Phải phân tích kỹ các yếu tố kiến trúc sâu: Stacking Context (`backdrop-blur`, `will-change`, `transform`), Overflow Clipping, Z-Index Token Hierarchy, Dynamic Viewport Height (`dvh`), và Virtual Keyboard interactions.
+   - Ưu tiên các giải pháp bền vững (như React Portal Engine `createPortal`) thay vì vá lỗi bề mặt (như tăng z-index tạm thời).
+
+2. **BẮT BUỘC ÁP DỤNG `verification-before-completion` TRƯỚC KHI KẾT THÚC:**
+   - Không được tuyên bố hoàn thành hay báo lỗi đã sửa xong khi chưa chạy kiểm thử thực tế.
+   - Phải chạy `npx tsc --noEmit` (đảm bảo 0 lỗi type) và `npm run build` (đảm bảo biên dịch Next.js thành công 100%).
+
+3. **BẮT BUỘC TẠO `implementation_plan.md` CHO CÁC THAY ĐỔI KIẾN TRÚC/UI NẶNG:**
+   - Phân tích nguyên nhân, đề xuất giải pháp, dự đoán xung đột và chờ sự phê duyệt của người dùng trước khi tiến hành viết code.
 
 ---
 
@@ -148,39 +166,9 @@ create trigger trg_todos_updated_at
   for each row execute function set_updated_at();
 ```
 
-*(Tùy chọn mở rộng sau: bảng `categories`, bảng `profiles` để lưu tên hiển thị/avatar, liên kết 1-1 với `auth.users`.)*
-
 ---
 
-## 5. Prompt mẫu để dùng trong Google Stitch
-
-Dán nguyên đoạn dưới vào Stitch để có bộ UI nhất quán, dễ code lại bằng Tailwind:
-
-```
-Design a clean, minimal Todo List web app with the following screens:
-
-1. Login screen — email + password fields, "Forgot password" link,
-   "Sign up" link, primary CTA button.
-2. Sign up screen — email, password, confirm password, terms checkbox.
-3. Dashboard — top bar with app name + user avatar/logout, a task input
-   bar at top ("Add a new task..." + priority dropdown + due date picker),
-   task list below grouped by status (Active / Completed), each task row
-   shows: checkbox, title, priority badge (color-coded low/medium/high),
-   due date, edit and delete icon buttons.
-4. Empty state — friendly illustration + "No tasks yet, add your first one".
-5. Edit task modal — title, description, priority, due date, save/cancel.
-
-Style: minimal, rounded corners (12px), soft shadows, primary color
-indigo/blue, generous whitespace, mobile-first responsive layout,
-support both light and dark mode. Use a consistent 8px spacing scale.
-Export as React components with Tailwind CSS classes.
-```
-
-Sau khi Stitch xuất code, việc của bạn chỉ là ghép các component đó vào project Next.js và nối dữ liệu với Supabase client — không cần code UI từ đầu.
-
----
-
-## 6. Cấu trúc thư mục project
+## 5. Cấu trúc thư mục project
 
 ```
 todo-app/
@@ -192,7 +180,7 @@ todo-app/
 │   ├── api/                     # Route handlers (server-side, nếu cần)
 │   └── layout.tsx
 ├── components/
-│   ├── ui/                      # Component từ Stitch (Button, Card, Modal...)
+│   ├── ui/                      # Component UI (PortalPopover, Modal, Button...)
 │   └── todo/
 │       ├── TodoList.tsx
 │       ├── TodoItem.tsx
@@ -206,44 +194,3 @@ todo-app/
 ├── .gitignore
 └── package.json
 ```
-
-`lib/supabase/client.ts`:
-```ts
-import { createBrowserClient } from '@supabase/ssr'
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-```
-
----
-
-## 7. Luồng phát triển từng bước
-
-1. **Thiết kế UI trên Google Stitch** dùng prompt ở mục 5, xuất code React/Tailwind.
-2. **Tạo project Supabase** → chạy SQL ở mục 4 trong SQL Editor.
-3. **Khởi tạo Next.js**: `npx create-next-app@latest todo-app --typescript --tailwind`
-4. **Cài supabase-js**: `npm install @supabase/supabase-js @supabase/ssr`
-5. **Setup `.env.local`** với anon key + URL (lấy trong Supabase Dashboard > Settings > API).
-6. **Ghép UI từ Stitch** vào `components/`.
-7. **Viết auth flow**: signup/login dùng `supabase.auth.signUp()` / `signInWithPassword()`.
-8. **Viết CRUD todo**: gọi `supabase.from('todos').select/insert/update/delete()` — RLS tự lo phần phân quyền.
-9. **Test bảo mật**: dùng 2 tài khoản khác nhau, xác nhận không xem được dữ liệu chéo nhau.
-10. **Deploy Vercel**, nhập env var qua dashboard (không qua code).
-11. **Rà lại checklist bảo mật ở mục 3.5** trước khi share công khai.
-
----
-
-## 8. Gợi ý mở rộng sau khi có bản MVP
-
-- Realtime sync giữa các thiết bị: `supabase.channel().on('postgres_changes', ...)`
-- Offline-first bằng cách cache local (IndexedDB) rồi sync khi có mạng
-- Thông báo nhắc deadline qua Supabase Edge Function + cron job
-- Đăng nhập bằng Google/GitHub OAuth (Supabase hỗ trợ sẵn, chỉ cần bật trong dashboard)
-
----
-
-**Tóm lại điều quan trọng nhất cần nhớ:** anon key được phép lộ ra frontend vì RLS sẽ chặn truy cập trái phép ở tầng database; còn service_role key và mọi thứ liên quan đến xử lý mật khẩu thì tuyệt đối chỉ nằm phía server và không bao giờ commit vào Git.
