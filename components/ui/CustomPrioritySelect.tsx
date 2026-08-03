@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import { ChevronDown, Check, AlertOctagon, Flame, ShieldCheck } from 'lucide-react';
+import { PortalPopover } from '@/components/ui/PortalPopover';
 
 export type PriorityType = 'low' | 'medium' | 'high';
 
@@ -52,27 +53,16 @@ const PRIORITY_OPTIONS: {
 
 export function CustomPrioritySelect({ value, onChange }: CustomPrioritySelectProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const selectedOpt = PRIORITY_OPTIONS.find((o) => o.id === value) || PRIORITY_OPTIONS[1];
-
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const Icon = selectedOpt.icon;
 
   return (
-    <div ref={containerRef} className="relative w-full">
+    <div className="w-full">
       {/* Custom Trigger Button */}
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full px-3.5 py-2.5 rounded-xl text-xs font-bold border transition-all flex items-center justify-between shadow-2xs active:scale-[0.99] cursor-pointer ${
@@ -99,59 +89,54 @@ export function CustomPrioritySelect({ value, onChange }: CustomPrioritySelectPr
         </motion.div>
       </button>
 
-      {/* Smooth Motion UI Animated Popover List */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -6, scale: 0.96 }}
-            animate={{ opacity: 1, y: 4, scale: 1 }}
-            exit={{ opacity: 0, y: -6, scale: 0.96 }}
-            transition={springPillMotion}
-            className="absolute left-0 right-0 top-full z-50 p-1.5 rounded-2xl bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-2xl backdrop-blur-xl space-y-1"
-          >
-            {PRIORITY_OPTIONS.map((opt) => {
-              const isSelected = opt.id === value;
-              const OptIcon = opt.icon;
+      {/* Render via PortalPopover to escape parent stacking contexts & overflow-y-auto clipping */}
+      <PortalPopover
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        triggerRef={triggerRef}
+        maxPopoverHeight={220}
+      >
+        {PRIORITY_OPTIONS.map((opt) => {
+          const isSelected = opt.id === value;
+          const OptIcon = opt.icon;
 
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => {
-                    onChange(opt.id);
-                    setIsOpen(false);
-                  }}
-                  className={`w-full text-left p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between group ${
-                    isSelected
-                      ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
+          return (
+            <button
+              key={opt.id}
+              type="button"
+              onClick={() => {
+                onChange(opt.id);
+                setIsOpen(false);
+              }}
+              className={`w-full text-left p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between group cursor-pointer ${
+                isSelected
+                  ? 'bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800'
+                  : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+              }`}
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span
+                  className={`p-1.5 rounded-lg border ${opt.badgeBg} ${opt.badgeText} ${opt.badgeBorder}`}
                 >
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <span
-                      className={`p-1.5 rounded-lg border ${opt.badgeBg} ${opt.badgeText} ${opt.badgeBorder}`}
-                    >
-                      <OptIcon className="w-3.5 h-3.5" />
-                    </span>
-                    <div className="min-w-0">
-                      <div className="font-extrabold truncate">{opt.label}</div>
-                      <div className="text-[10px] text-slate-400 font-normal truncate">
-                        {opt.sublabel}
-                      </div>
-                    </div>
+                  <OptIcon className="w-3.5 h-3.5" />
+                </span>
+                <div className="min-w-0">
+                  <div className="font-extrabold truncate">{opt.label}</div>
+                  <div className="text-[10px] text-slate-400 font-normal truncate">
+                    {opt.sublabel}
                   </div>
+                </div>
+              </div>
 
-                  {isSelected && (
-                    <span className="p-1 rounded-lg bg-indigo-600 text-white shadow-xs">
-                      <Check className="w-3.5 h-3.5" />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </motion.div>
-        )}
-      </AnimatePresence>
+              {isSelected && (
+                <span className="p-1 rounded-lg bg-indigo-600 text-white shadow-xs">
+                  <Check className="w-3.5 h-3.5" />
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </PortalPopover>
     </div>
   );
 }

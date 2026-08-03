@@ -212,7 +212,8 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             statusText={statusText}
           />
 
-          <div className="flex justify-end gap-2 pt-2">
+          {/* Sticky Mobile Action Bar */}
+          <div className="sticky bottom-0 z-[60] pt-3 pb-1 -mx-5 -mb-5 px-5 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
@@ -223,7 +224,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             <button
               type="submit"
               disabled={isSubmitting || updateMutation.isPending}
-              className="px-5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-extrabold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {isSubmitting || updateMutation.isPending ? (
                 <>
