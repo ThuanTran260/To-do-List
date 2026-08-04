@@ -85,23 +85,23 @@ function TaskDetailContent() {
       <AnimatePresence>
         {activeTaskId && (
           <>
-            {/* Backdrop overlay with smooth Framer Motion fade-in / fade-out */}
+            {/* Backdrop overlay with smooth Framer Motion fade-in / fade-out (z-[9000]) */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={overlayMotion}
               onClick={handleClose}
-              className="fixed inset-0 bg-slate-950/50 backdrop-blur-md z-40 cursor-pointer"
+              className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[9000] cursor-pointer"
             />
 
-            {/* Slide-Over Drawer / Panel with 60fps Spring Motion */}
+            {/* Slide-Over Drawer / Panel with 60fps Spring Motion (z-[9500]) */}
             <motion.div
               initial={{ x: '100%', opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0 }}
               transition={springPillMotion}
-              className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 border-l border-slate-200/80 dark:border-slate-800 shadow-2xl z-50 overflow-y-auto p-4 sm:p-8 space-y-6 backdrop-blur-xl"
+              className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 border-l border-slate-200/80 dark:border-slate-800 shadow-2xl z-[9500] overflow-y-auto p-4 sm:p-8 space-y-6 backdrop-blur-xl"
             >
               {/* Header Bar with Go Back */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">

@@ -15,8 +15,8 @@ interface TimeWheelPickerProps {
 
 const ITEM_HEIGHT = 36; // 36px height per item
 const CONTAINER_HEIGHT = 180; // 180px total height of wheel column
-const CENTER_OFFSET = (CONTAINER_HEIGHT - ITEM_HEIGHT) / 2; // 72px offset to position selected item exactly in the center lens
-const DEBOUNCE_MS = 70; // 70ms step lock
+const CENTER_OFFSET = (CONTAINER_HEIGHT - ITEM_HEIGHT) / 2; // 72px offset to position selected item exactly in center lens
+const DEBOUNCE_MS = 60; // 60ms step lock for wheel scroll
 
 export function TimeWheelPicker({
   hours,
@@ -31,7 +31,19 @@ export function TimeWheelPicker({
   const lastHourScroll = useRef<number>(0);
   const lastMinScroll = useRef<number>(0);
 
-  // Wheel listener for Hours Column: Exactly 1 hour per wheel tick
+  // Touch & Mouse Drag Tracking Refs for Hours Column
+  const touchStartHourY = useRef<number | null>(null);
+  const initialHourVal = useRef<number>(currentHoursInt);
+  const isMouseDraggingHour = useRef<boolean>(false);
+
+  // Touch & Mouse Drag Tracking Refs for Minutes Column
+  const touchStartMinY = useRef<number | null>(null);
+  const initialMinVal = useRef<number>(currentMinutesInt);
+  const isMouseDraggingMin = useRef<boolean>(false);
+
+  // -------------------------------------------------------------
+  // Mouse Wheel Handlers (Desktop Mouse Wheel)
+  // -------------------------------------------------------------
   const handleHoursWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       e.stopPropagation();
@@ -48,7 +60,6 @@ export function TimeWheelPicker({
     [currentHoursInt, onChangeHours]
   );
 
-  // Wheel listener for Minutes Column: Exactly 1 minute per wheel tick
   const handleMinutesWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       e.stopPropagation();
@@ -65,6 +76,128 @@ export function TimeWheelPicker({
     [currentMinutesInt, onChangeMinutes]
   );
 
+  // -------------------------------------------------------------
+  // Touch Swipe Handlers for Hours (Mobile Touch Swipe)
+  // -------------------------------------------------------------
+  const handleHoursTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    touchStartHourY.current = e.touches[0].clientY;
+    initialHourVal.current = currentHoursInt;
+  };
+
+  const handleHoursTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault(); // Strictly isolate & prevent outer page scroll!
+    if (touchStartHourY.current === null) return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartHourY.current - currentY;
+    const stepOffset = Math.round(deltaY / ITEM_HEIGHT);
+
+    let nextHours = (initialHourVal.current + stepOffset) % 24;
+    if (nextHours < 0) nextHours += 24;
+
+    if (nextHours !== currentHoursInt) {
+      onChangeHours(String(nextHours).padStart(2, '0'));
+    }
+  };
+
+  const handleHoursTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    touchStartHourY.current = null;
+  };
+
+  // -------------------------------------------------------------
+  // Mouse Drag Handlers for Hours (Desktop Mouse Drag)
+  // -------------------------------------------------------------
+  const handleHoursMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    isMouseDraggingHour.current = true;
+    touchStartHourY.current = e.clientY;
+    initialHourVal.current = currentHoursInt;
+  };
+
+  const handleHoursMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMouseDraggingHour.current || touchStartHourY.current === null) return;
+    e.stopPropagation();
+
+    const deltaY = touchStartHourY.current - e.clientY;
+    const stepOffset = Math.round(deltaY / ITEM_HEIGHT);
+
+    let nextHours = (initialHourVal.current + stepOffset) % 24;
+    if (nextHours < 0) nextHours += 24;
+
+    if (nextHours !== currentHoursInt) {
+      onChangeHours(String(nextHours).padStart(2, '0'));
+    }
+  };
+
+  const handleHoursMouseUp = () => {
+    isMouseDraggingHour.current = false;
+    touchStartHourY.current = null;
+  };
+
+  // -------------------------------------------------------------
+  // Touch Swipe Handlers for Minutes (Mobile Touch Swipe)
+  // -------------------------------------------------------------
+  const handleMinutesTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    touchStartMinY.current = e.touches[0].clientY;
+    initialMinVal.current = currentMinutesInt;
+  };
+
+  const handleMinutesTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    if (e.cancelable) e.preventDefault(); // Strictly isolate & prevent outer page scroll!
+    if (touchStartMinY.current === null) return;
+
+    const currentY = e.touches[0].clientY;
+    const deltaY = touchStartMinY.current - currentY;
+    const stepOffset = Math.round(deltaY / ITEM_HEIGHT);
+
+    let nextMinutes = (initialMinVal.current + stepOffset) % 60;
+    if (nextMinutes < 0) nextMinutes += 60;
+
+    if (nextMinutes !== currentMinutesInt) {
+      onChangeMinutes(String(nextMinutes).padStart(2, '0'));
+    }
+  };
+
+  const handleMinutesTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    touchStartMinY.current = null;
+  };
+
+  // -------------------------------------------------------------
+  // Mouse Drag Handlers for Minutes (Desktop Mouse Drag)
+  // -------------------------------------------------------------
+  const handleMinutesMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    isMouseDraggingMin.current = true;
+    touchStartMinY.current = e.clientY;
+    initialMinVal.current = currentMinutesInt;
+  };
+
+  const handleMinutesMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!isMouseDraggingMin.current || touchStartMinY.current === null) return;
+    e.stopPropagation();
+
+    const deltaY = touchStartMinY.current - e.clientY;
+    const stepOffset = Math.round(deltaY / ITEM_HEIGHT);
+
+    let nextMinutes = (initialMinVal.current + stepOffset) % 60;
+    if (nextMinutes < 0) nextMinutes += 60;
+
+    if (nextMinutes !== currentMinutesInt) {
+      onChangeMinutes(String(nextMinutes).padStart(2, '0'));
+    }
+  };
+
+  const handleMinutesMouseUp = () => {
+    isMouseDraggingMin.current = false;
+    touchStartMinY.current = null;
+  };
+
   const hoursList = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0'));
   const minutesList = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, '0'));
 
@@ -75,57 +208,66 @@ export function TimeWheelPicker({
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       transition={springPillMotion}
       onWheel={(e) => e.stopPropagation()}
-      className="absolute bottom-12 right-0 z-50 p-4 rounded-3xl bg-slate-900 dark:bg-slate-950 border border-slate-700/90 shadow-2xl space-y-3 w-72 text-slate-100 select-none"
+      onTouchMove={(e) => {
+        if (e.cancelable) e.preventDefault();
+        e.stopPropagation();
+      }}
+      className="absolute bottom-12 right-0 z-[9999] p-4 rounded-3xl bg-slate-900 dark:bg-slate-950 border-2 border-indigo-500/40 shadow-2xl space-y-3 w-72 text-slate-100 select-none touch-none overscroll-contain"
     >
       {/* Header Bar */}
       <div className="flex items-center justify-between pb-2.5 border-b border-slate-800">
         <span className="text-xs font-extrabold uppercase tracking-wider text-slate-200 flex items-center gap-1.5">
           <Sparkles className="w-4 h-4 text-indigo-400" />
-          <span>Chọn giờ</span>
+          <span>CHỌN GIỜ</span>
         </span>
         <button
           type="button"
           onClick={onConfirm}
-          className="px-3 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/25 active:scale-95 flex items-center gap-1"
+          className="px-3 py-1 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white text-xs font-extrabold transition-all shadow-md shadow-indigo-500/25 active:scale-95 flex items-center gap-1 cursor-pointer"
         >
-          <Check className="w-3.5 h-3.5" />
+          <Check className="w-3.5 h-3.5 stroke-[3]" />
           <span>Xác nhận</span>
         </button>
       </div>
 
       {/* Controlled Framer Motion 3D Wheel Container */}
       <div
-        className="flex items-center justify-center gap-3 relative overflow-hidden rounded-2xl bg-slate-950/80 p-2 border border-slate-800"
+        className="flex items-center justify-center gap-3 relative overflow-hidden rounded-2xl bg-slate-950/90 p-2 border border-slate-800 touch-none overscroll-contain"
         style={{ height: `${CONTAINER_HEIGHT}px` }}
       >
-        {/* Glass Lens Highlight Center Bar (Mathematically Centered at CENTER_OFFSET) */}
+        {/* Glass Lens Highlight Center Bar (Mathematically Centered) */}
         <div
           style={{
             height: `${ITEM_HEIGHT}px`,
             top: `${CENTER_OFFSET + 8}px`,
           }}
-          className="absolute inset-x-3 rounded-xl bg-gradient-to-r from-indigo-600/30 via-violet-600/40 to-indigo-600/30 border border-indigo-500/50 pointer-events-none z-0 shadow-md shadow-indigo-500/20"
+          className="absolute inset-x-3 rounded-xl bg-gradient-to-r from-indigo-600/40 via-violet-600/50 to-indigo-600/40 border border-indigo-500/60 pointer-events-none z-0 shadow-md shadow-indigo-500/30"
         />
 
         {/* Hours Wheel Column */}
         <div
           onWheel={handleHoursWheel}
-          className="w-28 h-full relative overflow-hidden flex flex-col items-center cursor-grab active:cursor-grabbing z-10"
+          onTouchStart={handleHoursTouchStart}
+          onTouchMove={handleHoursTouchMove}
+          onTouchEnd={handleHoursTouchEnd}
+          onMouseDown={handleHoursMouseDown}
+          onMouseMove={handleHoursMouseMove}
+          onMouseUp={handleHoursMouseUp}
+          onMouseLeave={handleHoursMouseUp}
+          className="w-28 h-full relative overflow-hidden flex flex-col items-center cursor-grab active:cursor-grabbing z-10 touch-none select-none"
         >
           <motion.div
             animate={{ y: CENTER_OFFSET - currentHoursInt * ITEM_HEIGHT }}
             transition={springPillMotion}
-            className="flex flex-col items-center w-full"
+            className="flex flex-col items-center w-full pointer-events-none"
           >
             {hoursList.map((val, idx) => {
               const distance = Math.abs(idx - currentHoursInt);
               const isSelected = idx === currentHoursInt;
 
               return (
-                <button
+                <div
                   key={val}
-                  type="button"
-                  onClick={() => onChangeHours(val)}
                   style={{ height: `${ITEM_HEIGHT}px` }}
                   className="w-full flex items-center justify-center text-center transition-all duration-150"
                 >
@@ -140,7 +282,7 @@ export function TimeWheelPicker({
                   >
                     {val}
                   </span>
-                </button>
+                </div>
               );
             })}
           </motion.div>
@@ -152,22 +294,27 @@ export function TimeWheelPicker({
         {/* Minutes Wheel Column */}
         <div
           onWheel={handleMinutesWheel}
-          className="w-28 h-full relative overflow-hidden flex flex-col items-center cursor-grab active:cursor-grabbing z-10"
+          onTouchStart={handleMinutesTouchStart}
+          onTouchMove={handleMinutesTouchMove}
+          onTouchEnd={handleMinutesTouchEnd}
+          onMouseDown={handleMinutesMouseDown}
+          onMouseMove={handleMinutesMouseMove}
+          onMouseUp={handleMinutesMouseUp}
+          onMouseLeave={handleMinutesMouseUp}
+          className="w-28 h-full relative overflow-hidden flex flex-col items-center cursor-grab active:cursor-grabbing z-10 touch-none select-none"
         >
           <motion.div
             animate={{ y: CENTER_OFFSET - currentMinutesInt * ITEM_HEIGHT }}
             transition={springPillMotion}
-            className="flex flex-col items-center w-full"
+            className="flex flex-col items-center w-full pointer-events-none"
           >
             {minutesList.map((val, idx) => {
               const distance = Math.abs(idx - currentMinutesInt);
               const isSelected = idx === currentMinutesInt;
 
               return (
-                <button
+                <div
                   key={val}
-                  type="button"
-                  onClick={() => onChangeMinutes(val)}
                   style={{ height: `${ITEM_HEIGHT}px` }}
                   className="w-full flex items-center justify-center text-center transition-all duration-150"
                 >
@@ -182,7 +329,7 @@ export function TimeWheelPicker({
                   >
                     {val}
                   </span>
-                </button>
+                </div>
               );
             })}
           </motion.div>
