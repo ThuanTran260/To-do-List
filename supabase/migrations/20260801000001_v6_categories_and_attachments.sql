@@ -52,5 +52,6 @@ create policy "Authenticated Upload Attachments" on storage.objects for insert w
 
 drop policy if exists "Owner Delete Attachments" on storage.objects;
 create policy "Owner Delete Attachments" on storage.objects for delete using (
-  (bucket_id = 'task-attachments' or bucket_id = 'avatars') and auth.role() = 'authenticated'
+  (bucket_id = 'task-attachments' or bucket_id = 'avatars') 
+  and (auth.uid() = owner or auth.uid()::text = owner_id)
 );
