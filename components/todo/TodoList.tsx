@@ -183,21 +183,25 @@ function TodoListContent() {
             }
           />
         ) : (
-          <div className="space-y-3">
-            <AnimatePresence initial={false}>
-              {filteredTodos.map((item) => (
+            <AnimatePresence mode="popLayout" initial={false}>
+              {filteredTodos.map((item, index) => (
                 <motion.div
                   key={item.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -6 }}
-                  transition={springPillMotion}
+                  layout
+                  initial={{ opacity: 0, y: 12, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
+                  transition={{
+                    type: 'spring',
+                    damping: 22,
+                    stiffness: 300,
+                    delay: Math.min(index * 0.03, 0.2),
+                  }}
                 >
                   <TodoItem item={item} />
                 </motion.div>
               ))}
             </AnimatePresence>
-          </div>
         )}
       </motion.div>
 

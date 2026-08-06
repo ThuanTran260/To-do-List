@@ -2,10 +2,11 @@ import { TodoForm } from '@/components/todo/TodoForm';
 import { TodoList } from '@/components/todo/TodoList';
 import { InsightsCard } from '@/components/todo/InsightsCard';
 import { TaskDetailView } from '@/components/todo/TaskDetailView';
+import { MotionPage } from '@/components/ui/MotionPage';
 
 export default function DashboardPage() {
   return (
-    <div className="space-y-6">
+    <MotionPage className="space-y-6">
       {/* FlowState Insights Analytics Panel */}
       <section>
         <InsightsCard />
@@ -22,6 +23,6 @@ export default function DashboardPage() {
       </section>
 
       <TaskDetailView />
-    </div>
+    </MotionPage>
   );
 }

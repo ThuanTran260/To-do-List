@@ -6,6 +6,8 @@ import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { loginSchema } from '@/lib/validations/auth';
 import { Mail, Lock, Loader2, ArrowRight, CheckCircle2, User, LogOut, LayoutDashboard } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { staggerContainerVariants, staggerItemVariants } from '@/components/ui/MotionPage';
 
 export function LoginForm() {
   const { user } = useAuth();
@@ -34,9 +36,7 @@ export function LoginForm() {
       await supabase.auth.signOut({ scope: 'local' });
     }
 
-    // Set remember-me cookie preference:
-    // If rememberMe = true: 30 days cookie max-age
-    // If rememberMe = false: deleted / absent (making Supabase cookies session cookies that expire on browser close)
+    // Set remember-me cookie preference
     if (rememberMe) {
       document.cookie = 'sb-remember-me=true; path=/; max-age=2592000; SameSite=Lax';
     } else {
@@ -56,14 +56,19 @@ export function LoginForm() {
       );
       setLoading(false);
     } else {
-      // Full session refresh redirect to clear React Query & client memory cache completely
+      // Full session refresh redirect
       window.location.href = '/dashboard';
     }
   };
 
   return (
-    <div className="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-2xl space-y-6">
-      <div className="text-center space-y-2">
+    <motion.div
+      variants={staggerContainerVariants}
+      initial="hidden"
+      animate="show"
+      className="w-full max-w-md p-6 sm:p-8 rounded-3xl glass-panel bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-2xl space-y-6"
+    >
+      <motion.div variants={staggerItemVariants} className="text-center space-y-2">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-500 mx-auto flex items-center justify-center text-white shadow-lg shadow-indigo-500/25">
           <CheckCircle2 className="w-7 h-7" />
         </div>
@@ -73,11 +78,14 @@ export function LoginForm() {
         <p className="text-xs text-slate-500 dark:text-slate-400">
           Quản lý công việc thông minh & bảo mật tuyệt đối
         </p>
-      </div>
+      </motion.div>
 
       {/* Active Session Notice Banner */}
       {user && (
-        <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 space-y-2">
+        <motion.div
+          variants={staggerItemVariants}
+          className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 space-y-2"
+        >
           <div className="flex items-center gap-2 text-xs font-semibold text-indigo-900 dark:text-indigo-200">
             <User className="w-4 h-4 text-indigo-500" />
             <span>Đang đăng nhập với: <strong>{user.email}</strong></span>
@@ -98,17 +106,20 @@ export function LoginForm() {
               <span>Đăng xuất</span>
             </Link>
           </div>
-        </div>
+        </motion.div>
       )}
 
       <form onSubmit={handleLogin} className="space-y-4">
         {errorMsg && (
-          <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-medium">
+          <motion.div
+            variants={staggerItemVariants}
+            className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-medium"
+          >
             {errorMsg}
-          </div>
+          </motion.div>
         )}
 
-        <div className="space-y-1">
+        <motion.div variants={staggerItemVariants} className="space-y-1">
           <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
             Email
           </label>
@@ -123,9 +134,9 @@ export function LoginForm() {
               className="w-full bg-slate-50 dark:bg-slate-800/80 pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-        </div>
+        </motion.div>
 
-        <div className="space-y-1">
+        <motion.div variants={staggerItemVariants} className="space-y-1">
           <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
             Mật khẩu
           </label>
@@ -140,10 +151,10 @@ export function LoginForm() {
               className="w-full bg-slate-50 dark:bg-slate-800/80 pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
-        </div>
+        </motion.div>
 
         {/* Sleek Custom Remember Me Control */}
-        <div className="pt-1">
+        <motion.div variants={staggerItemVariants} className="pt-1">
           <button
             type="button"
             onClick={() => setRememberMe(!rememberMe)}
@@ -171,25 +182,30 @@ export function LoginForm() {
               </span>
             )}
           </button>
-        </div>
+        </motion.div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
-        >
-          {loading ? (
-            <Loader2 className="w-5 h-5 animate-spin" />
-          ) : (
-            <>
-              <span>Đăng nhập</span>
-              <ArrowRight className="w-4 h-4" />
-            </>
-          )}
-        </button>
+        <motion.div variants={staggerItemVariants}>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
+          >
+            {loading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <>
+                <span>Đăng nhập</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
+          </button>
+        </motion.div>
       </form>
 
-      <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800/60">
+      <motion.div
+        variants={staggerItemVariants}
+        className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400 border-t border-slate-200/60 dark:border-slate-800/60"
+      >
         Chưa có tài khoản?{' '}
         <Link
           href="/signup"
@@ -197,7 +213,7 @@ export function LoginForm() {
         >
           Đăng ký ngay
         </Link>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
