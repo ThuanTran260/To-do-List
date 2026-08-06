@@ -141,7 +141,7 @@ export function SignupForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Tối thiểu 8 ký tự"
+              placeholder="Tối thiểu 6 ký tự"
               required
               className="w-full bg-slate-50 dark:bg-slate-800/80 pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />

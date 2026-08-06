@@ -49,22 +49,16 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   }, [isOpen]);
 
   const handleSignOut = async () => {
-    const supabase = createClient();
-    // scope: 'global' revokes the refresh token on Supabase Auth server,
-    // invalidating ALL active sessions across every device for this user.
-    await supabase.auth.signOut({ scope: 'global' });
-    // Selectively purge only Supabase auth token keys (sb-*) from localStorage.
-    // This is critical for Discord In-App Browser (WebView) which caches tokens
-    // aggressively and does not clear them on signOut automatically.
-    // We intentionally preserve other keys (e.g. 'flowstate-theme') so user
-    // settings survive the logout.
+    // Selectively purge client storage keys
     try {
       Object.keys(localStorage)
         .filter((key) => key.startsWith('sb-'))
         .forEach((key) => localStorage.removeItem(key));
     } catch {}
     try { sessionStorage.clear(); } catch {}
-    window.location.href = '/login';
+
+    // Navigate to server-side logout route handler which issues Set-Cookie maxAge=0 headers
+    window.location.href = '/auth/logout';
   };
 
   const navItems = [
