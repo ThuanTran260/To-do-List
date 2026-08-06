@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import QueryProvider from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { DropdownManagerProvider } from '@/hooks/useDropdownManager';
+import { IntroSplash } from '@/components/ui/IntroSplash';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -19,7 +20,9 @@ export default function RootLayout({
       <body className="antialiased selection:bg-indigo-500 selection:text-white">
         <ThemeProvider defaultTheme="dark" storageKey="flowstate-theme">
           <QueryProvider>
-            <DropdownManagerProvider>{children}</DropdownManagerProvider>
+            <DropdownManagerProvider>
+              <IntroSplash>{children}</IntroSplash>
+            </DropdownManagerProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>
