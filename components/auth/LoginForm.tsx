@@ -142,17 +142,35 @@ export function LoginForm() {
           </div>
         </div>
 
-        {/* Remember Me Checkbox */}
-        <div className="flex items-center justify-between pt-1">
-          <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-            />
-            <span>Ghi nhớ đăng nhập (Tự động xóa session khi đóng trình duyệt nếu bỏ chọn)</span>
-          </label>
+        {/* Sleek Custom Remember Me Control */}
+        <div className="pt-1">
+          <button
+            type="button"
+            onClick={() => setRememberMe(!rememberMe)}
+            className={`w-full py-2.5 px-3.5 rounded-2xl border transition-all flex items-center justify-between text-xs font-semibold cursor-pointer select-none ${
+              rememberMe
+                ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500/50 text-indigo-900 dark:text-indigo-200 shadow-sm shadow-indigo-500/10'
+                : 'bg-slate-50/60 dark:bg-slate-800/40 border-slate-200/80 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100/60 dark:hover:bg-slate-800/80'
+            }`}
+          >
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-5 h-5 rounded-lg flex items-center justify-center transition-all ${
+                  rememberMe
+                    ? 'bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-md shadow-indigo-500/30 scale-105'
+                    : 'border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-transparent'
+                }`}
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 stroke-[3]" />
+              </div>
+              <span className="font-bold tracking-tight">Ghi nhớ đăng nhập</span>
+            </div>
+            {rememberMe && (
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
+                Đã bật
+              </span>
+            )}
+          </button>
         </div>
 
         <button
