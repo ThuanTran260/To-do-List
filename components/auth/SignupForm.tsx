@@ -34,6 +34,18 @@ export function SignupForm() {
 
     setLoading(true);
     const supabase = createClient();
+
+    // Purge any stale session from a previous login before creating a new account.
+    // This is critical for Discord In-App Browser (WebView) which may still hold
+    // an old session in localStorage/cookies even after the user clicked "Sign out".
+    // scope: 'local' clears client-side tokens only (no server round-trip needed here).
+    await supabase.auth.signOut({ scope: 'local' });
+    try {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('sb-'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {}
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,

@@ -13,7 +13,17 @@ export function Navbar() {
 
   const handleSignOut = async () => {
     const supabase = createClient();
-    await supabase.auth.signOut();
+    // scope: 'global' revokes the refresh token on Supabase Auth server,
+    // invalidating ALL active sessions across every device for this user.
+    await supabase.auth.signOut({ scope: 'global' });
+    // Selectively purge only Supabase auth token keys (sb-*) from localStorage.
+    // Preserves other keys like 'flowstate-theme' (user settings survive logout).
+    try {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith('sb-'))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {}
+    try { sessionStorage.clear(); } catch {}
     window.location.href = '/login';
   };
 
