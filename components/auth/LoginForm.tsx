@@ -2,13 +2,16 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { loginSchema } from '@/lib/validations/auth';
-import { Mail, Lock, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, Loader2, ArrowRight, CheckCircle2, User, LogOut, LayoutDashboard } from 'lucide-react';
 
 export function LoginForm() {
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,13 +28,32 @@ export function LoginForm() {
 
     setLoading(true);
     const supabase = createClient();
+
+    // If a session exists, purge old session first to prevent account state bleed
+    if (user) {
+      await supabase.auth.signOut({ scope: 'local' });
+    }
+
+    // Set remember-me cookie preference:
+    // If rememberMe = true: 30 days cookie max-age
+    // If rememberMe = false: deleted / absent (making Supabase cookies session cookies that expire on browser close)
+    if (rememberMe) {
+      document.cookie = 'sb-remember-me=true; path=/; max-age=2592000; SameSite=Lax';
+    } else {
+      document.cookie = 'sb-remember-me=false; path=/; max-age=0; SameSite=Lax';
+    }
+
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
-      setErrorMsg(error.message === 'Invalid login credentials' ? 'Email hoặc mật khẩu không chính xác' : error.message);
+      setErrorMsg(
+        error.message === 'Invalid login credentials'
+          ? 'Email hoặc mật khẩu không chính xác'
+          : error.message
+      );
       setLoading(false);
     } else {
       // Full session refresh redirect to clear React Query & client memory cache completely
@@ -52,6 +74,32 @@ export function LoginForm() {
           Quản lý công việc thông minh & bảo mật tuyệt đối
         </p>
       </div>
+
+      {/* Active Session Notice Banner */}
+      {user && (
+        <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+            <User className="w-4 h-4 text-indigo-500" />
+            <span>Đang đăng nhập với: <strong>{user.email}</strong></span>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Link
+              href="/dashboard"
+              className="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Vào Dashboard</span>
+            </Link>
+            <Link
+              href="/auth/logout"
+              className="py-1.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 hover:text-rose-600 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Đăng xuất</span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleLogin} className="space-y-4">
         {errorMsg && (
@@ -92,6 +140,19 @@ export function LoginForm() {
               className="w-full bg-slate-50 dark:bg-slate-800/80 pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700/80 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
           </div>
+        </div>
+
+        {/* Remember Me Checkbox */}
+        <div className="flex items-center justify-between pt-1">
+          <label className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            />
+            <span>Ghi nhớ đăng nhập (Tự động xóa session khi đóng trình duyệt nếu bỏ chọn)</span>
+          </label>
         </div>
 
         <button

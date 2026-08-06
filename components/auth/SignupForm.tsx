@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import Link from 'next/link';
 import { signupSchema } from '@/lib/validations/auth';
-import { Mail, Lock, User, Loader2, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Mail, Lock, User, Loader2, ArrowRight, CheckCircle2, LogOut, LayoutDashboard } from 'lucide-react';
 
 export function SignupForm() {
+  const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -36,9 +38,6 @@ export function SignupForm() {
     const supabase = createClient();
 
     // Purge any stale session from a previous login before creating a new account.
-    // This is critical for Discord In-App Browser (WebView) which may still hold
-    // an old session in localStorage/cookies even after the user clicked "Sign out".
-    // scope: 'local' clears client-side tokens only (no server round-trip needed here).
     await supabase.auth.signOut({ scope: 'local' });
     try {
       Object.keys(localStorage)
@@ -84,6 +83,32 @@ export function SignupForm() {
           Trải nghiệm hệ thống Todo thông minh & đồng bộ tức thì
         </p>
       </div>
+
+      {/* Active Session Notice Banner */}
+      {user && (
+        <div className="p-3.5 rounded-2xl bg-indigo-50/80 dark:bg-indigo-950/40 border border-indigo-200/80 dark:border-indigo-900/50 space-y-2">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-900 dark:text-indigo-200">
+            <User className="w-4 h-4 text-indigo-500" />
+            <span>Đang đăng nhập với: <strong>{user.email}</strong></span>
+          </div>
+          <div className="flex items-center gap-2 pt-1">
+            <Link
+              href="/dashboard"
+              className="flex-1 py-1.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Vào Dashboard</span>
+            </Link>
+            <Link
+              href="/auth/logout"
+              className="py-1.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 hover:text-rose-600 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Đăng xuất</span>
+            </Link>
+          </div>
+        </div>
+      )}
 
       <form onSubmit={handleSignup} className="space-y-4">
         {errorMsg && (

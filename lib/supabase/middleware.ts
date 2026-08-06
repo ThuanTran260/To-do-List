@@ -99,9 +99,13 @@ export async function updateProxy(request: NextRequest) {
           ].join('; ')
         );
         // Write refreshed Supabase auth cookies to response
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
+        const isRemembered = request.cookies.get('sb-remember-me')?.value === 'true';
+        cookiesToSet.forEach(({ name, value, options }) => {
+          const cookieOptions = isRemembered
+            ? options
+            : { ...options, maxAge: undefined, expires: undefined };
+          supabaseResponse.cookies.set(name, value, cookieOptions);
+        });
       },
     },
   });
@@ -116,7 +120,6 @@ export async function updateProxy(request: NextRequest) {
   // ── 3. Route Protection ──────────────────────────────────────────────────
   const { pathname } = request.nextUrl;
   const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isAuthRoute = pathname === '/login' || pathname === '/signup';
 
   if (!user && isDashboardRoute) {
     // Unauthenticated user trying to access dashboard → send to login
@@ -125,12 +128,9 @@ export async function updateProxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && isAuthRoute) {
-    // Already authenticated user trying to access login/signup → send to dashboard
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = '/dashboard';
-    return NextResponse.redirect(dashboardUrl);
-  }
+  // Note: We intentionally do NOT auto-redirect authenticated users away from /login or /signup.
+  // This allows users to view login/signup forms, switch accounts, or log out explicitly
+  // without being trapped in an auto-redirect loop when re-opening the site.
 
   return supabaseResponse;
 }
