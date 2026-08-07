@@ -17,6 +17,7 @@ import {
   User,
   Shield,
   KeyRound,
+  Database,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -71,6 +72,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const settingItems = [
     { label: 'Account Info', href: '/dashboard/settings/account', icon: Shield },
     { label: 'Change Password', href: '/dashboard/settings/password', icon: KeyRound },
+    { label: 'Data (Export/Import)', href: '/dashboard/settings/data', icon: Database },
   ];
 
   return (

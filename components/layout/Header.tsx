@@ -39,6 +39,16 @@ export function Header({ onOpenSidebar }: HeaderProps) {
 
           {/* Controls Right */}
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, metaKey: true });
+                window.dispatchEvent(event);
+              }}
+              className="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition-all cursor-pointer"
+              title="Mở Command Palette (Ctrl+K)"
+            >
+              <span className="font-mono">⌘K</span>
+            </button>
             <ThemeToggle />
             <CalendarPopover />
             <NotificationPopover />

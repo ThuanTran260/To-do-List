@@ -3,6 +3,7 @@ import QueryProvider from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { DropdownManagerProvider } from '@/hooks/useDropdownManager';
 import { IntroSplash } from '@/components/ui/IntroSplash';
+import { AppToaster } from '@/components/ui/AppToaster';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({
           <QueryProvider>
             <DropdownManagerProvider>
               <IntroSplash>{children}</IntroSplash>
+              <AppToaster />
             </DropdownManagerProvider>
           </QueryProvider>
         </ThemeProvider>

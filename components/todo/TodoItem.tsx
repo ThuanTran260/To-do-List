@@ -7,6 +7,7 @@ import { useCategories, getReadableTextColor } from '@/hooks/useCategories';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { Check, Edit3, Trash2, Calendar, Clock, Eye } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface TodoItemProps {
   item: TodoItemData;
@@ -192,9 +193,22 @@ function TodoItemContent({ item }: TodoItemProps) {
             </button>
             <button
               onClick={() => {
-                if (confirm(`Bạn có chắc chắn muốn xóa "${item.title}"?`)) {
-                  deleteMutation.mutate(item.id);
-                }
+                let isCancelled = false;
+                toast(`Đã chuyển "${item.title}" vào thùng rác`, {
+                  action: {
+                    label: 'Hoàn tác',
+                    onClick: () => {
+                      isCancelled = true;
+                      toast.success(`Đã khôi phục "${item.title}"`);
+                    },
+                  },
+                  onAutoClose: () => {
+                    if (!isCancelled) {
+                      deleteMutation.mutate(item.id);
+                    }
+                  },
+                  duration: 5000,
+                });
               }}
               disabled={deleteMutation.isPending}
               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"

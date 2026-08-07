@@ -3,9 +3,31 @@
 import { useState } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
+import { CommandPalette } from '@/components/ui/CommandPalette';
+import { KeyboardShortcutsModal } from '@/components/ui/KeyboardShortcutsModal';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
+  const [isShortcutsHelpOpen, setIsShortcutsHelpOpen] = useState(false);
+
+  useKeyboardShortcuts({
+    onCommandPalette: () => setIsCommandPaletteOpen((prev) => !prev),
+    onNewTask: () => {
+      const titleInput = document.getElementById('todo-title-input') as HTMLInputElement;
+      if (titleInput) {
+        titleInput.focus();
+      }
+    },
+    onSearchFocus: () => {
+      const searchInput = document.getElementById('search-autocomplete-input') as HTMLInputElement;
+      if (searchInput) {
+        searchInput.focus();
+      }
+    },
+    onHelpModal: () => setIsShortcutsHelpOpen((prev) => !prev),
+  });
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 mesh-gradient-bg transition-colors">
@@ -19,6 +41,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {children}
         </main>
       </div>
+
+      {/* Global Modals */}
+      <CommandPalette
+        isOpen={isCommandPaletteOpen}
+        onClose={() => setIsCommandPaletteOpen(false)}
+        onOpenNewTask={() => {
+          const titleInput = document.getElementById('todo-title-input') as HTMLInputElement;
+          if (titleInput) titleInput.focus();
+        }}
+      />
+
+      <KeyboardShortcutsModal
+        isOpen={isShortcutsHelpOpen}
+        onClose={() => setIsShortcutsHelpOpen(false)}
+      />
     </div>
   );
 }
