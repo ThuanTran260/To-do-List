@@ -11,18 +11,18 @@ export const todoCreateSchema = z.object({
     .transform(val => val ? sanitizeInput(val.trim()) : undefined)
     .optional(),
   priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
-  due_date: z.string().datetime().optional(),
+  due_date: z.string().optional().nullable(),
   category_id: z.string().uuid().optional(),
   is_vital: z.boolean().optional(),
   image_url: z.string().url().optional(),
-});
-
-export const todoUpdateSchema = todoCreateSchema.partial().extend({
-  is_completed: z.boolean().optional(),
   checklist: z.array(z.any()).optional(),
   recurrence_rule: z.string().nullable().optional(),
   sort_order: z.number().optional(),
   pomodoro_count: z.number().optional(),
+});
+
+export const todoUpdateSchema = todoCreateSchema.partial().extend({
+  is_completed: z.boolean().optional(),
 });
 
 export const categorySchema = z.object({

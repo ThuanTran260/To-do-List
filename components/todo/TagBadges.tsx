@@ -1,9 +1,14 @@
 'use client';
 
-import { TagData } from '@/hooks/useTags';
+export interface TagItem {
+  id: string;
+  name: string;
+  color: string;
+  created_at?: string;
+}
 
 interface TagBadgesProps {
-  tags?: TagData[];
+  tags?: TagItem[];
 }
 
 export function TagBadges({ tags }: TagBadgesProps) {

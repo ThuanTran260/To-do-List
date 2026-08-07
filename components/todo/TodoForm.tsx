@@ -9,6 +9,10 @@ import { DatePickerModal } from '@/components/ui/DatePickerModal';
 import { CustomPrioritySelect, type PriorityType } from '@/components/ui/CustomPrioritySelect';
 import { CustomCategorySelect } from '@/components/ui/CustomCategorySelect';
 import { ImageUpload } from '@/components/ui/ImageUpload';
+import { TagPicker } from '@/components/ui/TagPicker';
+import { RecurrencePicker } from '@/components/todo/RecurrencePicker';
+import { TemplatePicker } from '@/components/todo/TemplatePicker';
+import { parseNaturalLanguageDate } from '@/lib/nlpDate';
 import { motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
 import {
@@ -19,7 +23,9 @@ import {
   Sparkles,
   AlignLeft,
   AlertCircle,
+  Wand2,
 } from 'lucide-react';
+import type { TaskTemplate } from '@/types/todo';
 
 export function TodoForm() {
   const { user } = useAuth();
@@ -29,15 +35,43 @@ export function TodoForm() {
   const [dueDate, setDueDate] = useState<string>('');
   const [categoryId, setCategoryId] = useState<string>('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
+  const [recurrenceRule, setRecurrenceRule] = useState<string | null>(null);
 
   const [showExtra, setShowExtra] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [statusText, setStatusText] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [nlpPreview, setNlpPreview] = useState<Date | null>(null);
 
   const createMutation = useCreateTodo();
   const { data: categories = [] } = useCategories();
+
+  const handleTitleChange = (val: string) => {
+    setTitle(val);
+    const parsed = parseNaturalLanguageDate(val);
+    if (parsed && !dueDate) {
+      setNlpPreview(parsed);
+    } else {
+      setNlpPreview(null);
+    }
+  };
+
+  const applyNlpDate = () => {
+    if (nlpPreview) {
+      setDueDate(nlpPreview.toISOString());
+      setNlpPreview(null);
+    }
+  };
+
+  const handleSelectTemplate = (templateData: TaskTemplate['template_data']) => {
+    setTitle(templateData.title);
+    if (templateData.description) setDescription(templateData.description);
+    if (templateData.priority) setPriority(templateData.priority);
+    if (templateData.category_id) setCategoryId(templateData.category_id);
+    setShowExtra(true);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,15 +94,19 @@ export function TodoForm() {
         }
       }
 
+      const finalDueDate = dueDate || (nlpPreview ? nlpPreview.toISOString() : undefined);
+
       setStatusText('Đang khởi tạo công việc...');
       createMutation.mutate(
         {
           title: title.trim(),
           description: description.trim() || undefined,
           priority,
-          due_date: dueDate || undefined,
+          due_date: finalDueDate,
           category_id: categoryId || undefined,
           image_url: imageUrl,
+          tag_ids: selectedTagIds,
+          recurrence_rule: recurrenceRule,
         },
         {
           onSuccess: () => {
@@ -78,9 +116,12 @@ export function TodoForm() {
             setDueDate('');
             setCategoryId('');
             setSelectedFile(null);
+            setSelectedTagIds([]);
+            setRecurrenceRule(null);
             setShowExtra(false);
             setStatusText('');
             setIsSubmitting(false);
+            setNlpPreview(null);
           },
           onError: (err) => {
             setErrorMsg((err as Error).message);
@@ -115,9 +156,8 @@ export function TodoForm() {
         onSubmit={handleSubmit}
         className="relative rounded-3xl glass-panel bg-white/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden"
       >
-        {/* Scrollable Form Body Container with dvh and overscroll-contain */}
         <div className="p-4 sm:p-6 space-y-4 max-h-[70dvh] overflow-y-auto overscroll-contain no-scrollbar">
-          {/* Header Bar */}
+          {/* Header Bar with TemplatePicker */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400">
@@ -128,18 +168,22 @@ export function TodoForm() {
               </h3>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setShowExtra(!showExtra)}
-              className={`text-xs font-bold transition-all px-3 py-1.5 rounded-xl flex items-center gap-1.5 border shadow-2xs cursor-pointer ${
-                showExtra || description || categoryId || selectedFile
-                  ? 'bg-indigo-50 dark:bg-indigo-950/70 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-300'
-                  : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-              }`}
-            >
-              <AlignLeft className="w-3.5 h-3.5" />
-              <span>{showExtra ? 'Thu gọn' : 'Chi tiết & Ảnh'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <TemplatePicker onSelectTemplate={handleSelectTemplate} />
+
+              <button
+                type="button"
+                onClick={() => setShowExtra(!showExtra)}
+                className={`text-xs font-bold transition-all px-3 py-1.5 rounded-xl flex items-center gap-1.5 border shadow-2xs cursor-pointer ${
+                  showExtra || description || categoryId || selectedFile || selectedTagIds.length > 0
+                    ? 'bg-indigo-50 dark:bg-indigo-950/70 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-300'
+                    : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <AlignLeft className="w-3.5 h-3.5" />
+                <span>{showExtra ? 'Thu gọn' : 'Chi tiết'}</span>
+              </button>
+            </div>
           </div>
 
           {errorMsg && (
@@ -153,16 +197,30 @@ export function TodoForm() {
           <div className="space-y-3">
             <div>
               <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Title (Tiêu đề)
+                Title (Tiêu đề - Gõ "ngày mai", "thứ 2" để tự phát hiện ngày)
               </label>
               <input
                 id="todo-title-input"
                 type="text"
                 value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="Tên công việc (ví dụ: Submit Documents, Walk the dog...)"
+                onChange={(e) => handleTitleChange(e.target.value)}
+                placeholder="Tên công việc (ví dụ: Nộp báo cáo ngày mai 3h...)"
                 className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
               />
+
+              {/* Natural Language Date Suggestion Pill */}
+              {nlpPreview && (
+                <div className="mt-1.5 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={applyNlpDate}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 transition-colors"
+                  >
+                    <Wand2 className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Phát hiện hạn: {nlpPreview.toLocaleString('vi-VN')} — <b>Áp dụng</b></span>
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Date & Priority Row */}
@@ -195,7 +253,13 @@ export function TodoForm() {
               </div>
             </div>
 
-            {/* Framer Motion Accordion Slide-Out Panel */}
+            {/* Tags & Recurrence controls row */}
+            <div className="flex items-center gap-3 pt-1">
+              <TagPicker selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} />
+              <RecurrencePicker value={recurrenceRule} onChange={setRecurrenceRule} />
+            </div>
+
+            {/* Expandable Extra Panel */}
             <AnimatePresence initial={false}>
               {(showExtra || description || categoryId || selectedFile) && (
                 <motion.div
@@ -225,7 +289,7 @@ export function TodoForm() {
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
-                        placeholder="Start writing here... (Nội dung chi tiết, mục tiêu, yêu cầu công việc)"
+                        placeholder="Nội dung chi tiết, mục tiêu, yêu cầu công việc..."
                         rows={3}
                         className="w-full bg-slate-100/80 dark:bg-slate-800/80 p-3 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium resize-y"
                       />
@@ -243,7 +307,7 @@ export function TodoForm() {
           </div>
         </div>
 
-        {/* Sticky Mobile-Friendly Action Footer Bar (Always Accessible on Mobile) */}
+        {/* Sticky Action Footer */}
         <div className="sticky bottom-0 z-[60] px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shadow-lg">
           <div className="text-[11px] font-bold text-slate-400 hidden sm:block">
             {showExtra ? 'Chế độ nhập chi tiết' : 'Chế độ tạo nhanh'}
@@ -264,7 +328,7 @@ export function TodoForm() {
         </div>
       </form>
 
-      {/* Date Picker Modal Trigger */}
+      {/* Date Picker Modal */}
       <DatePickerModal
         isOpen={isDatePickerOpen}
         onClose={() => setIsDatePickerOpen(false)}

@@ -7,11 +7,15 @@ import { deleteTaskImage } from '@/lib/storage';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { ChecklistEditor } from '@/components/todo/ChecklistEditor';
+import { TagBadges } from '@/components/todo/TagBadges';
+import { TagPicker } from '@/components/ui/TagPicker';
+import { RecurrencePicker } from '@/components/todo/RecurrencePicker';
+import { getRRuleDescription } from '@/lib/recurrence';
 import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/state/ErrorState';
 import { motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion, overlayMotion } from '@/lib/motion';
-import { ArrowLeft, Edit3, Trash2, Sparkles, Calendar, Clock, Check, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Edit3, Trash2, Sparkles, Calendar, Clock, Check, AlertCircle, Repeat } from 'lucide-react';
 
 function TaskDetailContent() {
   const router = useRouter();
@@ -58,6 +62,23 @@ function TaskDetailContent() {
     });
   };
 
+  const handleTagsChange = (tagIds: string[]) => {
+    if (!currentTask) return;
+    updateMutation.mutate({
+      id: currentTask.id,
+      update: {},
+      tag_ids: tagIds,
+    });
+  };
+
+  const handleRecurrenceChange = (rule: string | null) => {
+    if (!currentTask) return;
+    updateMutation.mutate({
+      id: currentTask.id,
+      update: { recurrence_rule: rule },
+    });
+  };
+
   // Due date formatting
   let isOverdue = false;
   let formattedDueDate = '';
@@ -81,12 +102,14 @@ function TaskDetailContent() {
     });
   }
 
+  const tagIds = currentTask?.tags ? currentTask.tags.map((t) => t.id) : [];
+
   return (
     <>
       <AnimatePresence>
         {activeTaskId && (
           <>
-            {/* Backdrop overlay with smooth Framer Motion fade-in / fade-out (z-[9000]) */}
+            {/* Backdrop overlay */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -96,7 +119,7 @@ function TaskDetailContent() {
               className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-[9000] cursor-pointer"
             />
 
-            {/* Slide-Over Drawer / Panel with 60fps Spring Motion (z-[9500]) */}
+            {/* Slide-Over Drawer */}
             <motion.div
               initial={{ x: '100%', opacity: 0 }}
               animate={{ x: 0, opacity: 1 }}
@@ -104,7 +127,7 @@ function TaskDetailContent() {
               transition={springPillMotion}
               className="fixed inset-y-0 right-0 w-full max-w-2xl bg-white/95 dark:bg-slate-900/95 border-l border-slate-200/80 dark:border-slate-800 shadow-2xl z-[9500] overflow-y-auto p-4 sm:p-8 space-y-6 backdrop-blur-xl"
             >
-              {/* Header Bar with Go Back */}
+              {/* Header Bar */}
               <div className="flex items-center justify-between pb-4 border-b border-slate-200/80 dark:border-slate-800">
                 <button
                   onClick={handleClose}
@@ -130,7 +153,7 @@ function TaskDetailContent() {
                 </div>
               </div>
 
-              {/* Loading State */}
+              {/* Loading / Error States */}
               {isLoading ? (
                 <div className="space-y-4 py-6">
                   <LoadingSkeleton variant="card" count={1} />
@@ -147,9 +170,6 @@ function TaskDetailContent() {
                   <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
                     Công việc không tồn tại
                   </h3>
-                  <p className="text-xs text-slate-500">
-                    Công việc này có thể đã bị xóa hoặc đường dẫn không chính xác.
-                  </p>
                   <button
                     onClick={handleClose}
                     className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs shadow-md"
@@ -160,7 +180,7 @@ function TaskDetailContent() {
               ) : (
                 /* Main Task Content */
                 <div className="space-y-6">
-                  {/* Split Hero Layout: Image Left / Top, Metadata Right / Below */}
+                  {/* Hero Layout */}
                   <div className="flex flex-col md:flex-row items-stretch gap-6">
                     {currentTask.image_url ? (
                       <div className="w-full md:w-1/2 aspect-video md:aspect-square rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-950/5 shadow-md flex-shrink-0">
@@ -185,6 +205,11 @@ function TaskDetailContent() {
                           {currentTask.title}
                         </h1>
 
+                        {/* Tag badges */}
+                        {currentTask.tags && currentTask.tags.length > 0 && (
+                          <TagBadges tags={currentTask.tags} />
+                        )}
+
                         <div className="space-y-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
                           <div className="flex items-center gap-2">
                             <span className="text-slate-400 font-normal">Priority:</span>
@@ -203,6 +228,13 @@ function TaskDetailContent() {
                               </span>
                             )}
                           </div>
+
+                          {currentTask.recurrence_rule && (
+                            <div className="flex items-center gap-2 text-indigo-400">
+                              <Repeat className="w-4 h-4" />
+                              <span>{getRRuleDescription(currentTask.recurrence_rule)}</span>
+                            </div>
+                          )}
 
                           {formattedCreatedDate && (
                             <div className="flex items-center gap-2">
@@ -227,12 +259,19 @@ function TaskDetailContent() {
                         </div>
                       </div>
 
+                      {/* Controls row for Tags & Recurrence */}
+                      <div className="flex flex-wrap items-center gap-2 pt-2">
+                        <TagPicker selectedTagIds={tagIds} onChange={handleTagsChange} />
+                        <RecurrencePicker value={currentTask.recurrence_rule || null} onChange={handleRecurrenceChange} />
+                      </div>
+
                       {/* Mark Complete Action Button */}
                       <button
                         onClick={() =>
                           toggleMutation.mutate({
                             id: currentTask.id,
                             is_completed: !currentTask.is_completed,
+                            currentTodo: currentTask,
                           })
                         }
                         className={`w-full py-2.5 px-4 rounded-2xl text-xs font-extrabold shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer ${
@@ -277,7 +316,7 @@ function TaskDetailContent() {
                     />
                   </div>
 
-                  {/* Bottom Action Bar: Delete & Edit */}
+                  {/* Bottom Action Bar */}
                   <div className="pt-6 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-end gap-3">
                     <button
                       onClick={() => setIsEditing(true)}

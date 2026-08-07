@@ -7,15 +7,21 @@ import { useCategories, getReadableTextColor } from '@/hooks/useCategories';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { ChecklistProgress } from '@/components/todo/ChecklistProgress';
-import { Check, Edit3, Trash2, Calendar, Clock, Eye } from 'lucide-react';
+import { TagBadges } from '@/components/todo/TagBadges';
+import { getRRuleDescription } from '@/lib/recurrence';
+import { Check, Edit3, Trash2, Calendar, Clock, Eye, Repeat, Timer } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface TodoItemProps {
   item: TodoItemData;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  showBulkSelect?: boolean;
 }
 
-function TodoItemContent({ item }: TodoItemProps) {
+function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSelect = false }: TodoItemProps) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isPendingDelete, setIsPendingDelete] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -50,7 +56,31 @@ function TodoItemContent({ item }: TodoItemProps) {
     window.dispatchEvent(new Event('popstate'));
   };
 
-  // Due date formatting & status calculation
+  const handleDeleteWithUndo = () => {
+    setIsPendingDelete(true);
+    let isCancelled = false;
+
+    toast(`Đã xóa "${item.title}"`, {
+      action: {
+        label: 'Hoàn tác',
+        onClick: () => {
+          isCancelled = true;
+          setIsPendingDelete(false);
+          toast.success(`Đã khôi phục "${item.title}"`);
+        },
+      },
+      onAutoClose: () => {
+        if (!isCancelled) {
+          deleteMutation.mutate(item.id);
+        }
+      },
+      duration: 5000,
+    });
+  };
+
+  if (isPendingDelete) return null;
+
+  // Due date formatting
   let isOverdue = false;
   let formattedDueDate = '';
   if (item.due_date) {
@@ -76,14 +106,28 @@ function TodoItemContent({ item }: TodoItemProps) {
             : isOverdue
             ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/40'
             : 'glass-panel bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-indigo-700'
-        }`}
+        } ${isSelected ? 'ring-2 ring-indigo-500 border-indigo-500' : ''}`}
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4">
+          {/* Multi-select checkbox */}
+          {showBulkSelect && onToggleSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => onToggleSelect(item.id)}
+              className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+            />
+          )}
+
           {/* Left Column: Checkbox & Content */}
           <div className="flex items-start gap-3 flex-1 min-w-0">
             <button
               onClick={() =>
-                toggleMutation.mutate({ id: item.id, is_completed: !item.is_completed })
+                toggleMutation.mutate({
+                  id: item.id,
+                  is_completed: !item.is_completed,
+                  currentTodo: item,
+                })
               }
               disabled={toggleMutation.isPending}
               className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
@@ -123,15 +167,23 @@ function TodoItemContent({ item }: TodoItemProps) {
                   </button>
                 )}
 
-                {item.is_completed ? (
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold">
-                    Status: Done
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 rounded-md bg-slate-500/10 text-slate-600 dark:text-slate-400 text-[10px] font-bold">
-                    Status: Not Started
+                {item.tags && item.tags.length > 0 && (
+                  <TagBadges tags={item.tags} />
+                )}
+
+                {item.recurrence_rule && (
+                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-semibold flex items-center gap-1">
+                    <Repeat className="w-3 h-3" />
+                    <span>{getRRuleDescription(item.recurrence_rule)}</span>
                   </span>
                 )}
+
+                {item.pomodoro_count && item.pomodoro_count > 0 ? (
+                  <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 text-[10px] font-semibold flex items-center gap-1">
+                    <Timer className="w-3 h-3" />
+                    <span>🍅 {item.pomodoro_count}</span>
+                  </span>
+                ) : null}
               </div>
 
               {item.description && (
@@ -155,7 +207,7 @@ function TodoItemContent({ item }: TodoItemProps) {
                   </div>
                 )}
 
-                <ChecklistProgress items={(item as any).checklist || []} />
+                <ChecklistProgress items={item.checklist || []} />
 
                 <button
                   type="button"
@@ -169,7 +221,7 @@ function TodoItemContent({ item }: TodoItemProps) {
             </div>
           </div>
 
-          {/* Right Column: Thumbnail Image (If available) */}
+          {/* Right Column: Thumbnail Image */}
           {item.image_url && (
             <div
               onClick={handleOpenDetail}
@@ -195,24 +247,7 @@ function TodoItemContent({ item }: TodoItemProps) {
               <Edit3 className="w-4 h-4" />
             </button>
             <button
-              onClick={() => {
-                let isCancelled = false;
-                toast(`Đã chuyển "${item.title}" vào thùng rác`, {
-                  action: {
-                    label: 'Hoàn tác',
-                    onClick: () => {
-                      isCancelled = true;
-                      toast.success(`Đã khôi phục "${item.title}"`);
-                    },
-                  },
-                  onAutoClose: () => {
-                    if (!isCancelled) {
-                      deleteMutation.mutate(item.id);
-                    }
-                  },
-                  duration: 5000,
-                });
-              }}
+              onClick={handleDeleteWithUndo}
               disabled={deleteMutation.isPending}
               className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
               title="Xóa công việc"

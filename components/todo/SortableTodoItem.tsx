@@ -3,14 +3,17 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { TodoItem } from './TodoItem';
-import { TodoItemData } from '@/hooks/useTodos';
+import type { TodoItemData } from '@/types/todo';
 import { GripVertical } from 'lucide-react';
 
 interface SortableTodoItemProps {
   item: TodoItemData;
+  isSelected?: boolean;
+  onToggleSelect?: (id: string) => void;
+  showBulkSelect?: boolean;
 }
 
-export function SortableTodoItem({ item }: SortableTodoItemProps) {
+export function SortableTodoItem({ item, isSelected, onToggleSelect, showBulkSelect }: SortableTodoItemProps) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.id,
   });
@@ -35,7 +38,12 @@ export function SortableTodoItem({ item }: SortableTodoItemProps) {
       </div>
 
       <div className="pl-4">
-        <TodoItem item={item} />
+        <TodoItem
+          item={item}
+          isSelected={isSelected}
+          onToggleSelect={onToggleSelect}
+          showBulkSelect={showBulkSelect}
+        />
       </div>
     </div>
   );

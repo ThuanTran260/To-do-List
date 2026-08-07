@@ -2,28 +2,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { todoCreateSchema, type TodoInput, type TodoUpdate } from '@/lib/validations/todo';
 import { log } from '@/lib/logger';
+import { getNextOccurrenceDate } from '@/lib/recurrence';
+import type { TodoItemData, ChecklistItem } from '@/types/todo';
 
-// KHÔNG dùng singleton — luôn gọi createClient() bên trong query/mutation
-// để đảm bảo JWT token trong cookie được đọc tại thời điểm request
-
-export interface TodoItemData {
-  id: string;
-  user_id: string;
-  title: string;
-  description: string | null;
-  is_completed: boolean;
-  priority: 'low' | 'medium' | 'high';
-  due_date: string | null;
-  created_at: string;
-  updated_at: string;
-  deleted_at: string | null;
-  is_vital?: boolean;
-  category_id?: string | null;
-  image_url?: string | null;
-}
+export type { TodoItemData, ChecklistItem };
 
 // Fetch active (non-deleted) todos
-export function useTodos(page = 1, pageSize = 30) {
+export function useTodos(page = 1, pageSize = 50) {
   return useQuery({
     queryKey: ['todos', 'active', page],
     queryFn: async () => {
@@ -33,13 +18,20 @@ export function useTodos(page = 1, pageSize = 30) {
 
       const { data, error, count } = await supabase
         .from('todos')
-        .select('*', { count: 'exact' })
+        .select('*, todo_tags(tags(*))', { count: 'exact' })
         .is('deleted_at', null)
+        .order('sort_order', { ascending: true })
         .order('created_at', { ascending: false })
         .range(from, to);
 
       if (error) throw error;
-      return { todos: (data as TodoItemData[]) || [], total: count || 0, page, pageSize };
+      
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        tags: item.todo_tags ? item.todo_tags.map((tt: any) => tt.tags).filter(Boolean) : [],
+      }));
+
+      return { todos: mapped as TodoItemData[], total: count || 0, page, pageSize };
     },
   });
 }
@@ -67,11 +59,11 @@ export function useCreateTodo() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (input: TodoInput) => {
+    mutationFn: async (input: TodoInput & { tag_ids?: string[] }) => {
       const supabase = createClient();
-      const validated = todoCreateSchema.parse(input);
+      const { tag_ids, ...rawInput } = input;
+      const validated = todoCreateSchema.parse(rawInput);
 
-      // Lấy user_id hiện tại từ Auth session
       const { data: { user }, error: authError } = await supabase.auth.getUser();
       if (authError || !user) {
         throw new Error('Bạn cần đăng nhập để tạo công việc.');
@@ -87,6 +79,12 @@ export function useCreateTodo() {
         .single();
 
       if (error) throw error;
+
+      if (tag_ids && tag_ids.length > 0) {
+        const tagRows = tag_ids.map(tag_id => ({ todo_id: data.id, tag_id }));
+        await supabase.from('todo_tags').insert(tagRows);
+      }
+
       return data as TodoItemData;
     },
     onMutate: async (newTodo) => {
@@ -104,6 +102,8 @@ export function useCreateTodo() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         deleted_at: null,
+        checklist: newTodo.checklist || [],
+        recurrence_rule: newTodo.recurrence_rule || null,
       };
 
       queryClient.setQueryData(['todos', 'active', 1], (old: any) => ({
@@ -123,18 +123,39 @@ export function useCreateTodo() {
   });
 }
 
-// Toggle completed status with optimistic update
+// Toggle completed status with optimistic update + Recurring Task handler
 export function useToggleTodo() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, is_completed }: { id: string; is_completed: boolean }) => {
+    mutationFn: async ({ id, is_completed, currentTodo }: { id: string; is_completed: boolean; currentTodo?: TodoItemData }) => {
       const supabase = createClient();
       const { error } = await supabase
         .from('todos')
-        .update({ is_completed })
+        .update({ is_completed, updated_at: new Date().toISOString() })
         .eq('id', id);
       if (error) throw error;
+
+      // Handle recurrence if completing a task with recurrence_rule
+      if (is_completed && currentTodo?.recurrence_rule) {
+        const nextDate = getNextOccurrenceDate(currentTodo.recurrence_rule, currentTodo.due_date ? new Date(currentTodo.due_date) : new Date());
+        if (nextDate) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            await supabase.from('todos').insert({
+              title: currentTodo.title,
+              description: currentTodo.description,
+              priority: currentTodo.priority,
+              due_date: nextDate.toISOString(),
+              user_id: user.id,
+              recurrence_rule: currentTodo.recurrence_rule,
+              parent_id: currentTodo.id,
+              category_id: currentTodo.category_id,
+              checklist: currentTodo.checklist ? currentTodo.checklist.map(item => ({ ...item, is_done: false })) : [],
+            });
+          }
+        }
+      }
     },
     onMutate: async ({ id, is_completed }) => {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
@@ -162,11 +183,79 @@ export function useUpdateTodo() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, update }: { id: string; update: TodoUpdate }) => {
+    mutationFn: async ({ id, update, tag_ids }: { id: string; update: TodoUpdate; tag_ids?: string[] }) => {
       const supabase = createClient();
       const { error } = await supabase
         .from('todos')
         .update(update)
+        .eq('id', id);
+      if (error) throw error;
+
+      if (tag_ids !== undefined) {
+        await supabase.from('todo_tags').delete().eq('todo_id', id);
+        if (tag_ids.length > 0) {
+          const tagRows = tag_ids.map(tag_id => ({ todo_id: id, tag_id }));
+          await supabase.from('todo_tags').insert(tagRows);
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
+  });
+}
+
+// Reorder todos (batch update sort_order)
+export function useReorderTodos() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (orderedIds: string[]) => {
+      const supabase = createClient();
+      const updates = orderedIds.map((id, index) =>
+        supabase.from('todos').update({ sort_order: index }).eq('id', id)
+      );
+      await Promise.all(updates);
+    },
+    onMutate: async (orderedIds) => {
+      await queryClient.cancelQueries({ queryKey: ['todos'] });
+      const previous = queryClient.getQueryData(['todos', 'active', 1]);
+
+      queryClient.setQueryData(['todos', 'active', 1], (old: any) => {
+        if (!old?.todos) return old;
+        const itemMap = new Map(old.todos.map((t: TodoItemData) => [t.id, t]));
+        const newTodos: TodoItemData[] = [];
+        orderedIds.forEach((id, idx) => {
+          const item = itemMap.get(id) as TodoItemData | undefined;
+          if (item) newTodos.push({ ...item, sort_order: idx });
+        });
+        // add remaining items not in orderedIds
+        old.todos.forEach((t: TodoItemData) => {
+          if (!orderedIds.includes(t.id)) newTodos.push(t);
+        });
+        return { ...old, todos: newTodos };
+      });
+
+      return { previous };
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['todos'] });
+    },
+  });
+}
+
+// Increment Pomodoro count
+export function useIncrementPomodoro() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const supabase = createClient();
+      const { data } = await supabase.from('todos').select('pomodoro_count').eq('id', id).single();
+      const currentCount = data?.pomodoro_count || 0;
+      const { error } = await supabase
+        .from('todos')
+        .update({ pomodoro_count: currentCount + 1 })
         .eq('id', id);
       if (error) throw error;
     },
@@ -174,6 +263,49 @@ export function useUpdateTodo() {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     },
   });
+}
+
+// Bulk complete/delete mutations
+export function useBulkActions() {
+  const queryClient = useQueryClient();
+
+  const bulkComplete = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('todos')
+        .update({ is_completed: true, updated_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+  });
+
+  const bulkDelete = useMutation({
+    mutationFn: async (ids: string[]) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('todos')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+  });
+
+  const bulkPriority = useMutation({
+    mutationFn: async ({ ids, priority }: { ids: string[]; priority: 'low' | 'medium' | 'high' }) => {
+      const supabase = createClient();
+      const { error } = await supabase
+        .from('todos')
+        .update({ priority, updated_at: new Date().toISOString() })
+        .in('id', ids);
+      if (error) throw error;
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
+  });
+
+  return { bulkComplete, bulkDelete, bulkPriority };
 }
 
 // Soft delete todo (move to trash)
