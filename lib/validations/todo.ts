@@ -19,6 +19,10 @@ export const todoCreateSchema = z.object({
 
 export const todoUpdateSchema = todoCreateSchema.partial().extend({
   is_completed: z.boolean().optional(),
+  checklist: z.array(z.any()).optional(),
+  recurrence_rule: z.string().nullable().optional(),
+  sort_order: z.number().optional(),
+  pomodoro_count: z.number().optional(),
 });
 
 export const categorySchema = z.object({

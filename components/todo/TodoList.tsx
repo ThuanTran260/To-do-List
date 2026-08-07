@@ -6,6 +6,7 @@ import { useCategories } from '@/hooks/useCategories';
 import { useRealtimeTodos } from '@/hooks/useRealtimeTodos';
 import { useSearchParams } from 'next/navigation';
 import { TodoItem } from '@/components/todo/TodoItem';
+import { SortableTodoItem } from '@/components/todo/SortableTodoItem';
 import { CategoryFilterBar } from '@/components/todo/CategoryFilterBar';
 import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/state/EmptyState';
@@ -198,7 +199,7 @@ function TodoListContent() {
                     delay: Math.min(index * 0.03, 0.2),
                   }}
                 >
-                  <TodoItem item={item} />
+                  <SortableTodoItem item={item} />
                 </motion.div>
               ))}
             </AnimatePresence>

@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts';
 import { CommandPalette } from '@/components/ui/CommandPalette';
 import { KeyboardShortcutsModal } from '@/components/ui/KeyboardShortcutsModal';
+import { PomodoroTimer } from '@/components/widget/PomodoroTimer';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -56,6 +57,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         isOpen={isShortcutsHelpOpen}
         onClose={() => setIsShortcutsHelpOpen(false)}
       />
+
+      <PomodoroTimer />
     </div>
   );
 }

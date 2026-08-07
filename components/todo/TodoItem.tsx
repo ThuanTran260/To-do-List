@@ -6,6 +6,7 @@ import { useToggleTodo, useDeleteTodo, type TodoItemData } from '@/hooks/useTodo
 import { useCategories, getReadableTextColor } from '@/hooks/useCategories';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
+import { ChecklistProgress } from '@/components/todo/ChecklistProgress';
 import { Check, Edit3, Trash2, Calendar, Clock, Eye } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -153,6 +154,8 @@ function TodoItemContent({ item }: TodoItemProps) {
                     <span>{isOverdue ? `Quá hạn: ${formattedDueDate}` : formattedDueDate}</span>
                   </div>
                 )}
+
+                <ChecklistProgress items={(item as any).checklist || []} />
 
                 <button
                   type="button"

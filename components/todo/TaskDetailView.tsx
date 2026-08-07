@@ -6,6 +6,7 @@ import { useTodos, useDeleteTodo, useToggleTodo, useUpdateTodo } from '@/hooks/u
 import { deleteTaskImage } from '@/lib/storage';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
+import { ChecklistEditor } from '@/components/todo/ChecklistEditor';
 import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { ErrorState } from '@/components/ui/state/ErrorState';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -259,6 +260,21 @@ function TaskDetailContent() {
                     ) : (
                       <p className="text-xs text-slate-400 italic">Không có mô tả chi tiết cho công việc này.</p>
                     )}
+                  </div>
+
+                  {/* Checklist & Subtasks Section */}
+                  <div className="pt-6 border-t border-slate-200/80 dark:border-slate-800">
+                    <ChecklistEditor
+                      items={(currentTask as any).checklist || []}
+                      onChange={(newItems) => {
+                        updateMutation.mutate({
+                          id: currentTask.id,
+                          update: {
+                            checklist: newItems as any,
+                          },
+                        });
+                      }}
+                    />
                   </div>
 
                   {/* Bottom Action Bar: Delete & Edit */}

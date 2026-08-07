@@ -18,6 +18,9 @@ import {
   Shield,
   KeyRound,
   Database,
+  Calendar,
+  Columns3,
+  Target,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -64,7 +67,10 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
   const navItems = [
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { label: 'Focus Mode', href: '/dashboard/focus', icon: Target },
     { label: 'Vital Tasks', href: '/dashboard/vital', icon: AlertOctagon, badge: 'Ghim' },
+    { label: 'Calendar View', href: '/dashboard/calendar', icon: Calendar },
+    { label: 'Kanban Board', href: '/dashboard/board', icon: Columns3 },
     { label: 'My Tasks', href: '/dashboard/tasks', icon: CheckSquare },
     { label: 'Task Categories', href: '/dashboard/categories', icon: FolderKanban },
   ];
