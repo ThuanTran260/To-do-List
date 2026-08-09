@@ -2,27 +2,18 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * Applies security headers (CSP, HSTS, X-Frame-Options, etc.) to the response object.
- * Incorporates a per-request dynamic nonce into Content-Security-Policy header.
+ * Helper duy nhất gán Security Headers lên response cuối cùng trước khi return.
+ * Đảm bảo 100% response (kể cả sau khi setAll tạo mới response hoặc redirect)
+ * luôn có đầy đủ CSP, HSTS, X-Frame-Options, X-Content-Type-Options...
  */
-function applySecurityHeaders(response: NextResponse, nonce: string): void {
+function applySecurityHeaders(response: NextResponse): NextResponse {
   const isDev = process.env.NODE_ENV === 'development';
 
-  const scriptSrc = "script-src 'self' 'unsafe-inline' 'unsafe-eval' https:";
+  // Tạm thời dùng unsafe-inline để đảm bảo tính ổn định production
+  const scriptSrc = isDev
+    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+    : "script-src 'self' 'unsafe-inline' https:";
 
-  const cspHeader = [
-    "default-src 'self'",
-    scriptSrc,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob: https://*.supabase.co",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-    "frame-ancestors 'none'",
-    "base-uri 'self'",
-    "form-action 'self'",
-  ].join('; ');
-
-  response.headers.set('Content-Security-Policy', cspHeader);
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
   response.headers.set('X-XSS-Protection', '1; mode=block');
@@ -32,51 +23,57 @@ function applySecurityHeaders(response: NextResponse, nonce: string): void {
     'Strict-Transport-Security',
     'max-age=63072000; includeSubDomains; preload'
   );
+  response.headers.set(
+    'Content-Security-Policy',
+    [
+      "default-src 'self'",
+      scriptSrc,
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https://*.supabase.co",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+    ].join('; ')
+  );
+
+  return response;
 }
 
 /**
- * updateSession — Supabase SSR session & Auth guard handler for Next.js Middleware.
+ * updateSession — Supabase SSR session & Auth guard handler cho Next.js Middleware.
  *
  * Responsibilities:
- * 1. Generates dynamic per-request nonce (base64 random UUID/bytes) and forwards in x-nonce request header.
- * 2. Applies Nonce-based Content Security Policy and security headers.
- * 3. Creates Supabase server client reading/writing cookies via @supabase/ssr.
- * 4. Calls getUser() on EVERY request to validate JWT signature and refresh expired tokens.
- * 5. Enforces route protection:
- *    - Unauthenticated users accessing /dashboard/* -> redirect /login
- *    - Authenticated users accessing /login or /signup -> redirect /dashboard
- * 6. Preserves refreshed cookies on redirect responses.
- * 7. Provides graceful fallback during build/CI mode when SUPABASE_URL is missing or placeholder.
+ * 1. Đọc và ghi đồng bộ cookies từ request xuống response qua @supabase/ssr.
+ * 2. Gọi getUser() bọc try/catch chống nổ 500 khi API Supabase chập chờn mạng.
+ * 3. Kiểm soát phân quyền route:
+ *    - Chưa auth truy cập /dashboard/* -> Redirect /login (Fail-closed)
+ *    - Giữ chủ ý KHÔNG auto-redirect từ /login sang /dashboard để hỗ trợ đổi tài khoản / đăng xuất.
+ * 4. Áp dụng Security Headers SAU CÙNG (ngừa bug setAll xóa mất header).
  */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
-  // 1. Per-request Nonce Generation
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  const { pathname } = request.nextUrl;
+  const isDashboardRoute = pathname.startsWith('/dashboard');
 
-  // 2. Forward x-nonce in Request Headers
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set('x-nonce', nonce);
+  let supabaseResponse = NextResponse.next({ request });
 
-  // 3. Response Initialization & Security Headers
-  let supabaseResponse = NextResponse.next({
-    request: {
-      headers: requestHeaders,
-    },
-  });
-
-  applySecurityHeaders(supabaseResponse, nonce);
-
-  // 4. Supabase Session Validation & Token Refresh
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Skip auth guard if env vars are not configured (e.g. CI build with placeholders)
+  // Fail-closed: Nếu thiếu env vars và cố truy cập /dashboard -> Bắt buộc redirect /login
   if (
     !supabaseUrl ||
     !supabaseAnonKey ||
     supabaseUrl.includes('placeholder') ||
     supabaseUrl.includes('xxxx.supabase.co')
   ) {
-    return supabaseResponse;
+    if (isDashboardRoute) {
+      const loginUrl = request.nextUrl.clone();
+      loginUrl.pathname = '/login';
+      return applySecurityHeaders(NextResponse.redirect(loginUrl));
+    }
+    return applySecurityHeaders(supabaseResponse);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -86,13 +83,8 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({
-          request: {
-            headers: requestHeaders,
-          },
-        });
-        applySecurityHeaders(supabaseResponse, nonce);
-
+        supabaseResponse = NextResponse.next({ request });
+        
         const isRemembered = request.cookies.get('sb-remember-me')?.value === 'true';
         cookiesToSet.forEach(({ name, value, options }) => {
           const cookieOptions = isRemembered
@@ -104,43 +96,34 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     },
   });
 
-  // IMPORTANT: getUser() immediately after createServerClient
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Bọc try/catch chống nổ 500 khi Supabase Auth API bị sự cố mạng tạm thời
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data.user;
+  } catch (err) {
+    console.error('[Middleware] getUser failed (network/API error):', err);
+  }
 
-  // 5. Route Protection & Auth Guard
-  const { pathname } = request.nextUrl;
-  const isDashboardRoute = pathname.startsWith('/dashboard');
-  const isAuthRoute = pathname === '/login' || pathname === '/signup';
-
+  // Chủ ý: KHÔNG tự động redirect người dùng đã auth từ /login về /dashboard 
+  // để cho phép xem form, đăng xuất hoặc đổi tài khoản mà không bị kẹt lặp trang.
   if (!user && isDashboardRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     const redirectResponse = NextResponse.redirect(loginUrl);
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    // Truyền toàn bộ cookies đã refresh sang response redirect
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c.name, c.value, c);
     });
-    applySecurityHeaders(redirectResponse, nonce);
-    return redirectResponse;
+    return applySecurityHeaders(redirectResponse);
   }
 
-  if (user && isAuthRoute) {
-    const dashboardUrl = request.nextUrl.clone();
-    dashboardUrl.pathname = '/dashboard';
-    const redirectResponse = NextResponse.redirect(dashboardUrl);
-    supabaseResponse.cookies.getAll().forEach((cookie) => {
-      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
-    });
-    applySecurityHeaders(redirectResponse, nonce);
-    return redirectResponse;
-  }
-
-  return supabaseResponse;
+  // Áp dụng Security Headers SAU CÙNG lên duy nhất 1 response sẽ trả về
+  return applySecurityHeaders(supabaseResponse);
 }
 
 /**
- * Backward compatibility alias for updateProxy
+ * Alias tương thích ngược cho updateProxy
  */
 export async function updateProxy(request: NextRequest): Promise<NextResponse> {
   return await updateSession(request);
