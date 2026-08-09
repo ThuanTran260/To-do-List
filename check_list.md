@@ -52,7 +52,7 @@
 
 | # | Hạng mục | Trạng thái | Ghi chú |
 |---|---|---|---|
-| 19 | `middleware.ts` bảo vệ route `/dashboard/*` | ✅ | [middleware.ts](file:///e:/luyentaphe/portfolio/Flow%20State/middleware.ts) — Chuyển hướng 100% người dùng chưa đăng nhập về `/login` |
+| 19 | `proxy.ts` (Next.js 16 Proxy) bảo vệ route `/dashboard/*` | ✅ | [proxy.ts](file:///e:/luyentaphe/portfolio/Flow%20State/proxy.ts) — Chuyển hướng 100% người dùng chưa đăng nhập về `/login` |
 | 20 | Redirect `/dashboard` nếu đã authenticated ở trang auth | ✅ | Tự động chuyển hướng người dùng đã đăng nhập sang `/dashboard` |
 | 21 | Refresh Auth Cookies tự động per-request | ✅ | Đồng bộ cookie `@supabase/ssr` trong middleware |
 

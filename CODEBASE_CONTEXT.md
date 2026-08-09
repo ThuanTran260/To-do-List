@@ -22,7 +22,7 @@
   - Ghi đè trực tiếp callback `cookies: { getAll, setAll }` trong `createBrowserClient` để bypass bug `cookieOptions` của `@supabase/ssr`.
   - Đọc động cookie `sb-remember-me`: nếu `true` ➔ cookie hạn 30 ngày (`maxAge: 2592000`), nếu `false` ➔ **Session Cookie** (`maxAge: undefined`).
   - Chứa helper `parseDocumentCookies()` với `safeDecode()` (mã hóa/giải mã đối xứng 100%).
-- **Middleware Guard ([`middleware.ts`](file:///e:/luyentaphe/portfolio/Flow%20State/middleware.ts) & [`lib/supabase/middleware.ts`](file:///e:/luyentaphe/portfolio/Flow%20State/lib/supabase/middleware.ts)):**
+- **Proxy Guard (Next.js 16 Convention) ([`proxy.ts`](file:///e:/luyentaphe/portfolio/Flow%20State/proxy.ts) & [`lib/supabase/middleware.ts`](file:///e:/luyentaphe/portfolio/Flow%20State/lib/supabase/middleware.ts)):**
   - Tự động bảo vệ tất cả tuyến đường `/dashboard/*` ➔ redirect chưa auth về `/login`.
   - Tự động redirect người dùng đã đăng nhập từ `/login` & `/signup` vào `/dashboard`.
   - Sinh ngẫu nhiên dynamic `nonce` per-request nhúng vào **Content-Security-Policy (CSP)** header.
