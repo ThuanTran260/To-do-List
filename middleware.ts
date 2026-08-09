@@ -2,16 +2,12 @@ import { type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 /**
- * Flow State Root Proxy Guard (Next.js 16 Proxy Convention)
+ * Flow State Root Middleware Entry Point
  *
- * Next.js 16 officially replaces legacy middleware.ts with proxy.ts.
- * Runs on matched requests to:
- * 1. Generate dynamic per-request nonces for CSP security.
- * 2. Validate and refresh Supabase auth session tokens via @supabase/ssr.
- * 3. Enforce route protection (/dashboard/* -> /login, /login & /signup -> /dashboard).
- * 4. Apply security headers (CSP, HSTS, X-Frame-Options, etc.).
+ * Universal Edge Middleware entrypoint recognized by Vercel Edge Router.
+ * Delegates session validation, token refresh, and security headers to updateSession().
  */
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   return await updateSession(request);
 }
 

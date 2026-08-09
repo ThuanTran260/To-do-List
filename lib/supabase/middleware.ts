@@ -8,8 +8,6 @@ import { NextResponse, type NextRequest } from 'next/server';
  */
 function applySecurityHeaders(response: NextResponse): NextResponse {
   const isDev = process.env.NODE_ENV === 'development';
-
-  // Tạm thời dùng unsafe-inline để đảm bảo tính ổn định production
   const scriptSrc = isDev
     ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
     : "script-src 'self' 'unsafe-inline' https:";
@@ -49,12 +47,13 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
  * 2. Gọi getUser() bọc try/catch chống nổ 500 khi API Supabase chập chờn mạng.
  * 3. Kiểm soát phân quyền route:
  *    - Chưa auth truy cập /dashboard/* -> Redirect /login (Fail-closed)
- *    - Giữ chủ ý KHÔNG auto-redirect từ /login sang /dashboard để hỗ trợ đổi tài khoản / đăng xuất.
+ *    - Đã auth truy cập /login hoặc /signup -> Redirect /dashboard
  * 4. Áp dụng Security Headers SAU CÙNG (ngừa bug setAll xóa mất header).
  */
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
   const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isAuthRoute = pathname === '/login' || pathname === '/signup';
 
   let supabaseResponse = NextResponse.next({ request });
 
@@ -84,14 +83,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request });
-        
-        const isRemembered = request.cookies.get('sb-remember-me')?.value === 'true';
-        cookiesToSet.forEach(({ name, value, options }) => {
-          const cookieOptions = isRemembered
-            ? options
-            : { ...options, maxAge: undefined, expires: undefined };
-          supabaseResponse.cookies.set(name, value, cookieOptions);
-        });
+        // Chuẩn 100% của @supabase/ssr: Giữ nguyên options để trình duyệt HTTPS Vercel chấp nhận Secure/SameSite
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options)
+        );
       },
     },
   });
@@ -105,13 +100,22 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     console.error('[Middleware] getUser failed (network/API error):', err);
   }
 
-  // Chủ ý: KHÔNG tự động redirect người dùng đã auth từ /login về /dashboard 
-  // để cho phép xem form, đăng xuất hoặc đổi tài khoản mà không bị kẹt lặp trang.
+  // 1. Chưa auth mà truy cập /dashboard/* -> Redirect /login
   if (!user && isDashboardRoute) {
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
     const redirectResponse = NextResponse.redirect(loginUrl);
-    // Truyền toàn bộ cookies đã refresh sang response redirect
+    supabaseResponse.cookies.getAll().forEach((c) => {
+      redirectResponse.cookies.set(c.name, c.value, c);
+    });
+    return applySecurityHeaders(redirectResponse);
+  }
+
+  // 2. Đã auth mà truy cập /login hoặc /signup -> Redirect /dashboard
+  if (user && isAuthRoute) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = '/dashboard';
+    const redirectResponse = NextResponse.redirect(dashboardUrl);
     supabaseResponse.cookies.getAll().forEach((c) => {
       redirectResponse.cookies.set(c.name, c.value, c);
     });
