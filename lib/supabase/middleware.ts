@@ -8,9 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 function applySecurityHeaders(response: NextResponse, nonce: string): void {
   const isDev = process.env.NODE_ENV === 'development';
 
-  const scriptSrc = isDev
-    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}'`
-    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: http:`;
+  const scriptSrc = `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}' https:`;
 
   const cspHeader = [
     "default-src 'self'",
