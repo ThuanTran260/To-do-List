@@ -13,13 +13,9 @@ export async function createClient() {
       },
       setAll(cookiesToSet) {
         try {
-          const isRemembered = cookieStore.get('sb-remember-me')?.value === 'true';
-          cookiesToSet.forEach(({ name, value, options }) => {
-            const cookieOptions = isRemembered
-              ? options
-              : { ...options, maxAge: undefined, expires: undefined };
-            cookieStore.set(name, value, cookieOptions);
-          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
         } catch {
           // Handled by Middleware
         }
