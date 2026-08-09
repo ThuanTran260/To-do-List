@@ -101,13 +101,13 @@ export function LoginForm() {
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Vào Dashboard</span>
             </Link>
-            <Link
+            <a
               href="/auth/logout"
               className="py-1.5 px-3 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-rose-100 dark:hover:bg-rose-950 text-slate-700 dark:text-slate-300 hover:text-rose-600 text-xs font-semibold flex items-center justify-center gap-1 transition-colors"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Đăng xuất</span>
-            </Link>
+            </a>
           </div>
         </motion.div>
       )}

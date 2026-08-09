@@ -31,13 +31,13 @@ export default function HomePage() {
                 <User className="w-3.5 h-3.5 text-indigo-500" />
                 <span>{user.email}</span>
               </span>
-              <Link
+              <a
                 href="/auth/logout"
                 className="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center gap-1"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Đăng xuất</span>
-              </Link>
+              </a>
             </div>
           ) : (
             <>
