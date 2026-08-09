@@ -36,11 +36,14 @@ export function LoginForm() {
       await supabase.auth.signOut({ scope: 'local' });
     }
 
-    // Set remember-me cookie preference
+    // Set remember-me cookie preference (Session Cookie vs 30-day Persistent Cookie)
+    const isProd = process.env.NODE_ENV === 'production';
+    const secureFlag = isProd ? '; Secure' : '';
+
     if (rememberMe) {
-      document.cookie = 'sb-remember-me=true; path=/; max-age=2592000; SameSite=Lax';
+      document.cookie = `sb-remember-me=true; path=/; max-age=2592000; SameSite=Lax${secureFlag}`;
     } else {
-      document.cookie = 'sb-remember-me=false; path=/; max-age=0; SameSite=Lax';
+      document.cookie = `sb-remember-me=false; path=/; SameSite=Lax${secureFlag}`;
     }
 
     const { error } = await supabase.auth.signInWithPassword({

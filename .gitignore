@@ -43,3 +43,7 @@ next-env.d.ts
 # Stitch MCP API Key
 .vscode/mcp.json
 
+# Temporary AI Agent working directories (preserve AGENTS.md and skills/)
+.agents/*
+!.agents/AGENTS.md
+!.agents/skills/

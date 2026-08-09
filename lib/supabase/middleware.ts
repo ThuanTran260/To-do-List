@@ -2,58 +2,72 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 /**
- * updateProxy — Supabase SSR session handler for Next.js 16 Proxy (formerly Middleware).
- *
- * Next.js 16 renamed the file convention from middleware.ts → proxy.ts and the
- * exported function from middleware() → proxy(). This helper contains all session
- * and security logic, called by the root proxy.ts entry point.
- *
- * Responsibilities:
- * 1. Create a Supabase server client that reads cookies from the request and
- *    writes updated cookies back to the response.
- * 2. Call getUser() on EVERY request:
- *    - Validates JWT signature against Supabase Auth Server (not just local decode).
- *    - Automatically refreshes expired access tokens using refresh tokens.
- *    - Writes renewed tokens back to response cookies so Server Components
- *      can access a valid session without an extra round-trip.
- * 3. Enforce route protection:
- *    - Unauthenticated users hitting /dashboard/* → redirect /login
- *    - Authenticated users hitting /login or /signup → redirect /dashboard
- *
- * IMPORTANT: Do NOT write any logic between createServerClient and getUser().
- * The two must stay adjacent so token refresh propagates correctly.
+ * Applies security headers (CSP, HSTS, X-Frame-Options, etc.) to the response object.
+ * Incorporates a per-request dynamic nonce into Content-Security-Policy header.
  */
-export async function updateProxy(request: NextRequest) {
-  // ── 1. Security Headers ──────────────────────────────────────────────────
-  let supabaseResponse = NextResponse.next({ request });
-
+function applySecurityHeaders(response: NextResponse, nonce: string): void {
   const isDev = process.env.NODE_ENV === 'development';
-  const scriptSrc = isDev
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self' 'unsafe-inline'";
 
-  supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
-  supabaseResponse.headers.set('X-Frame-Options', 'DENY');
-  supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block');
-  supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-  supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-  supabaseResponse.headers.set(
+  const scriptSrc = isDev
+    ? `script-src 'self' 'unsafe-inline' 'unsafe-eval' 'nonce-${nonce}'`
+    : `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' https: http:`;
+
+  const cspHeader = [
+    "default-src 'self'",
+    scriptSrc,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https://*.supabase.co",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ].join('; ');
+
+  response.headers.set('Content-Security-Policy', cspHeader);
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  response.headers.set(
     'Strict-Transport-Security',
     'max-age=63072000; includeSubDomains; preload'
   );
-  supabaseResponse.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      scriptSrc,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com",
-      "img-src 'self' data: blob: https://*.supabase.co",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-    ].join('; ')
-  );
+}
 
-  // ── 2. Supabase Session Validation & Token Refresh ──────────────────────
+/**
+ * updateSession — Supabase SSR session & Auth guard handler for Next.js Middleware.
+ *
+ * Responsibilities:
+ * 1. Generates dynamic per-request nonce (base64 random UUID/bytes) and forwards in x-nonce request header.
+ * 2. Applies Nonce-based Content Security Policy and security headers.
+ * 3. Creates Supabase server client reading/writing cookies via @supabase/ssr.
+ * 4. Calls getUser() on EVERY request to validate JWT signature and refresh expired tokens.
+ * 5. Enforces route protection:
+ *    - Unauthenticated users accessing /dashboard/* -> redirect /login
+ *    - Authenticated users accessing /login or /signup -> redirect /dashboard
+ * 6. Preserves refreshed cookies on redirect responses.
+ * 7. Provides graceful fallback during build/CI mode when SUPABASE_URL is missing or placeholder.
+ */
+export async function updateSession(request: NextRequest): Promise<NextResponse> {
+  // 1. Per-request Nonce Generation
+  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+
+  // 2. Forward x-nonce in Request Headers
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+
+  // 3. Response Initialization & Security Headers
+  let supabaseResponse = NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  });
+
+  applySecurityHeaders(supabaseResponse, nonce);
+
+  // 4. Supabase Session Validation & Token Refresh
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -73,32 +87,14 @@ export async function updateProxy(request: NextRequest) {
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        // Write cookies to the request (for downstream middleware/server components)
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        // Re-create response so we can write cookies to response headers too
-        supabaseResponse = NextResponse.next({ request });
-        // Re-apply all security headers on the new response object
-        supabaseResponse.headers.set('X-Content-Type-Options', 'nosniff');
-        supabaseResponse.headers.set('X-Frame-Options', 'DENY');
-        supabaseResponse.headers.set('X-XSS-Protection', '1; mode=block');
-        supabaseResponse.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        supabaseResponse.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
-        supabaseResponse.headers.set(
-          'Strict-Transport-Security',
-          'max-age=63072000; includeSubDomains; preload'
-        );
-        supabaseResponse.headers.set(
-          'Content-Security-Policy',
-          [
-            "default-src 'self'",
-            scriptSrc,
-            "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-            "font-src 'self' https://fonts.gstatic.com",
-            "img-src 'self' data: blob: https://*.supabase.co",
-            "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-          ].join('; ')
-        );
-        // Write refreshed Supabase auth cookies to response
+        supabaseResponse = NextResponse.next({
+          request: {
+            headers: requestHeaders,
+          },
+        });
+        applySecurityHeaders(supabaseResponse, nonce);
+
         const isRemembered = request.cookies.get('sb-remember-me')?.value === 'true';
         cookiesToSet.forEach(({ name, value, options }) => {
           const cookieOptions = isRemembered
@@ -110,27 +106,44 @@ export async function updateProxy(request: NextRequest) {
     },
   });
 
-  // ── IMPORTANT: getUser() must be called immediately after createServerClient ──
-  // This validates the JWT against Supabase Auth server AND refreshes expired tokens.
-  // Do NOT add any other logic between createServerClient and getUser().
+  // IMPORTANT: getUser() immediately after createServerClient
   const {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // ── 3. Route Protection ──────────────────────────────────────────────────
+  // 5. Route Protection & Auth Guard
   const { pathname } = request.nextUrl;
   const isDashboardRoute = pathname.startsWith('/dashboard');
+  const isAuthRoute = pathname === '/login' || pathname === '/signup';
 
   if (!user && isDashboardRoute) {
-    // Unauthenticated user trying to access dashboard → send to login
     const loginUrl = request.nextUrl.clone();
     loginUrl.pathname = '/login';
-    return NextResponse.redirect(loginUrl);
+    const redirectResponse = NextResponse.redirect(loginUrl);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    applySecurityHeaders(redirectResponse, nonce);
+    return redirectResponse;
   }
 
-  // Note: We intentionally do NOT auto-redirect authenticated users away from /login or /signup.
-  // This allows users to view login/signup forms, switch accounts, or log out explicitly
-  // without being trapped in an auto-redirect loop when re-opening the site.
+  if (user && isAuthRoute) {
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = '/dashboard';
+    const redirectResponse = NextResponse.redirect(dashboardUrl);
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie);
+    });
+    applySecurityHeaders(redirectResponse, nonce);
+    return redirectResponse;
+  }
 
   return supabaseResponse;
+}
+
+/**
+ * Backward compatibility alias for updateProxy
+ */
+export async function updateProxy(request: NextRequest): Promise<NextResponse> {
+  return await updateSession(request);
 }

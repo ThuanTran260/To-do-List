@@ -16,7 +16,12 @@ export function useTodos(page = 1, pageSize = 50) {
       const from = (page - 1) * pageSize;
       const to = from + pageSize - 1;
 
-      const { data, error, count } = await supabase
+      let data: any = null;
+      let error: any = null;
+      let count: number | null = null;
+
+      // Thử query có JOIN với todo_tags
+      const result = await supabase
         .from('todos')
         .select('*, todo_tags(tags(*))', { count: 'exact' })
         .is('deleted_at', null)
@@ -24,8 +29,24 @@ export function useTodos(page = 1, pageSize = 50) {
         .order('created_at', { ascending: false })
         .range(from, to);
 
-      if (error) throw error;
-      
+      if (result.error) {
+        // Fallback: Nếu Supabase chưa chạy SQL Migration (thiếu bảng todo_tags/relationship),
+        // query fallback chỉ lấy bảng todos để ứng dụng KHÔNG bị lỗi/crash với to-do cũ.
+        const fallbackResult = await supabase
+          .from('todos')
+          .select('*', { count: 'exact' })
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .range(from, to);
+
+        if (fallbackResult.error) throw fallbackResult.error;
+        data = fallbackResult.data;
+        count = fallbackResult.count;
+      } else {
+        data = result.data;
+        count = result.count;
+      }
+
       const mapped = (data || []).map((item: any) => ({
         ...item,
         tags: item.todo_tags ? item.todo_tags.map((tt: any) => tt.tags).filter(Boolean) : [],

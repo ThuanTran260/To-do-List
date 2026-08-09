@@ -148,39 +148,9 @@ create trigger trg_todos_updated_at
   for each row execute function set_updated_at();
 ```
 
-*(Tùy chọn mở rộng sau: bảng `categories`, bảng `profiles` để lưu tên hiển thị/avatar, liên kết 1-1 với `auth.users`.)*
-
 ---
 
-## 5. Prompt mẫu để dùng trong Google Stitch
-
-Dán nguyên đoạn dưới vào Stitch để có bộ UI nhất quán, dễ code lại bằng Tailwind:
-
-```
-Design a clean, minimal Todo List web app with the following screens:
-
-1. Login screen — email + password fields, "Forgot password" link,
-   "Sign up" link, primary CTA button.
-2. Sign up screen — email, password, confirm password, terms checkbox.
-3. Dashboard — top bar with app name + user avatar/logout, a task input
-   bar at top ("Add a new task..." + priority dropdown + due date picker),
-   task list below grouped by status (Active / Completed), each task row
-   shows: checkbox, title, priority badge (color-coded low/medium/high),
-   due date, edit and delete icon buttons.
-4. Empty state — friendly illustration + "No tasks yet, add your first one".
-5. Edit task modal — title, description, priority, due date, save/cancel.
-
-Style: minimal, rounded corners (12px), soft shadows, primary color
-indigo/blue, generous whitespace, mobile-first responsive layout,
-support both light and dark mode. Use a consistent 8px spacing scale.
-Export as React components with Tailwind CSS classes.
-```
-
-Sau khi Stitch xuất code, việc của bạn chỉ là ghép các component đó vào project Next.js và nối dữ liệu với Supabase client — không cần code UI từ đầu.
-
----
-
-## 6. Cấu trúc thư mục project
+## 5. Cấu trúc thư mục project
 
 ```
 todo-app/
@@ -192,7 +162,7 @@ todo-app/
 │   ├── api/                     # Route handlers (server-side, nếu cần)
 │   └── layout.tsx
 ├── components/
-│   ├── ui/                      # Component từ Stitch (Button, Card, Modal...)
+│   ├── ui/                      # Component UI
 │   └── todo/
 │       ├── TodoList.tsx
 │       ├── TodoItem.tsx
@@ -200,49 +170,83 @@ todo-app/
 ├── lib/
 │   ├── supabase/
 │   │   ├── client.ts             # supabase client (browser, dùng anon key)
-│   │   └── server.ts             # supabase client (server, dùng service_role khi cần)
+│   │   └── server.ts             # supabase client (server)
 │   └── validations/todo.ts       # Zod schema
 ├── .env.local                    # KHÔNG commit
 ├── .gitignore
 └── package.json
 ```
 
-`lib/supabase/client.ts`:
-```ts
-import { createBrowserClient } from '@supabase/ssr'
-
-export function createClient() {
-  return createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-}
-```
-
 ---
 
-## 7. Luồng phát triển từng bước
-
-1. **Thiết kế UI trên Google Stitch** dùng prompt ở mục 5, xuất code React/Tailwind.
-2. **Tạo project Supabase** → chạy SQL ở mục 4 trong SQL Editor.
-3. **Khởi tạo Next.js**: `npx create-next-app@latest todo-app --typescript --tailwind`
-4. **Cài supabase-js**: `npm install @supabase/supabase-js @supabase/ssr`
-5. **Setup `.env.local`** với anon key + URL (lấy trong Supabase Dashboard > Settings > API).
-6. **Ghép UI từ Stitch** vào `components/`.
-7. **Viết auth flow**: signup/login dùng `supabase.auth.signUp()` / `signInWithPassword()`.
-8. **Viết CRUD todo**: gọi `supabase.from('todos').select/insert/update/delete()` — RLS tự lo phần phân quyền.
-9. **Test bảo mật**: dùng 2 tài khoản khác nhau, xác nhận không xem được dữ liệu chéo nhau.
-10. **Deploy Vercel**, nhập env var qua dashboard (không qua code).
-11. **Rà lại checklist bảo mật ở mục 3.5** trước khi share công khai.
-
----
-
-## 8. Gợi ý mở rộng sau khi có bản MVP
+## 6. Gợi ý mở rộng sau khi có bản MVP
 
 - Realtime sync giữa các thiết bị: `supabase.channel().on('postgres_changes', ...)`
 - Offline-first bằng cách cache local (IndexedDB) rồi sync khi có mạng
 - Thông báo nhắc deadline qua Supabase Edge Function + cron job
 - Đăng nhập bằng Google/GitHub OAuth (Supabase hỗ trợ sẵn, chỉ cần bật trong dashboard)
+
+---
+
+## 7. 🚀 Phân Tích & Báo Cáo Kế Hoạch Vận Hành Bộ Superpowers Skills (`.agents/skills/superpowers`)
+
+> Bộ Superpowers Skills (nằm tại `.agents/skills/superpowers/skills/`) định hình toàn bộ quy chuẩn thực thi, phân tích lỗi, lập kế hoạch và nghiệm thu dành cho AI Agent trên dự án **Flow State**.
+
+### 7.1. Phân Tích Chi Tiết 14 Superpowers Skills & Bối Cảnh Sử Dụng
+
+| # | Skill Name | Mục đích & Mô tả cốt lõi | Bối cảnh kích hoạt (When to use) | Quy tắc bắt buộc (Iron Rules) |
+|---|---|---|---|---|
+| 1 | **`systematic-debugging`** | Phân tích nguyên nhân gốc rễ (Root Cause Analysis - RCA) và sửa lỗi hệ thống | Khi gặp bug, crash, lỗi hydration, hay bất kỳ sai lệch hành vi nào | **THE IRON LAW:** KHÔNG BAO GIỜ sửa code khi chưa tìm ra nguyên nhân gốc rễ. |
+| 2 | **`verification-before-completion`** | Thẩm định & kiểm thử thực tế trước khi tuyên bố hoàn thành | Trước khi kết thúc turn làm việc hoặc báo cho người dùng là "đã fix/xong" | **BẮT BUỘC:** Phải chạy `npx tsc --noEmit` (0 lỗi type) & `npm run build` (build thành công). |
+| 3 | **`writing-plans`** | Thiết lập tài liệu kiến trúc & kế hoạch thực thi chi tiết (`implementation_plan.md`) | Khi thay đổi kiến trúc nặng, refactor lớn, hoặc triển khai tính năng phức tạp | Phân tích rủi ro, open questions và chờ phê duyệt của người dùng trước khi viết code. |
+| 4 | **`executing-plans`** | Thực thi theo kế hoạch đã phê duyệt một cách kỷ luật | Ngay sau khi người dùng phê duyệt `implementation_plan.md` | Thực hiện từng step, verify liên tục và dừng lại báo cáo nếu có sai lệch lớn. |
+| 5 | **`brainstorming`** | Phân tích ý tưởng, khảo sát các phương án kỹ thuật và đánh giá trade-offs | Đầu nhiệm vụ mới, khi yêu cầu chưa rõ ràng hoặc cần đề xuất giải pháp UI/UX | Đưa ra các lựa chọn cụ thể kèm ưu/nhược điểm thay vì tự áp đặt giải pháp. |
+| 6 | **`test-driven-development`** | Viết test case trước khi viết code triển khai (Red ➔ Green ➔ Refactor) | Khi tạo mới các hàm helper, utility, Zod schemas, hay API handlers nhạy cảm | Viết test fail trước ➔ viết code cho test pass ➔ tối ưu code. |
+| 7 | **`subagent-driven-development`** | Phân rã nhiệm vụ và ủy quyền cho các AI Subagent chuyên biệt | Các tác vụ phức tạp gồm nhiều pha độc lập (Worker, Reviewer, Auditor) | Mỗi subagent làm đúng phạm vi role, có kiểm tra nghiệm thu độc lập. |
+| 8 | **`dispatching-parallel-agents`** | Kích hoạt nhiều subagent chạy song song | Quét bảo mật toàn bộ repo, audit code song song, hoặc tìm kiếm tài liệu lớn | Không block main agent, tự động tổng hợp kết quả khi subagents hoàn thành. |
+| 9 | **`requesting-code-review`** | Gửi yêu cầu review code độc lập cho subagent/reviewer | Sau khi hoàn thành một milestone quan trọng hoặc thay đổi cấu trúc bảo mật | Cung cấp diff chi tiết và danh sách file thay đổi cho reviewer. |
+| 10 | **`receiving-code-review`** | Tiếp thu và xử lý các phản hồi code review một cách nghiêm túc | Khi nhận phản hồi từ reviewer hoặc góp ý kỹ thuật từ người dùng | Kiểm tra lại lập luận, sửa triệt để các edge cases được chỉ ra. |
+| 11 | **`using-git-worktrees`** | Cô lập môi trường phát triển nhánh tính năng bằng Git Worktree | Khi làm việc trên nhiều tính năng độc lập mà không muốn làm dơ working directory | Giữ nhánh `main` luôn sạch và có thể build production bất cứ lúc nào. |
+| 12 | **`finishing-a-development-branch`** | Đóng nhánh phát triển, nghiệm thu, merge và dọn dẹp môi trường | Khi tính năng đã hoàn thành 100% và qua kiểm định | Rebase/merge sạch, chạy verification cuối cùng và dọn dẹp worktree/branch. |
+| 13 | **`using-superpowers`** | Harness điều phối trung tâm định hướng việc gọi các skills | Khi bắt đầu bất kỳ tác vụ nào để xác định skill phù hợp | Luôn tuân thủ luồng: Brainstorm ➔ Plan ➔ Execute ➔ Verify. |
+| 14 | **`writing-skills`** | Cấu trúc, tác giả và kiểm thử các Superpowers Skills mới | Khi cần đóng góp hoặc mở rộng bộ kỹ năng AI cho dự án | Tuân thủ định dạng YAML frontmatter + markdown chuẩn mực. |
+
+---
+
+### 7.2. Kế Hoạch Vận Hành (Execution Plan) Theo Từng Giai Đoạn Dự Án
+
+Để dự án **Flow State** luôn đạt tiêu chuẩn chất lượng cao nhất, AI Agent sẽ vận hành bộ Superpowers theo 4 pha làm việc chuẩn mực:
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 1: KHẢO SÁT & ĐỀ XUẤT (Brainstorming & Skill Selection)          │
+│  - Kích hoạt `using-superpowers` ➔ Xác định bài toán                   │
+│  - Sử dụng `brainstorming` đưa ra phương án & trade-offs               │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 2: KẾ HOẠCH & XÁC NHẬN (Writing Plans)                           │
+│  - Sử dụng `writing-plans` tạo `implementation_plan.md`                 │
+│  - Đặt câu hỏi clarification (nếu có) ➔ Chờ người dùng phê duyệt      │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 3: THỰC THI & SỬA LỖI (Executing Plans & Systematic Debugging)    │
+│  - Sử dụng `executing-plans` hoặc `subagent-driven-development`        │
+│  - Nếu có bug: BẮT BUỘC dùng `systematic-debugging` (Iron Law RCA)     │
+│  - Áp dụng `test-driven-development` cho các hàm tính toán cốt lõi     │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 4: NGHIỆM THU & BẢO VỆ (Verification Before Completion)           │
+│  - BẮT BUỘC dùng `verification-before-completion`                      │
+│  - Chạy `npx tsc --noEmit` (0 lỗi) & `npm run build` (Build OK 100%)    │
+│  - Tạo `walkthrough.md` tổng kết trước khi báo hoàn thành               │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
