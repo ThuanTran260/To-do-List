@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { useTodos, useCreateTodo } from '@/hooks/useTodos';
 import { exportToCSV, exportToJSON } from '@/lib/export';
 import { parseCSVImport, parseJSONImport, ImportedTask } from '@/lib/import';
-import { MotionPage } from '@/components/ui/MotionPage';
 import { toast } from 'sonner';
 import {
   Download,
@@ -83,7 +82,7 @@ export default function DataSettingsPage() {
   };
 
   return (
-    <MotionPage className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
@@ -228,6 +227,6 @@ export default function DataSettingsPage() {
           </ul>
         </div>
       )}
-    </MotionPage>
+    </div>
   );
 }
