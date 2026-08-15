@@ -7,39 +7,39 @@ export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
 
   return (
-    <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-200/60 dark:bg-slate-800/60 border border-slate-300/40 dark:border-slate-700/40 backdrop-blur-sm">
+    <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-surface-2 border border-hairline">
       <button
         onClick={() => setTheme('light')}
-        className={`p-1.5 rounded-lg text-xs font-medium transition-all ${
+        className={`p-1 rounded text-xs transition-colors ${
           theme === 'light'
-            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+            ? 'bg-surface-1 text-primary shadow-xs border border-hairline'
+            : 'text-ink-subtle hover:text-ink'
         }`}
         title="Light Mode"
       >
-        <Sun className="w-4 h-4" />
+        <Sun className="w-3.5 h-3.5" />
       </button>
       <button
         onClick={() => setTheme('dark')}
-        className={`p-1.5 rounded-lg text-xs font-medium transition-all ${
+        className={`p-1 rounded text-xs transition-colors ${
           theme === 'dark'
-            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+            ? 'bg-surface-1 text-primary shadow-xs border border-hairline'
+            : 'text-ink-subtle hover:text-ink'
         }`}
         title="Dark Mode"
       >
-        <Moon className="w-4 h-4" />
+        <Moon className="w-3.5 h-3.5" />
       </button>
       <button
         onClick={() => setTheme('system')}
-        className={`p-1.5 rounded-lg text-xs font-medium transition-all ${
+        className={`p-1 rounded text-xs transition-colors ${
           theme === 'system'
-            ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm'
-            : 'text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100'
+            ? 'bg-surface-1 text-primary shadow-xs border border-hairline'
+            : 'text-ink-subtle hover:text-ink'
         }`}
         title="System Preference"
       >
-        <Monitor className="w-4 h-4" />
+        <Monitor className="w-3.5 h-3.5" />
       </button>
     </div>
   );

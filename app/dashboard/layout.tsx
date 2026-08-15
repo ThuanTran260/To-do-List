@@ -31,7 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   });
 
   return (
-    <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 mesh-gradient-bg transition-colors">
+    <div className="min-h-screen flex bg-canvas text-ink transition-colors">
       {/* Permanent Left Sidebar for Desktop, Drawer for Mobile */}
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
 
