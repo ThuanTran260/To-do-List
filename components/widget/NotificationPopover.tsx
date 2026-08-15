@@ -147,7 +147,7 @@ function NotificationPopoverContent() {
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
+                      onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true, currentTodo: t })}
                       className="p-1 rounded bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
                       title="Đã xong"
                     >
@@ -193,7 +193,7 @@ function NotificationPopoverContent() {
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
+                      onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true, currentTodo: t })}
                       className="p-1 rounded bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
                       title="Đã xong"
                     >
@@ -237,7 +237,7 @@ function NotificationPopoverContent() {
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
+                      onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true, currentTodo: t })}
                       className="p-1 rounded bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
                       title="Đã xong"
                     >

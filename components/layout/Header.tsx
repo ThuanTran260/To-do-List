@@ -18,7 +18,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 w-full surface-panel bg-surface-1/90 border-b border-hairline backdrop-blur-md transition-colors">
+      <header className="sticky top-0 z-40 w-full surface-panel bg-surface-1/90 border-b border-hairline backdrop-blur-md transition-colors">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
           {/* Mobile Sidebar Toggle Button & Realtime World Clock */}
           <div className="flex items-center gap-3">

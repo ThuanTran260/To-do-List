@@ -311,7 +311,7 @@ export function TodoForm() {
         </div>
 
         {/* Sticky Action Footer */}
-        <div className="sticky bottom-0 z-[60] px-4 py-3 bg-surface-1/95 backdrop-blur-md border-t border-hairline flex items-center justify-between gap-3">
+        <div className="sticky bottom-0 z-10 px-4 py-3 bg-surface-1/95 backdrop-blur-md border-t border-hairline flex items-center justify-between gap-3">
           <div className="text-[11px] font-medium text-ink-subtle hidden sm:block">
             {showExtra ? 'Chế độ nhập chi tiết' : 'Chế độ tạo nhanh'}
           </div>

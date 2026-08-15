@@ -10,6 +10,7 @@ import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DatePickerModal } from '@/components/ui/DatePickerModal';
 import { CustomPrioritySelect, type PriorityType } from '@/components/ui/CustomPrioritySelect';
 import { CustomCategorySelect } from '@/components/ui/CustomCategorySelect';
+import { RecurrencePicker } from '@/components/todo/RecurrencePicker';
 import { Loader2, Check, Calendar, Clock } from 'lucide-react';
 
 interface EditTodoModalProps {
@@ -24,6 +25,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
   const [priority, setPriority] = useState<PriorityType>('medium');
   const [categoryId, setCategoryId] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [recurrenceRule, setRecurrenceRule] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [removeImageRequested, setRemoveImageRequested] = useState(false);
@@ -43,6 +45,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
       setDescription(todo.description || '');
       setPriority(todo.priority || 'medium');
       setCategoryId(todo.category_id || '');
+      setRecurrenceRule(todo.recurrence_rule || null);
       setImageUrl(todo.image_url || null);
       setSelectedFile(null);
       setRemoveImageRequested(false);
@@ -89,6 +92,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             priority,
             category_id: categoryId || undefined,
             due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
+            recurrence_rule: recurrenceRule,
             image_url: newImageUrl || undefined,
             is_vital: priority === 'high',
           },
@@ -174,14 +178,21 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="font-medium text-ink-muted text-xs">
-              Danh mục
-            </label>
-            <CustomCategorySelect
-              categories={categories}
-              value={categoryId}
-              onChange={(id) => setCategoryId(id)}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+            <div className="space-y-1">
+              <label className="font-medium text-ink-muted text-xs">
+                Danh mục
+              </label>
+              <CustomCategorySelect
+                categories={categories}
+                value={categoryId}
+                onChange={(id) => setCategoryId(id)}
+              />
+            </div>
+
+            <RecurrencePicker
+              value={recurrenceRule}
+              onChange={setRecurrenceRule}
             />
           </div>
 
@@ -212,8 +223,8 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             statusText={statusText}
           />
 
-          {/* Sticky Mobile Action Bar */}
-          <div className="sticky bottom-0 z-[60] pt-3 pb-1 -mx-5 -mb-5 px-5 bg-surface-1/95 backdrop-blur-md border-t border-hairline flex items-center justify-end gap-2">
+          {/* Sticky Action Bar */}
+          <div className="sticky bottom-0 z-10 pt-3 pb-1 -mx-5 -mb-5 px-5 bg-surface-1/95 backdrop-blur-md border-t border-hairline flex items-center justify-end gap-2">
             <button
               type="button"
               onClick={onClose}
