@@ -71,9 +71,6 @@ export function RealtimeStreakBadge() {
       };
     }
 
-    // Sort unique dates descending
-    const sortedDates = Array.from(completedDatesSet).sort().reverse();
-
     // Check consecutive days starting from today or yesterday
     let streak = 0;
     const todayHasDone = completedDatesSet.has(todayStr);
@@ -115,30 +112,25 @@ export function RealtimeStreakBadge() {
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Real-time Streak Badge Button (No time, pure Streak Days) */}
+      {/* Real-time Streak Badge Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`px-3 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shadow-sm hover:scale-105 transition-transform cursor-pointer ${
+        className={`px-2.5 py-1 rounded-md text-xs font-medium border flex items-center gap-1.5 transition-colors cursor-pointer ${
           streakCount > 0
-            ? 'bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-indigo-500/10 dark:from-emerald-500/20 dark:via-teal-500/20 dark:to-indigo-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30'
-            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-300 dark:border-slate-700'
+            ? 'bg-success/10 text-success border-success/20'
+            : 'bg-surface-2 text-ink-muted border-hairline'
         }`}
         title="Bấm để xem chi tiết Flow Streak"
       >
-        <span className="relative flex items-center justify-center">
-          <Flame
-            className={`w-4 h-4 ${
-              streakCount > 0
-                ? 'fill-emerald-500 text-emerald-500 dark:fill-emerald-400 animate-pulse'
-                : 'text-slate-400'
-            }`}
-          />
-          {streakCount > 0 && (
-            <span className="absolute inset-0 rounded-full bg-emerald-400 opacity-40 animate-ping" />
-          )}
-        </span>
-        <span className="font-extrabold">
-          Flow Streak: {streakCount} Ngày
+        <Flame
+          className={`w-3.5 h-3.5 ${
+            streakCount > 0
+              ? 'fill-success text-success'
+              : 'text-ink-subtle'
+          }`}
+        />
+        <span>
+          Streak: {streakCount} Ngày
         </span>
       </button>
 
@@ -146,61 +138,61 @@ export function RealtimeStreakBadge() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            initial={{ opacity: 0, y: 6, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            exit={{ opacity: 0, y: 6, scale: 0.96 }}
             transition={springPillMotion}
-            className="absolute right-0 top-full mt-2 w-72 p-4 rounded-3xl glass-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-2xl z-50 space-y-3 backdrop-blur-xl"
+            className="absolute right-0 top-full mt-2 w-72 p-3.5 rounded-xl surface-panel bg-surface-1 border border-hairline shadow-xl z-50 space-y-2.5 text-ink"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-              <h4 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 uppercase tracking-wider">
-                <Zap className="w-4 h-4 text-emerald-500" />
-                <span>Chi tiết Chuỗi Flow Streak</span>
+            <div className="flex items-center justify-between pb-2 border-b border-hairline">
+              <h4 className="text-xs font-semibold text-ink flex items-center gap-1.5 uppercase tracking-wider">
+                <Zap className="w-3.5 h-3.5 text-primary" />
+                <span>Chi tiết Flow Streak</span>
               </h4>
-              <span className="text-[10px] font-bold text-emerald-500 flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span className="text-[10px] font-medium text-success flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
                 Realtime
               </span>
             </div>
 
             <div className="space-y-2 text-xs">
-              <div className="p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-between">
+              <div className="p-2.5 rounded-lg bg-success/10 border border-success/20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Flame className="w-4 h-4 text-emerald-500 fill-emerald-500" />
-                  <span className="text-slate-700 dark:text-slate-300 font-bold">Chuỗi liên tục:</span>
+                  <Flame className="w-4 h-4 text-success fill-success" />
+                  <span className="text-ink font-medium">Chuỗi liên tục:</span>
                 </div>
-                <span className="font-black text-emerald-600 dark:text-emerald-400 text-sm">
+                <span className="font-semibold text-success text-sm">
                   {streakCount} Ngày 🔥
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-between">
+              <div className="p-2 rounded-lg bg-surface-2 border border-hairline flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-indigo-500" />
-                  <span className="text-slate-600 dark:text-slate-400 font-medium">Hôm nay đã xong:</span>
+                  <CheckCircle2 className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-ink-muted font-normal">Hôm nay đã xong:</span>
                 </div>
-                <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
+                <span className="font-medium text-ink">
                   {todayCompletedCount} công việc
                 </span>
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-slate-100 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-800 flex items-center justify-between">
+              <div className="p-2 rounded-lg bg-surface-2 border border-hairline flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Target className="w-4 h-4 text-purple-500" />
-                  <span className="text-slate-600 dark:text-slate-400 font-medium">Tổng đã hoàn thành:</span>
+                  <Target className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-ink-muted font-normal">Tổng đã hoàn thành:</span>
                 </div>
-                <span className="font-extrabold text-slate-800 dark:text-slate-200">
+                <span className="font-medium text-ink">
                   {totalCompletedCount} công việc
                 </span>
               </div>
             </div>
 
-            <div className="p-2.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/50 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400 font-medium flex items-center gap-2">
-              <CalendarDays className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+            <div className="p-2 rounded-lg bg-surface-2 border border-hairline text-[11px] text-ink-subtle font-normal flex items-center gap-2">
+              <CalendarDays className="w-3.5 h-3.5 text-primary flex-shrink-0" />
               <span>
                 {hasDoneToday
-                  ? '✨ Bạn đã hoàn thành công việc hôm nay và duy trì chuỗi Streak!'
-                  : '⚡ Hoàn thành 1 công việc hôm nay để bắt đầu/tăng chuỗi Streak.'}
+                  ? 'Bạn đã hoàn thành công việc hôm nay!'
+                  : 'Hoàn thành 1 công việc hôm nay để tăng chuỗi.'}
               </span>
             </div>
           </motion.div>

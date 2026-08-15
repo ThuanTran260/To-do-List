@@ -4,12 +4,12 @@ import { TaskDetailView } from '@/components/todo/TaskDetailView';
 
 export default function MyTasksPage() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
+        <h2 className="text-lg sm:text-xl font-semibold text-ink">
           My Tasks (Toàn bộ công việc)
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
+        <p className="text-xs text-ink-subtle font-normal">
           Quản lý, tìm kiếm và sắp xếp danh sách việc cần làm của bạn.
         </p>
       </div>

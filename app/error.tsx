@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ShieldAlert, RefreshCw, Home, ChevronDown, ChevronUp, Bug } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home, ChevronDown, ChevronUp, Bug } from 'lucide-react';
 import Link from 'next/link';
 import { log } from '@/lib/logger';
 
@@ -23,68 +23,68 @@ export default function RootError({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-950 text-slate-100 selection:bg-indigo-500 selection:text-white">
-      <div className="w-full max-w-lg bg-slate-900/90 backdrop-blur-2xl border border-slate-800 shadow-2xl rounded-3xl p-6 sm:p-8 text-center space-y-6 animate-in fade-in zoom-in-95 duration-200">
-        {/* System Shield Icon */}
-        <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/20 flex items-center justify-center mx-auto text-rose-400 shadow-lg">
-          <ShieldAlert className="w-8 h-8" />
+    <div className="min-h-screen flex items-center justify-center p-4 bg-canvas text-ink">
+      <div className="w-full max-w-lg surface-panel bg-surface-1 border border-hairline shadow-2xl rounded-xl p-6 sm:p-8 text-center space-y-5 animate-in fade-in zoom-in-95 duration-200">
+        {/* Error Icon */}
+        <div className="w-12 h-12 rounded-lg bg-danger/10 border border-danger/20 flex items-center justify-center mx-auto text-danger">
+          <AlertTriangle className="w-6 h-6" />
         </div>
 
-        {/* Heading & Message */}
-        <div className="space-y-2">
-          <h1 className="text-2xl font-bold tracking-tight text-white">
-            Flow State — Hệ Thống Gặp Sự Cố
-          </h1>
-          <p className="text-sm text-slate-400 max-w-md mx-auto leading-relaxed">
-            Đã xảy ra lỗi không mong muốn ở cấp độ hệ thống. Bạn có thể làm mới hoặc quay lại trang chủ.
+        {/* Friendly Heading & Message */}
+        <div className="space-y-1.5">
+          <h2 className="text-lg sm:text-xl font-semibold tracking-tight text-ink">
+            Đã xảy ra lỗi hệ thống
+          </h2>
+          <p className="text-xs sm:text-sm text-ink-muted max-w-md mx-auto leading-relaxed font-normal">
+            Ứng dụng đã gặp sự cố không mong muốn. Dữ liệu của bạn trên Supabase vẫn được bảo vệ an toàn bằng Row Level Security.
           </p>
         </div>
 
-        {/* Error Digest */}
+        {/* Digest Reference ID if present */}
         {error.digest && (
-          <div className="inline-block px-3 py-1 rounded-full bg-slate-800 border border-slate-700 text-xs font-mono text-slate-400">
-            Digest: <span className="text-slate-200 font-semibold">{error.digest}</span>
+          <div className="inline-block px-2.5 py-1 rounded bg-surface-2 border border-hairline text-xs font-mono text-ink-subtle">
+            Mã lỗi: <span className="text-ink font-medium">{error.digest}</span>
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-2">
           <button
             onClick={() => reset()}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full sm:w-auto px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
           >
-            <RefreshCw className="w-4 h-4" />
-            <span>Thử lại hệ thống</span>
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Thử lại</span>
           </button>
 
           <Link
             href="/"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 active:scale-95 text-slate-200 font-semibold text-sm transition-all flex items-center justify-center gap-2 border border-slate-700"
+            className="w-full sm:w-auto px-4 py-2 rounded-md bg-surface-2 hover:bg-surface-3 text-ink font-medium text-xs transition-colors flex items-center justify-center gap-1.5 border border-hairline"
           >
-            <Home className="w-4 h-4" />
-            <span>Trang chủ</span>
+            <Home className="w-3.5 h-3.5" />
+            <span>Về Trang Chủ</span>
           </Link>
         </div>
 
-        {/* Debug Stack Trace for Dev Mode */}
+        {/* Development-Only Debug Accordion */}
         {isDev && (
-          <div className="pt-4 border-t border-slate-800 text-left">
+          <div className="pt-3 border-t border-hairline text-left">
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="flex items-center justify-between w-full text-xs font-medium text-slate-400 hover:text-slate-200 transition-colors py-1 cursor-pointer"
+              className="flex items-center justify-between w-full text-xs font-medium text-ink-subtle hover:text-ink transition-colors py-1 cursor-pointer"
             >
-              <span className="flex items-center gap-1.5 text-rose-400">
+              <span className="flex items-center gap-1.5 text-danger">
                 <Bug className="w-3.5 h-3.5" />
-                Chi tiết kỹ thuật (Dev Mode Only)
+                Chi tiết kỹ thuật (Dev Mode)
               </span>
-              {showDetails ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {showDetails ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
             </button>
 
             {showDetails && (
-              <div className="mt-2 p-3 rounded-xl bg-slate-950 text-slate-200 font-mono text-xs overflow-x-auto max-h-48 border border-slate-800 space-y-2">
-                <p className="text-rose-400 font-semibold">{error.name}: {error.message}</p>
+              <div className="mt-2 p-3 rounded-lg bg-surface-2 text-ink font-mono text-xs overflow-x-auto max-h-48 border border-hairline space-y-2">
+                <p className="text-danger font-medium">{error.name}: {error.message}</p>
                 {error.stack && (
-                  <pre className="text-[11px] text-slate-400 whitespace-pre-wrap leading-tight">
+                  <pre className="text-[11px] text-ink-subtle whitespace-pre-wrap leading-tight">
                     {error.stack}
                   </pre>
                 )}

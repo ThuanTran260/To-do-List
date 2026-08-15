@@ -47,7 +47,7 @@ export function PortalPopover({
     const shouldFlip = spaceBelow < maxPopoverHeight && spaceAbove > spaceBelow;
 
     setCoords({
-      top: shouldFlip ? rect.top - 8 : rect.bottom + 6,
+      top: shouldFlip ? rect.top - 6 : rect.bottom + 4,
       left: rect.left,
       width: rect.width,
       isFlippedAbove: shouldFlip,
@@ -108,11 +108,11 @@ export function PortalPopover({
           }}
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: coords.isFlippedAbove ? 6 : -6 }}
+            initial={{ opacity: 0, scale: 0.97, y: coords.isFlippedAbove ? 4 : -4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: coords.isFlippedAbove ? 6 : -6 }}
+            exit={{ opacity: 0, scale: 0.97, y: coords.isFlippedAbove ? 4 : -4 }}
             transition={springPillMotion}
-            className="p-1.5 rounded-2xl bg-white dark:bg-slate-900 border-2 border-indigo-500/40 shadow-2xl space-y-1 overflow-hidden"
+            className="p-1 rounded-lg surface-panel bg-surface-1 border border-hairline shadow-xl space-y-0.5 overflow-hidden text-ink"
           >
             {children}
           </motion.div>

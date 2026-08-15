@@ -76,31 +76,28 @@ function NotificationPopoverContent() {
     <div className="relative">
       <button
         onClick={() => togglePanel('notifications')}
-        className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800 relative transition-colors"
+        className="p-1.5 rounded-md text-ink-muted hover:text-ink hover:bg-surface-2 border border-hairline relative transition-colors cursor-pointer"
         title="Thông báo"
       >
-        <Bell className="w-4 h-4 text-amber-500" />
+        <Bell className="w-4 h-4 text-warning" />
         {totalUnread > 0 && (
-          <>
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 absolute top-1.5 right-1.5 animate-ping" />
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 absolute top-1.5 right-1.5" />
-          </>
+          <span className="w-2 h-2 rounded-full bg-danger absolute top-1 right-1" />
         )}
       </button>
 
-      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 sm:w-96 p-4 space-y-3">
+      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 sm:w-96 p-3.5 space-y-3">
         {/* Header */}
-        <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
+        <div className="flex items-center justify-between pb-2 border-b border-hairline">
           <div className="flex items-center gap-2">
-            <Bell className="w-4 h-4 text-amber-500" />
-            <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100">
+            <Bell className="w-4 h-4 text-warning" />
+            <h3 className="text-xs font-semibold text-ink">
               Thông Báo Việc Quan Trọng ({totalUnread})
             </h3>
           </div>
           {totalUnread > 0 && (
             <button
               onClick={handleMarkAllRead}
-              className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+              className="text-[10px] font-medium text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer"
             >
               <CheckCheck className="w-3 h-3" />
               <span>Đọc tất cả</span>
@@ -110,11 +107,11 @@ function NotificationPopoverContent() {
 
         {/* Toast Notification */}
         {toastMessage && (
-          <div className="p-2.5 rounded-xl bg-slate-800 text-white text-xs flex items-center justify-between shadow-lg">
+          <div className="p-2 rounded-md bg-surface-2 text-ink text-xs flex items-center justify-between shadow-xs border border-hairline">
             <span className="truncate">{toastMessage}</span>
             <button
               onClick={handleUndo}
-              className="text-[11px] font-bold text-amber-400 hover:underline ml-2 flex-shrink-0"
+              className="text-[11px] font-medium text-warning hover:underline ml-2 flex-shrink-0 cursor-pointer"
             >
               Hoàn tác
             </button>
@@ -122,28 +119,28 @@ function NotificationPopoverContent() {
         )}
 
         {/* Notifications List */}
-        <div className="max-h-80 overflow-y-auto space-y-3 pr-1">
+        <div className="max-h-80 overflow-y-auto space-y-2.5 pr-1 no-scrollbar">
           {/* Overdue Section */}
           {overdueTasks.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-rose-500 uppercase tracking-wider flex items-center gap-1">
+              <p className="text-[10px] font-semibold text-danger uppercase tracking-wider flex items-center gap-1">
                 <AlertOctagon className="w-3 h-3" />
-                <span>🔴 Đã quá hạn ({overdueTasks.length})</span>
+                <span>Quá hạn ({overdueTasks.length})</span>
               </p>
               {overdueTasks.map((t) => (
                 <div
                   key={t.id}
-                  className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs flex items-center justify-between gap-2"
+                  className="p-2 rounded-lg bg-danger/10 border border-danger/20 text-xs flex items-center justify-between gap-2"
                 >
                   <div
                     onClick={() => handleOpenTaskDetail(t.id)}
                     className="min-w-0 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate hover:underline flex items-center gap-1">
+                    <p className="font-medium text-ink truncate flex items-center gap-1">
                       <span>{t.title}</span>
-                      <Eye className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                      <Eye className="w-3 h-3 text-primary flex-shrink-0" />
                     </p>
-                    <p className="text-[10px] text-rose-500 font-medium">
+                    <p className="text-[10px] text-danger font-normal">
                       Hạn: {new Date(t.due_date!).toLocaleString('vi-VN')}
                     </p>
                   </div>
@@ -151,14 +148,14 @@ function NotificationPopoverContent() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
-                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                      className="p-1 rounded bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
                       title="Đã xong"
                     >
                       <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDismiss(t.id, t.title)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                      className="p-1 rounded text-ink-subtle hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                       title="Ẩn thông báo"
                     >
                       <EyeOff className="w-3 h-3" />
@@ -172,24 +169,24 @@ function NotificationPopoverContent() {
           {/* Due Soon Section */}
           {dueSoonTasks.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-amber-500 uppercase tracking-wider flex items-center gap-1">
+              <p className="text-[10px] font-semibold text-warning uppercase tracking-wider flex items-center gap-1">
                 <Clock className="w-3 h-3" />
-                <span>🟡 Sắp đến hạn trong 24h ({dueSoonTasks.length})</span>
+                <span>Sắp đến hạn 24h ({dueSoonTasks.length})</span>
               </p>
               {dueSoonTasks.map((t) => (
                 <div
                   key={t.id}
-                  className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs flex items-center justify-between gap-2"
+                  className="p-2 rounded-lg bg-warning/10 border border-warning/20 text-xs flex items-center justify-between gap-2"
                 >
                   <div
                     onClick={() => handleOpenTaskDetail(t.id)}
                     className="min-w-0 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate hover:underline flex items-center gap-1">
+                    <p className="font-medium text-ink truncate flex items-center gap-1">
                       <span>{t.title}</span>
-                      <Eye className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                      <Eye className="w-3 h-3 text-primary flex-shrink-0" />
                     </p>
-                    <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">
+                    <p className="text-[10px] text-warning font-normal">
                       Hạn: {new Date(t.due_date!).toLocaleString('vi-VN')}
                     </p>
                   </div>
@@ -197,14 +194,14 @@ function NotificationPopoverContent() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
-                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                      className="p-1 rounded bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
                       title="Đã xong"
                     >
                       <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDismiss(t.id, t.title)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                      className="p-1 rounded text-ink-subtle hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                       title="Ẩn thông báo"
                     >
                       <EyeOff className="w-3 h-3" />
@@ -218,37 +215,37 @@ function NotificationPopoverContent() {
           {/* Vital Tasks Section */}
           {vitalTasks.length > 0 && (
             <div className="space-y-1.5">
-              <p className="text-[10px] font-bold text-indigo-500 uppercase tracking-wider flex items-center gap-1">
+              <p className="text-[10px] font-semibold text-primary uppercase tracking-wider flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
-                <span>⭐ Công việc quan trọng ({vitalTasks.length})</span>
+                <span>Việc quan trọng ({vitalTasks.length})</span>
               </p>
               {vitalTasks.map((t) => (
                 <div
                   key={t.id}
-                  className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-xs flex items-center justify-between gap-2"
+                  className="p-2 rounded-lg bg-primary-subtle border border-primary-border text-xs flex items-center justify-between gap-2"
                 >
                   <div
                     onClick={() => handleOpenTaskDetail(t.id)}
                     className="min-w-0 flex-1 cursor-pointer hover:opacity-80 transition-opacity"
                   >
-                    <p className="font-bold text-slate-900 dark:text-slate-100 truncate hover:underline flex items-center gap-1">
+                    <p className="font-medium text-ink truncate flex items-center gap-1">
                       <span>{t.title}</span>
-                      <Eye className="w-3 h-3 text-indigo-500 flex-shrink-0" />
+                      <Eye className="w-3 h-3 text-primary flex-shrink-0" />
                     </p>
-                    <p className="text-[10px] text-indigo-500 font-medium">Ưu tiên Cao</p>
+                    <p className="text-[10px] text-primary font-normal">Ưu tiên Cao</p>
                   </div>
 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => toggleMutation.mutate({ id: t.id, is_completed: true })}
-                      className="p-1 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 transition-colors"
+                      className="p-1 rounded bg-success text-white hover:bg-success/90 transition-colors cursor-pointer"
                       title="Đã xong"
                     >
                       <Check className="w-3 h-3" />
                     </button>
                     <button
                       onClick={() => handleDismiss(t.id, t.title)}
-                      className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                      className="p-1 rounded text-ink-subtle hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
                       title="Ẩn thông báo"
                     >
                       <EyeOff className="w-3 h-3" />
@@ -260,9 +257,9 @@ function NotificationPopoverContent() {
           )}
 
           {totalUnread === 0 && (
-            <div className="py-8 text-center text-xs text-slate-400 space-y-1">
-              <CheckCheck className="w-8 h-8 mx-auto text-emerald-500 opacity-80" />
-              <p className="font-bold text-slate-700 dark:text-slate-300">Không có thông báo mới</p>
+            <div className="py-6 text-center text-xs text-ink-subtle space-y-1">
+              <CheckCheck className="w-7 h-7 mx-auto text-success opacity-80" />
+              <p className="font-medium text-ink">Không có thông báo mới</p>
               <p className="text-[11px]">Tất cả các công việc quan trọng đều đã ổn thỏa!</p>
             </div>
           )}

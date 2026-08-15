@@ -17,7 +17,7 @@ export default function CategoriesPage() {
   const deleteMutation = useDeleteCategory();
 
   const [newCatName, setNewCatName] = useState('');
-  const [newCatColor, setNewCatColor] = useState('#6366f1');
+  const [newCatColor, setNewCatColor] = useState('#5e6ad2');
   const [errorMsg, setErrorMsg] = useState('');
 
   const todos = todosData?.todos || [];
@@ -39,7 +39,7 @@ export default function CategoriesPage() {
       {
         onSuccess: () => {
           setNewCatName('');
-          setNewCatColor('#6366f1');
+          setNewCatColor('#5e6ad2');
         },
         onError: (err) => {
           setErrorMsg((err as Error).message);
@@ -65,28 +65,28 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
-        <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-2">
-          <FolderKanban className="w-6 h-6 text-indigo-500" />
-          <span>Task Categories (Danh mục công việc DB Realtime)</span>
+        <h2 className="text-lg sm:text-xl font-semibold text-ink flex items-center gap-2">
+          <FolderKanban className="w-5 h-5 text-primary" />
+          <span>Task Categories (Danh mục công việc)</span>
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400">
-          Quản lý và sắp xếp các danh mục công việc với dữ liệu Supabase Database kết nối Realtime.
+        <p className="text-xs text-ink-subtle font-normal">
+          Quản lý và sắp xếp các danh mục công việc với dữ liệu kết nối Realtime.
         </p>
       </div>
 
       {/* Add Category Form */}
       <form
         onSubmit={handleAddCategory}
-        className="p-5 rounded-3xl glass-panel bg-white/80 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 space-y-4 shadow-xl"
+        className="p-4 sm:p-5 rounded-xl surface-panel bg-surface-1 border border-hairline space-y-3.5 shadow-xs"
       >
-        <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-ink uppercase tracking-wider">
           Tạo danh mục mới
         </h3>
 
         {errorMsg && (
-          <p className="text-xs font-semibold text-rose-500 flex items-center gap-1">
+          <p className="text-xs font-medium text-danger flex items-center gap-1">
             <AlertCircle className="w-3.5 h-3.5" />
             <span>{errorMsg}</span>
           </p>
@@ -98,25 +98,25 @@ export default function CategoriesPage() {
             value={newCatName}
             onChange={(e) => setNewCatName(e.target.value)}
             placeholder="Tên danh mục (ví dụ: Marketing, Học tập, UI/UX...)"
-            className="flex-1 bg-slate-100/80 dark:bg-slate-800/80 px-3.5 py-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+            className="flex-1 bg-surface-2 px-3 py-2 rounded-md text-xs text-ink placeholder:text-ink-subtle border border-hairline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border font-medium"
           />
           <div className="flex items-center gap-2">
-            <span className="text-xs font-medium text-slate-500">Màu sắc:</span>
+            <span className="text-xs font-normal text-ink-subtle">Màu:</span>
             <input
               type="color"
               value={newCatColor}
               onChange={(e) => setNewCatColor(e.target.value)}
-              className="w-9 h-9 rounded-xl cursor-pointer border-0 p-0 shadow-sm"
+              className="w-8 h-8 rounded-md cursor-pointer border border-hairline p-0 bg-transparent"
             />
             <button
               type="submit"
               disabled={createMutation.isPending}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shadow-md shadow-indigo-500/20 transition-all flex items-center gap-1 disabled:opacity-50 cursor-pointer"
+              className="px-3.5 py-2 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs shadow-xs transition-colors flex items-center gap-1 disabled:opacity-50 cursor-pointer"
             >
               {createMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
               ) : (
-                <Plus className="w-4 h-4" />
+                <Plus className="w-3.5 h-3.5" />
               )}
               <span>Tạo danh mục</span>
             </button>
@@ -126,7 +126,7 @@ export default function CategoriesPage() {
 
       {/* Categories Grid */}
       <div className="space-y-3">
-        <h3 className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider">
+        <h3 className="text-xs font-semibold text-ink uppercase tracking-wider">
           Danh sách danh mục hiện có ({categories.length})
         </h3>
 
@@ -141,7 +141,7 @@ export default function CategoriesPage() {
             description="Tạo danh mục mới ở trên để bắt đầu phân loại công việc."
           />
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {categories.map((cat) => {
               const textColor = getReadableTextColor(cat.color);
               const taskCount = getTaskCountForCategory(cat.id);
@@ -151,11 +151,11 @@ export default function CategoriesPage() {
                   key={cat.id}
                   onClick={() => handleCategoryCardClick(cat.id)}
                   style={{ backgroundColor: cat.color, color: textColor }}
-                  className="p-5 rounded-2xl shadow-lg transition-all hover:scale-[1.02] flex items-center justify-between group cursor-pointer relative"
+                  className="p-4 rounded-xl shadow-xs transition-transform hover:scale-[1.01] active:scale-[0.99] flex items-center justify-between group cursor-pointer relative border border-white/20"
                 >
-                  <div className="space-y-1 min-w-0 pr-2">
-                    <h4 className="font-extrabold text-base truncate">{cat.name}</h4>
-                    <p className="text-xs font-medium opacity-85">
+                  <div className="space-y-0.5 min-w-0 pr-2">
+                    <h4 className="font-semibold text-sm truncate">{cat.name}</h4>
+                    <p className="text-xs font-normal opacity-85">
                       {taskCount} công việc
                     </p>
                   </div>
@@ -166,13 +166,13 @@ export default function CategoriesPage() {
                         e.stopPropagation();
                         handleDeleteCategory(cat.id, cat.name);
                       }}
-                      className="p-2 rounded-xl bg-black/10 hover:bg-black/20 text-current transition-colors cursor-pointer"
+                      className="p-1.5 rounded-md bg-black/15 hover:bg-black/30 text-current transition-colors cursor-pointer"
                       title="Xóa danh mục"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
-                    <div className="p-2 rounded-xl bg-black/10 text-current group-hover:translate-x-1 transition-transform">
-                      <ArrowRight className="w-4 h-4" />
+                    <div className="p-1.5 rounded-md bg-black/15 text-current group-hover:translate-x-0.5 transition-transform">
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </div>
                   </div>
                 </div>

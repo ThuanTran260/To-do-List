@@ -22,17 +22,17 @@ export default function FocusPage() {
   };
 
   return (
-    <MotionPage className="max-w-2xl mx-auto space-y-8 text-center pt-8">
+    <MotionPage className="max-w-2xl mx-auto space-y-6 text-center pt-4">
       {/* Header */}
-      <div className="space-y-2">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+      <div className="space-y-1.5">
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary-subtle border border-primary-border text-primary text-xs font-medium">
           <Target className="w-3.5 h-3.5" />
-          <span>Focus Mode — Tối Đa Hóa Tập Trung</span>
+          <span>Focus Mode</span>
         </div>
-        <h2 className="text-3xl font-black text-slate-900 dark:text-slate-100">
+        <h2 className="text-2xl font-semibold text-ink">
           Chỉ 1 Công Việc Tại Một Thời Điểm
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        <p className="text-xs text-ink-subtle font-normal">
           Loại bỏ mọi xao nhãng và hoàn thành từng việc với sự tập trung tuyệt đối
         </p>
       </div>
@@ -48,12 +48,12 @@ export default function FocusPage() {
           />
         </AnimatePresence>
       ) : (
-        <div className="p-12 rounded-3xl glass-panel bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
-          <Sparkles className="w-12 h-12 text-amber-500 mx-auto animate-bounce" />
-          <h3 className="text-xl font-black text-slate-900 dark:text-slate-100">
+        <div className="p-8 rounded-xl surface-panel bg-surface-1 border border-hairline shadow-xs space-y-3">
+          <Sparkles className="w-8 h-8 text-primary mx-auto opacity-70" />
+          <h3 className="text-base font-semibold text-ink">
             Tuyệt Vời! Tất Cả Công Việc Đã Hoàn Thành
           </h3>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-ink-subtle font-normal">
             Không còn task nào cần thực hiện. Hãy tận hưởng thời gian nghỉ ngơi!
           </p>
         </div>

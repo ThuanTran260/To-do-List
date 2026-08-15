@@ -10,45 +10,45 @@ export default function VitalTasksPage() {
   const vitalTodos = data?.todos.filter((t) => t.priority === 'high' || t.is_vital) || [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header Banner */}
-      <div className="p-6 rounded-3xl glass-panel bg-gradient-to-r from-rose-500/10 via-amber-500/10 to-indigo-500/10 border border-rose-500/20 shadow-xl flex items-center justify-between">
+      <div className="p-4 sm:p-5 rounded-xl surface-panel bg-surface-1 border border-hairline flex items-center justify-between shadow-xs">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <AlertOctagon className="w-6 h-6 text-rose-500" />
-            <h2 className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
+            <AlertOctagon className="w-5 h-5 text-danger" />
+            <h2 className="text-base sm:text-lg font-semibold text-ink">
               Vital Tasks (Công việc quan trọng)
             </h2>
           </div>
-          <p className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+          <p className="text-xs text-ink-subtle font-normal">
             Danh sách các công việc ưu tiên cao và quan trọng cần hoàn thành sớm nhất.
           </p>
         </div>
-        <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-bold border border-rose-500/30">
-          <Sparkles className="w-4 h-4" />
+        <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-danger/10 text-danger text-xs font-medium border border-danger/20">
+          <Sparkles className="w-3.5 h-3.5" />
           <span>{vitalTodos.length} Công việc quan trọng</span>
         </div>
       </div>
 
       {/* List */}
       {isLoading ? (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="h-16 rounded-2xl bg-slate-200/60 dark:bg-slate-800/40 animate-pulse" />
+            <div key={n} className="h-14 rounded-lg bg-surface-2 animate-pulse border border-hairline" />
           ))}
         </div>
       ) : vitalTodos.length === 0 ? (
-        <div className="py-16 text-center rounded-2xl glass-panel bg-white/40 dark:bg-slate-900/40 border border-dashed border-slate-300 dark:border-slate-800 space-y-2">
-          <AlertOctagon className="w-10 h-10 text-slate-400 mx-auto" />
-          <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+        <div className="py-12 text-center rounded-xl bg-surface-1 border border-dashed border-hairline space-y-2">
+          <AlertOctagon className="w-8 h-8 text-ink-subtle mx-auto opacity-40" />
+          <h3 className="text-sm font-semibold text-ink">
             Không có công việc quan trọng nào
           </h3>
-          <p className="text-xs text-slate-500 max-w-sm mx-auto">
+          <p className="text-xs text-ink-subtle max-w-sm mx-auto font-normal">
             Các công việc có mức ưu tiên Cao sẽ tự động xuất hiện ở đây.
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {vitalTodos.map((item) => (
             <TodoItem key={item.id} item={item} />
           ))}

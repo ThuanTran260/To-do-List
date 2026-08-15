@@ -1,7 +1,5 @@
 'use client';
 
-import { motion } from 'framer-motion';
-
 interface WeekStripProps {
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
@@ -27,7 +25,7 @@ export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
   const today = new Date();
 
   return (
-    <div className="grid grid-cols-7 gap-2 p-3 bg-slate-900/60 border border-slate-800 rounded-2xl">
+    <div className="grid grid-cols-7 gap-1.5 p-2 bg-surface-1 border border-hairline rounded-xl">
       {days.map((d, i) => {
         const isToday = d.toDateString() === today.toDateString();
         const isSelected = d.toDateString() === selectedDate.toDateString();
@@ -37,16 +35,16 @@ export function WeekStrip({ selectedDate, onSelectDate }: WeekStripProps) {
           <button
             key={i}
             onClick={() => onSelectDate(d)}
-            className={`flex flex-col items-center py-2 px-1 rounded-xl transition-all ${
+            className={`flex flex-col items-center py-2 px-1 rounded-lg transition-colors cursor-pointer ${
               isSelected
-                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                ? 'bg-primary text-on-primary font-semibold shadow-xs'
                 : isToday
-                ? 'bg-indigo-500/20 text-indigo-400 border border-indigo-500/30'
-                : 'hover:bg-slate-800 text-slate-400 hover:text-slate-200'
+                ? 'bg-primary-subtle text-primary border border-primary-border font-medium'
+                : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
             }`}
           >
-            <span className="text-[10px] font-semibold uppercase">{dayNames[d.getDay()]}</span>
-            <span className="text-sm font-bold mt-0.5">{d.getDate()}</span>
+            <span className="text-[10px] font-medium uppercase">{dayNames[d.getDay()]}</span>
+            <span className="text-xs font-semibold mt-0.5">{d.getDate()}</span>
           </button>
         );
       })}

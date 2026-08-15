@@ -83,8 +83,8 @@ export function WorldClockWidget() {
   if (!now) {
     return (
       <div className="hidden sm:block animate-pulse">
-        <div className="h-3 w-16 bg-slate-200 dark:bg-slate-800 rounded mb-1" />
-        <div className="h-4 w-32 bg-slate-200 dark:bg-slate-800 rounded" />
+        <div className="h-3 w-16 bg-surface-2 rounded mb-1" />
+        <div className="h-4 w-32 bg-surface-2 rounded" />
       </div>
     );
   }
@@ -98,31 +98,31 @@ export function WorldClockWidget() {
       {/* Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="group flex items-center gap-2 px-3 py-1.5 rounded-2xl hover:bg-slate-100/80 dark:hover:bg-slate-800/80 border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all text-left cursor-pointer"
+        className="group flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-surface-2 border border-hairline transition-colors text-left cursor-pointer"
         title="Bấm để xem giờ thế giới"
       >
-        <div className="w-8 h-8 rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform border border-indigo-500/20">
-          <Globe className="w-4 h-4" />
+        <div className="w-7 h-7 rounded-md bg-primary-subtle text-primary flex items-center justify-center flex-shrink-0 border border-primary-border">
+          <Globe className="w-3.5 h-3.5" />
         </div>
 
         <div>
           <div className="flex items-center gap-1">
-            <span className="text-[10px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-primary uppercase tracking-wider">
               {selectedCity.flag} {selectedCity.cityName}
             </span>
             {activeIsDay ? (
-              <Sun className="w-3 h-3 text-amber-500" />
+              <Sun className="w-3 h-3 text-warning" />
             ) : (
-              <Moon className="w-3 h-3 text-indigo-400" />
+              <Moon className="w-3 h-3 text-primary" />
             )}
-            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown className={`w-3 h-3 text-ink-subtle transition-transform ${isOpen ? 'rotate-180' : ''}`} />
           </div>
 
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-black text-slate-900 dark:text-slate-100 font-mono tracking-tight">
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs font-semibold text-ink font-mono tracking-tight">
               {activeTimeStr}
             </span>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] font-normal text-ink-subtle">
               ({activeDateStr})
             </span>
           </div>
@@ -133,21 +133,21 @@ export function WorldClockWidget() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 8, scale: 0.95 }}
+            initial={{ opacity: 0, y: 6, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            exit={{ opacity: 0, y: 6, scale: 0.96 }}
             transition={springPillMotion}
-            className="absolute left-0 top-full mt-2 w-80 sm:w-96 p-4 rounded-3xl glass-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-2xl z-50 space-y-3 backdrop-blur-xl"
+            className="absolute left-0 top-full mt-2 w-80 sm:w-96 p-3.5 rounded-xl surface-panel bg-surface-1 border border-hairline shadow-2xl z-50 space-y-2.5 text-ink"
           >
-            <div className="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-              <h4 className="text-xs font-extrabold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 uppercase tracking-wider">
-                <Clock className="w-4 h-4 text-indigo-500" />
+            <div className="flex items-center justify-between pb-2 border-b border-hairline">
+              <h4 className="text-xs font-semibold text-ink flex items-center gap-1.5 uppercase tracking-wider">
+                <Clock className="w-3.5 h-3.5 text-primary" />
                 <span>Giờ thế giới thời gian thực (World Clock)</span>
               </h4>
-              <span className="text-[10px] font-bold text-slate-400">Live 1s</span>
+              <span className="text-[10px] font-medium text-ink-subtle">Live 1s</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-72 overflow-y-auto pr-1 no-scrollbar">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-72 overflow-y-auto pr-1 no-scrollbar">
               {WORLD_CITIES.map((city) => {
                 const cityTime = formatCityTime(now, city.timeZone);
                 const cityDate = formatCityDate(now, city.timeZone);
@@ -161,34 +161,34 @@ export function WorldClockWidget() {
                       setSelectedCity(city);
                       setIsOpen(false);
                     }}
-                    className={`p-2.5 rounded-2xl text-left border transition-all cursor-pointer flex flex-col justify-between ${
+                    className={`p-2 rounded-lg text-left border transition-colors cursor-pointer flex flex-col justify-between ${
                       isSelected
-                        ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/25'
-                        : 'bg-slate-50/80 dark:bg-slate-800/50 border-slate-200/60 dark:border-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-400 dark:hover:border-indigo-600'
+                        ? 'bg-primary text-on-primary border-primary shadow-xs'
+                        : 'bg-surface-2 border-hairline text-ink hover:border-hairline-strong'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-extrabold truncate">
+                      <span className="text-xs font-medium truncate">
                         {city.flag} {city.cityName}
                       </span>
                       {cityIsDay ? (
-                        <Sun className={`w-3.5 h-3.5 ${isSelected ? 'text-amber-300' : 'text-amber-500'}`} />
+                        <Sun className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-warning'}`} />
                       ) : (
-                        <Moon className={`w-3.5 h-3.5 ${isSelected ? 'text-indigo-200' : 'text-indigo-400'}`} />
+                        <Moon className={`w-3 h-3 ${isSelected ? 'text-white' : 'text-primary'}`} />
                       )}
                     </div>
 
                     <div className="mt-1 flex items-baseline justify-between">
                       <span
-                        className={`text-sm font-black font-mono tracking-tight ${
-                          isSelected ? 'text-white' : 'text-slate-900 dark:text-slate-100'
+                        className={`text-xs font-semibold font-mono tracking-tight ${
+                          isSelected ? 'text-white' : 'text-ink'
                         }`}
                       >
                         {cityTime}
                       </span>
                       <span
-                        className={`text-[10px] font-medium ${
-                          isSelected ? 'text-indigo-100' : 'text-slate-400'
+                        className={`text-[10px] ${
+                          isSelected ? 'text-white/80' : 'text-ink-subtle'
                         }`}
                       >
                         {cityDate.split(',')[0]}

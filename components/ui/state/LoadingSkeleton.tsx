@@ -10,11 +10,11 @@ export function LoadingSkeleton({ variant = 'list', count = 3 }: LoadingSkeleton
 
   if (variant === 'card') {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
         {items.map((_, i) => (
           <div
             key={i}
-            className="h-28 rounded-2xl bg-slate-200/70 dark:bg-slate-800/50 animate-pulse border border-slate-200/50 dark:border-slate-800/50"
+            className="h-24 rounded-lg bg-surface-2 animate-pulse border border-hairline"
           />
         ))}
       </div>
@@ -27,7 +27,7 @@ export function LoadingSkeleton({ variant = 'list', count = 3 }: LoadingSkeleton
         {items.map((_, i) => (
           <div
             key={i}
-            className="h-4 rounded-lg bg-slate-200/70 dark:bg-slate-800/50 animate-pulse w-3/4"
+            className="h-3.5 rounded bg-surface-2 animate-pulse w-3/4"
           />
         ))}
       </div>
@@ -35,11 +35,11 @@ export function LoadingSkeleton({ variant = 'list', count = 3 }: LoadingSkeleton
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2.5">
       {items.map((_, i) => (
         <div
           key={i}
-          className="h-16 rounded-2xl bg-slate-200/70 dark:bg-slate-800/50 animate-pulse border border-slate-200/50 dark:border-slate-800/50"
+          className="h-14 rounded-lg bg-surface-2 animate-pulse border border-hairline"
         />
       ))}
     </div>

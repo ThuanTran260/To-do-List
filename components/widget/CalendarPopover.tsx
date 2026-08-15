@@ -5,7 +5,7 @@ import { useTodos, useCreateTodo } from '@/hooks/useTodos';
 import { useDropdownManager } from '@/hooks/useDropdownManager';
 import { FloatingPanel } from '@/components/ui/FloatingPanel';
 import { useWheelMonthScroll } from '@/hooks/useWheelYearScroll';
-import { Calendar, ChevronLeft, ChevronRight, Plus, Sparkles, Clock, Check } from 'lucide-react';
+import { Calendar, ChevronLeft, ChevronRight, Plus, Check } from 'lucide-react';
 
 export function CalendarPopover() {
   const { activePanel, togglePanel, closeAll } = useDropdownManager();
@@ -64,9 +64,9 @@ export function CalendarPopover() {
   const getDayDotColor = (day: number) => {
     const dayTasks = getTasksForDay(day);
     if (dayTasks.length === 0) return null;
-    if (dayTasks.some((t) => t.priority === 'high')) return 'bg-rose-500';
-    if (dayTasks.some((t) => t.priority === 'medium')) return 'bg-amber-500';
-    return 'bg-emerald-500';
+    if (dayTasks.some((t) => t.priority === 'high')) return 'bg-danger';
+    if (dayTasks.some((t) => t.priority === 'medium')) return 'bg-warning';
+    return 'bg-success';
   };
 
   const handleQuickAdd = (e: React.FormEvent) => {
@@ -95,42 +95,42 @@ export function CalendarPopover() {
     <div className="relative">
       <button
         onClick={() => togglePanel('calendar')}
-        className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800 transition-colors"
+        className="p-1.5 rounded-md text-ink-muted hover:text-ink hover:bg-surface-2 border border-hairline transition-colors cursor-pointer"
         title="Lịch công việc"
       >
-        <Calendar className="w-4 h-4 text-indigo-500" />
+        <Calendar className="w-4 h-4 text-primary" />
       </button>
 
-      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 p-4 space-y-4">
+      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 p-3.5 space-y-3">
         {/* Header Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <button
               onClick={prevMonth}
-              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+              className="p-1 rounded-md hover:bg-surface-2 text-ink-muted hover:text-ink cursor-pointer"
             >
-              <ChevronLeft className="w-4 h-4" />
+              <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <span className="text-xs font-extrabold text-slate-900 dark:text-slate-100">
+            <span className="text-xs font-semibold text-ink">
               Tháng {month + 1}/{year}
             </span>
             <button
               onClick={nextMonth}
-              className="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500"
+              className="p-1 rounded-md hover:bg-surface-2 text-ink-muted hover:text-ink cursor-pointer"
             >
-              <ChevronRight className="w-4 h-4" />
+              <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
           <button
             onClick={jumpToday}
-            className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold border border-indigo-200 dark:border-indigo-800"
+            className="px-2 py-0.5 rounded-md bg-primary-subtle text-primary text-[11px] font-medium border border-primary-border cursor-pointer"
           >
             Hôm nay
           </button>
         </div>
 
         {/* Days of Week Header (T2 - CN) */}
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-bold text-slate-400">
+        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-ink-subtle">
           {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((d) => (
             <div key={d}>{d}</div>
           ))}
@@ -139,10 +139,10 @@ export function CalendarPopover() {
         {/* Days Grid with Smooth Mouse Wheel Month Scroll */}
         <div
           onWheel={handleWheel}
-          className="grid grid-cols-7 gap-1 text-center text-xs font-semibold select-none"
+          className="grid grid-cols-7 gap-1 text-center text-xs font-medium select-none"
         >
           {Array.from({ length: startingDayIndex }).map((_, i) => (
-            <div key={`empty-${i}`} className="h-8" />
+            <div key={`empty-${i}`} className="h-7" />
           ))}
 
           {Array.from({ length: daysInMonth }).map((_, i) => {
@@ -158,18 +158,18 @@ export function CalendarPopover() {
               <button
                 key={day}
                 onClick={() => setSelectedDay(day)}
-                className={`h-8 rounded-xl flex flex-col items-center justify-center relative transition-all ${
+                className={`h-7 rounded-md flex flex-col items-center justify-center relative transition-colors cursor-pointer ${
                   isSelected
-                    ? 'bg-indigo-600 text-white font-bold shadow-md scale-105'
+                    ? 'bg-primary text-on-primary font-semibold shadow-xs'
                     : isToday
-                    ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-300 font-bold border border-indigo-300'
-                    : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    ? 'bg-primary-subtle text-primary font-semibold border border-primary-border'
+                    : 'hover:bg-surface-2 text-ink'
                 }`}
               >
                 <span>{day}</span>
                 {dotColor && (
                   <span
-                    className={`w-1.5 h-1.5 rounded-full absolute bottom-1 ${dotColor}`}
+                    className={`w-1 h-1 rounded-full absolute bottom-0.5 ${dotColor}`}
                   />
                 )}
               </button>
@@ -179,14 +179,14 @@ export function CalendarPopover() {
 
         {/* Selected Date Details & Quick Add */}
         {selectedDay && (
-          <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/60 space-y-2">
+          <div className="pt-2.5 border-t border-hairline space-y-2">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-slate-800 dark:text-slate-200">
+              <span className="font-semibold text-ink">
                 Ngày {selectedDay}/{month + 1} ({selectedDayTasks.length} việc)
               </span>
               <button
                 onClick={() => setIsQuickAdding(!isQuickAdding)}
-                className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-0.5"
+                className="text-[11px] font-medium text-primary hover:text-primary-hover flex items-center gap-0.5 cursor-pointer"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Thêm việc</span>
@@ -201,13 +201,13 @@ export function CalendarPopover() {
                   value={quickTitle}
                   onChange={(e) => setQuickTitle(e.target.value)}
                   placeholder="Tên việc cần làm..."
-                  className="flex-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg text-xs focus:outline-none font-medium"
+                  className="flex-1 bg-surface-2 px-2.5 py-1 rounded-md text-xs text-ink placeholder:text-ink-subtle border border-hairline focus:outline-none focus:border-primary-border font-medium"
                   autoFocus
                 />
                 <button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white text-xs font-bold"
+                  className="px-2.5 py-1 rounded-md bg-primary hover:bg-primary-hover text-on-primary text-xs font-medium cursor-pointer shadow-xs"
                 >
                   <Check className="w-3.5 h-3.5" />
                 </button>
@@ -217,21 +217,21 @@ export function CalendarPopover() {
             {/* Day Tasks List */}
             <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
               {selectedDayTasks.length === 0 ? (
-                <p className="text-[11px] text-slate-400 italic">Không có công việc nào.</p>
+                <p className="text-[11px] text-ink-subtle italic">Không có công việc nào.</p>
               ) : (
                 selectedDayTasks.map((t) => (
                   <div
                     key={t.id}
-                    className="p-1.5 rounded-lg bg-slate-100/60 dark:bg-slate-800/50 text-[11px] font-medium text-slate-800 dark:text-slate-200 truncate flex items-center justify-between"
+                    className="p-1.5 rounded-md bg-surface-2 border border-hairline text-[11px] font-medium text-ink truncate flex items-center justify-between"
                   >
                     <span className="truncate">{t.title}</span>
                     <span
-                      className={`w-2 h-2 rounded-full ${
+                      className={`w-1.5 h-1.5 rounded-full ${
                         t.priority === 'high'
-                          ? 'bg-rose-500'
+                          ? 'bg-danger'
                           : t.priority === 'medium'
-                          ? 'bg-amber-500'
-                          : 'bg-emerald-500'
+                          ? 'bg-warning'
+                          : 'bg-success'
                       }`}
                     />
                   </div>

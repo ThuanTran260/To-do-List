@@ -1,8 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
 import { PriorityBadge } from '@/components/ui/Badge';
-import { ArrowRight, CheckCircle2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import type { TodoItemData } from '@/types/todo';
 import { useToggleTodo } from '@/hooks/useTodos';
 
@@ -14,14 +13,13 @@ export function KanbanCard({ task }: KanbanCardProps) {
   const toggleMutation = useToggleTodo();
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className="p-4 rounded-2xl bg-white dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 shadow-sm space-y-2.5 transition-all group"
+    <div
+      className="p-3 rounded-lg bg-surface-2 border border-hairline hover:border-hairline-strong card-hover space-y-2 transition-colors group"
     >
       <div className="flex items-start justify-between gap-2">
         <h4
-          className={`text-xs font-bold text-slate-900 dark:text-slate-100 leading-snug ${
-            task.is_completed ? 'line-through text-slate-400' : ''
+          className={`text-xs font-medium leading-snug break-words ${
+            task.is_completed ? 'line-through text-ink-subtle' : 'text-ink'
           }`}
         >
           {task.title}
@@ -30,14 +28,14 @@ export function KanbanCard({ task }: KanbanCardProps) {
       </div>
 
       {task.description && (
-        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
+        <p className="text-[11px] text-ink-muted line-clamp-2 leading-relaxed font-normal">
           {task.description}
         </p>
       )}
 
       {/* Action Button */}
-      <div className="pt-2 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between">
-        <span className="text-[10px] text-slate-400 font-semibold">
+      <div className="pt-2 border-t border-hairline flex items-center justify-between">
+        <span className="text-[10px] text-ink-subtle font-normal">
           {task.due_date
             ? new Date(task.due_date).toLocaleDateString('vi-VN')
             : 'Không hạn'}
@@ -50,12 +48,12 @@ export function KanbanCard({ task }: KanbanCardProps) {
               currentTodo: task,
             })
           }
-          className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+          className="text-[11px] font-medium text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer"
         >
           <span>{task.is_completed ? 'Mở lại' : 'Xong'}</span>
           <ArrowRight className="w-3 h-3" />
         </button>
       </div>
-    </motion.div>
+    </div>
   );
 }

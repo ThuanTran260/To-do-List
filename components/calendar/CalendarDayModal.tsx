@@ -45,20 +45,20 @@ export function CalendarDayModal({ date, todos, onClose }: CalendarDayModalProps
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-overlay backdrop-blur-xs">
         <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
+          initial={{ scale: 0.96, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5"
+          exit={{ scale: 0.96, opacity: 0 }}
+          className="w-full max-w-md bg-surface-1 border border-hairline rounded-xl p-5 shadow-2xl space-y-4 text-ink"
         >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-indigo-400">
-              <CalendarIcon className="w-5 h-5" />
-              <h3 className="font-bold text-base capitalize text-slate-100">{dateStr}</h3>
+          <div className="flex items-center justify-between pb-2 border-b border-hairline">
+            <div className="flex items-center gap-2 text-primary">
+              <CalendarIcon className="w-4 h-4" />
+              <h3 className="font-semibold text-sm capitalize text-ink">{dateStr}</h3>
             </div>
-            <button onClick={onClose} className="p-1 rounded-full text-slate-400 hover:text-white hover:bg-slate-800">
-              <X className="w-5 h-5" />
+            <button onClick={onClose} className="p-1 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 cursor-pointer">
+              <X className="w-4 h-4" />
             </button>
           </div>
 
@@ -67,36 +67,36 @@ export function CalendarDayModal({ date, todos, onClose }: CalendarDayModalProps
               type="text"
               value={newTitle}
               onChange={e => setNewTitle(e.target.value)}
-              placeholder="Thêm task mới cho ngày này..."
-              className="flex-1 px-3.5 py-2 text-sm bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+              placeholder="Thêm việc mới cho ngày này..."
+              className="flex-1 px-3 py-1.5 text-xs bg-surface-2 border border-hairline rounded-md text-ink placeholder:text-ink-subtle focus:outline-none focus:border-primary-border font-medium"
             />
             <button
               type="submit"
               disabled={!newTitle.trim() || createTodo.isPending}
-              className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium text-xs flex items-center gap-1 disabled:opacity-50"
+              className="px-3 py-1.5 bg-primary hover:bg-primary-hover text-on-primary rounded-md font-medium text-xs flex items-center gap-1 disabled:opacity-50 cursor-pointer shadow-xs"
             >
-              <Plus className="w-4 h-4" />
+              <Plus className="w-3.5 h-3.5" />
               <span>Thêm</span>
             </button>
           </form>
 
           <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-            <div className="text-xs font-semibold text-slate-400">Công việc trong ngày ({todos.length})</div>
+            <div className="text-xs font-semibold text-ink-subtle">Công việc trong ngày ({todos.length})</div>
             {todos.length === 0 ? (
-              <div className="p-4 text-center text-xs text-slate-500 border border-dashed border-slate-800 rounded-xl">
+              <div className="p-4 text-center text-xs text-ink-subtle border border-dashed border-hairline rounded-lg">
                 Chưa có công việc nào.
               </div>
             ) : (
               todos.map(t => (
-                <div key={t.id} className="p-3 bg-slate-800/60 border border-slate-700/50 rounded-xl flex items-center justify-between">
+                <div key={t.id} className="p-2.5 bg-surface-2 border border-hairline rounded-lg flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className={`w-4 h-4 ${t.is_completed ? 'text-emerald-400' : 'text-slate-500'}`} />
-                    <span className={`text-xs font-medium ${t.is_completed ? 'line-through text-slate-500' : 'text-slate-200'}`}>
+                    <CheckCircle2 className={`w-3.5 h-3.5 ${t.is_completed ? 'text-success' : 'text-ink-subtle'}`} />
+                    <span className={`text-xs font-medium ${t.is_completed ? 'line-through text-ink-subtle' : 'text-ink'}`}>
                       {t.title}
                     </span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${
-                    t.priority === 'high' ? 'bg-rose-500/20 text-rose-300' : 'bg-slate-700 text-slate-400'
+                  <span className={`text-[10px] px-2 py-0.5 rounded font-medium ${
+                    t.priority === 'high' ? 'bg-danger/10 text-danger border border-danger/20' : 'bg-surface-1 border border-hairline text-ink-muted'
                   }`}>
                     {t.priority}
                   </span>

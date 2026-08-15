@@ -8,7 +8,7 @@ import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/state/EmptyState';
 import { ErrorState } from '@/components/ui/state/ErrorState';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
-import { Search, Tag, Calendar, Sparkles } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 export function SearchAutocomplete() {
   const [query, setQuery] = useState('');
@@ -75,7 +75,7 @@ export function SearchAutocomplete() {
       <span>
         {parts.map((part, i) =>
           part.toLowerCase() === search.toLowerCase() ? (
-            <mark key={i} className="bg-amber-300 dark:bg-indigo-500/40 text-slate-900 dark:text-indigo-200 px-0.5 rounded font-bold">
+            <mark key={i} className="bg-primary/20 text-primary px-0.5 rounded font-medium">
               {part}
             </mark>
           ) : (
@@ -89,7 +89,7 @@ export function SearchAutocomplete() {
   return (
     <>
       <div className="relative flex-1 max-w-md">
-        <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+        <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-ink-subtle" />
         <input
           ref={inputRef}
           type="text"
@@ -103,8 +103,8 @@ export function SearchAutocomplete() {
             if (query && !isOpen) togglePanel('search');
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Gõ từ khóa tìm kiếm (VibeCoding, Nấu Ăn...)"
-          className="w-full bg-slate-100/80 dark:bg-slate-900/80 pl-9 pr-4 py-2 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/50"
+          placeholder="Tìm kiếm công việc..."
+          className="w-full bg-surface-2 pl-8 pr-3 py-1.5 rounded-md text-xs text-ink placeholder:text-ink-subtle border border-hairline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border font-medium"
           aria-expanded={isOpen}
           aria-autocomplete="list"
           role="combobox"
@@ -113,7 +113,7 @@ export function SearchAutocomplete() {
         <FloatingPanel
           isOpen={isOpen && !!debouncedQuery}
           onClose={closeAll}
-          className="w-full max-w-md p-3 space-y-2 mt-2 left-0 right-auto"
+          className="w-full max-w-md p-2.5 space-y-2 mt-1 left-0 right-auto"
         >
           {isLoading ? (
             <LoadingSkeleton variant="text" count={3} />
@@ -126,8 +126,8 @@ export function SearchAutocomplete() {
               description={`Không có công việc nào khớp với từ khóa "${debouncedQuery}"`}
             />
           ) : (
-            <div className="space-y-1" role="listbox">
-              <div className="flex items-center justify-between px-2 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-200/50 dark:border-slate-800/50">
+            <div className="space-y-0.5" role="listbox">
+              <div className="flex items-center justify-between px-2 pb-1 text-[10px] font-semibold text-ink-subtle uppercase tracking-wider border-b border-hairline">
                 <span>Gợi ý ({filteredTodos.length})</span>
                 <span>Dùng 🠗🠕 & Enter để chọn</span>
               </div>
@@ -140,24 +140,24 @@ export function SearchAutocomplete() {
                     closeAll();
                   }}
                   onMouseEnter={() => setSelectedIndex(index)}
-                  className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between gap-3 text-xs ${
+                  className={`p-2 rounded-md cursor-pointer transition-colors flex items-center justify-between gap-2.5 text-xs ${
                     selectedIndex === index
-                      ? 'bg-indigo-600 text-white font-semibold shadow-md'
-                      : 'hover:bg-slate-100 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200'
+                      ? 'bg-primary text-on-primary font-medium'
+                      : 'hover:bg-surface-2 text-ink'
                   }`}
                   role="option"
                   aria-selected={selectedIndex === index}
                 >
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">
+                    <p className="truncate font-medium">
                       {highlightText(task.title, debouncedQuery)}
                     </p>
                     {task.description && (
                       <p
                         className={`text-[11px] truncate ${
                           selectedIndex === index
-                            ? 'text-indigo-100'
-                            : 'text-slate-400 dark:text-slate-500'
+                            ? 'text-white/80'
+                            : 'text-ink-subtle'
                         }`}
                       >
                         {highlightText(task.description, debouncedQuery)}
@@ -165,12 +165,12 @@ export function SearchAutocomplete() {
                     )}
                   </div>
                   <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase ${
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-medium uppercase border ${
                       task.priority === 'high'
-                        ? 'bg-rose-500/20 text-rose-600 dark:text-rose-400'
+                        ? 'bg-danger/10 text-danger border-danger/20'
                         : task.priority === 'medium'
-                        ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400'
-                        : 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400'
+                        ? 'bg-warning/10 text-warning border-warning/20'
+                        : 'bg-success/10 text-success border-success/20'
                     }`}
                   >
                     {task.priority}

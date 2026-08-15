@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { useTodos } from '@/hooks/useTodos';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
 import { WeekStrip } from './WeekStrip';
 import { CalendarDayModal } from './CalendarDayModal';
 import type { TodoItemData } from '@/types/todo';
@@ -55,37 +54,37 @@ export function CalendarGrid() {
   const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* 7-Day Strip */}
       <WeekStrip selectedDate={currentDate} onSelectDate={setCurrentDate} />
 
-      <div className="p-6 rounded-3xl glass-panel bg-white/90 dark:bg-slate-900/90 border border-slate-200/80 dark:border-slate-800 shadow-xl space-y-6">
+      <div className="p-4 sm:p-6 rounded-xl surface-panel bg-surface-1 border border-hairline space-y-5 shadow-xs">
         {/* Calendar Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-200/60 dark:border-indigo-500/20">
-              <CalendarIcon className="w-5 h-5" />
+            <div className="p-2 rounded-lg bg-primary-subtle text-primary border border-primary-border">
+              <CalendarIcon className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="font-extrabold text-lg text-slate-900 dark:text-slate-100">
+              <h3 className="font-semibold text-base text-ink">
                 {monthNames[month]} NĂM {year}
               </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              <p className="text-xs text-ink-subtle font-normal">
                 Click vào bất kỳ ngày nào để xem và tạo công việc
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={prevMonth}
-              className="p-2 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+              className="p-1.5 rounded-md border border-hairline hover:bg-surface-2 text-ink-muted hover:text-ink transition-colors cursor-pointer"
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <button
               onClick={nextMonth}
-              className="p-2 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+              className="p-1.5 rounded-md border border-hairline hover:bg-surface-2 text-ink-muted hover:text-ink transition-colors cursor-pointer"
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -93,7 +92,7 @@ export function CalendarGrid() {
         </div>
 
         {/* Grid Days Header */}
-        <div className="grid grid-cols-7 gap-2 text-center text-xs font-extrabold text-slate-400 uppercase tracking-wider">
+        <div className="grid grid-cols-7 gap-2 text-center text-xs font-semibold text-ink-subtle uppercase tracking-wider">
           {daysOfWeek.map((day) => (
             <div key={day} className="py-1">
               {day}
@@ -105,7 +104,7 @@ export function CalendarGrid() {
         <div className="grid grid-cols-7 gap-2">
           {calendarCells.map((day, idx) => {
             if (day === null) {
-              return <div key={`empty-${idx}`} className="h-24 rounded-2xl bg-slate-50/30 dark:bg-slate-800/10" />;
+              return <div key={`empty-${idx}`} className="h-24 rounded-lg bg-surface-2/30" />;
             }
 
             const dayTodos = getTodosForDay(day);
@@ -113,28 +112,27 @@ export function CalendarGrid() {
             const targetDate = new Date(year, month, day);
 
             return (
-              <motion.div
+              <div
                 key={`day-${day}`}
-                whileHover={{ scale: 1.02 }}
                 onClick={() => setSelectedDayModal({ date: targetDate, todos: dayTodos })}
-                className={`h-24 p-2 rounded-2xl border flex flex-col justify-between transition-all overflow-hidden cursor-pointer ${
+                className={`h-24 p-2 rounded-lg border flex flex-col justify-between transition-colors overflow-hidden cursor-pointer ${
                   isToday
-                    ? 'bg-indigo-50/80 dark:bg-indigo-950/40 border-indigo-500/60 shadow-md shadow-indigo-500/10'
-                    : 'bg-slate-50/70 dark:bg-slate-800/40 border-slate-200/60 dark:border-slate-800 hover:border-indigo-500/40'
+                    ? 'bg-primary-subtle border-primary-border ring-1 ring-primary/20'
+                    : 'bg-surface-2 border-hairline hover:border-hairline-strong'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-xs font-black w-6 h-6 rounded-full flex items-center justify-center ${
+                    className={`text-xs font-semibold w-5 h-5 rounded-full flex items-center justify-center ${
                       isToday
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'text-slate-700 dark:text-slate-300'
+                        ? 'bg-primary text-on-primary shadow-xs'
+                        : 'text-ink'
                     }`}
                   >
                     {day}
                   </span>
                   {dayTodos.length > 0 && (
-                    <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-1.5 py-0.5 rounded-md">
+                    <span className="text-[10px] font-medium text-primary bg-primary-subtle px-1.5 py-0.5 rounded border border-primary-border">
                       {dayTodos.length} task
                     </span>
                   )}
@@ -144,10 +142,10 @@ export function CalendarGrid() {
                   {dayTodos.map((t) => (
                     <div
                       key={t.id}
-                      className={`text-[10px] p-1 rounded-md truncate font-semibold flex items-center gap-1 ${
+                      className={`text-[10px] p-1 rounded truncate font-medium flex items-center gap-1 ${
                         t.is_completed
-                          ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 line-through'
-                          : 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-300'
+                          ? 'bg-success/10 text-success line-through'
+                          : 'bg-surface-1 border border-hairline text-ink'
                       }`}
                       title={t.title}
                     >
@@ -156,7 +154,7 @@ export function CalendarGrid() {
                     </div>
                   ))}
                 </div>
-              </motion.div>
+              </div>
             );
           })}
         </div>

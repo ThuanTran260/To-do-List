@@ -14,37 +14,37 @@ export function PomodoroTimer() {
       {/* Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-40 p-3.5 rounded-2xl bg-gradient-to-tr from-indigo-600 to-violet-600 text-white shadow-xl shadow-indigo-500/30 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer"
+        className="fixed bottom-6 right-6 z-40 p-3 rounded-xl bg-surface-1 border border-hairline text-ink shadow-lg hover:border-hairline-strong transition-colors flex items-center gap-2 cursor-pointer"
         title="Mở đồng hồ Pomodoro"
       >
-        <Timer className="w-5 h-5 animate-pulse" />
-        <span className="font-mono font-extrabold text-xs hidden sm:inline">{formattedTime}</span>
+        <Timer className="w-4 h-4 text-primary" />
+        <span className="font-mono font-medium text-xs hidden sm:inline">{formattedTime}</span>
       </button>
 
       {/* Floating Pomodoro Widget Modal */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
-            transition={{ type: 'spring', damping: 22, stiffness: 320 }}
-            className="fixed bottom-20 right-6 z-50 w-72 p-5 rounded-3xl glass-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-2xl space-y-4"
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: 'spring', damping: 24, stiffness: 320 }}
+            className="fixed bottom-20 right-6 z-50 w-72 p-4 rounded-xl surface-panel bg-surface-1 border border-hairline shadow-2xl space-y-3"
           >
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between pb-2 border-b border-hairline">
               <div className="flex items-center gap-2">
                 {mode === 'focus' ? (
-                  <Flame className="w-5 h-5 text-indigo-500" />
+                  <Flame className="w-4 h-4 text-primary" />
                 ) : (
-                  <Coffee className="w-5 h-5 text-amber-500" />
+                  <Coffee className="w-4 h-4 text-warning" />
                 )}
-                <span className="font-extrabold text-xs uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                <span className="font-semibold text-xs text-ink">
                   {mode === 'focus' ? 'Phiên Tập Trung' : 'Nghỉ Giải Lao'}
                 </span>
               </div>
               <button
                 onClick={() => setIsOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                className="p-1 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -52,31 +52,31 @@ export function PomodoroTimer() {
 
             {/* Time Display */}
             <div className="text-center py-2">
-              <span className="font-mono text-4xl font-black text-indigo-600 dark:text-indigo-400 tracking-tight">
+              <span className="font-mono text-3xl font-semibold text-primary tracking-tight">
                 {formattedTime}
               </span>
             </div>
 
             {/* Controls */}
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex items-center justify-center gap-2 pt-1">
               <button
                 onClick={toggleTimer}
-                className={`py-2 px-5 rounded-xl text-white font-bold text-xs shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
+                className={`py-1.5 px-4 rounded-md text-on-primary font-medium text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
                   isActive
-                    ? 'bg-amber-500 hover:bg-amber-400'
-                    : 'bg-indigo-600 hover:bg-indigo-500'
+                    ? 'bg-warning hover:bg-warning/90'
+                    : 'bg-primary hover:bg-primary-hover'
                 }`}
               >
-                {isActive ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
                 <span>{isActive ? 'Tạm dừng' : 'Bắt đầu'}</span>
               </button>
 
               <button
                 onClick={resetTimer}
-                className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-600 dark:text-slate-300 text-xs font-semibold cursor-pointer"
+                className="p-1.5 rounded-md bg-surface-2 hover:bg-surface-3 text-ink text-xs font-medium border border-hairline cursor-pointer"
                 title="Đặt lại"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-3.5 h-3.5" />
               </button>
             </div>
           </motion.div>
