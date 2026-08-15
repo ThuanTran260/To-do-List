@@ -8,7 +8,6 @@ import { useRealtimeTodos } from '@/hooks/useRealtimeTodos';
 import { useBulkSelect } from '@/hooks/useBulkSelect';
 import { useSearchParams } from 'next/navigation';
 import { SortableTodoItem } from '@/components/todo/SortableTodoItem';
-import { TodoItem } from '@/components/todo/TodoItem';
 import { CategoryFilterBar } from '@/components/todo/CategoryFilterBar';
 import { BulkActionBar } from '@/components/todo/BulkActionBar';
 import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
@@ -63,7 +62,7 @@ function TodoListContent() {
   const { data: tags = [] } = useTags();
   const reorderMutation = useReorderTodos();
 
-  const { selectedIds, toggleSelect, selectAll, clearSelection, isSelected } = useBulkSelect();
+  const { selectedIds, toggleSelect, isSelected, clearSelection } = useBulkSelect();
 
   const todoList = data?.todos || [];
   const total = data?.total || 0;
@@ -136,7 +135,7 @@ function TodoListContent() {
       <CategoryFilterBar />
 
       {/* Controls Bar: Search & Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-center justify-between">
+      <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
         <div className="flex-1 max-w-md">
           <SearchAutocomplete />
         </div>
@@ -148,10 +147,10 @@ function TodoListContent() {
               params.delete('status');
               window.history.replaceState(null, '', `?${params.toString()}`);
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
               statusFilter === 'all'
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
-                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
+                : 'bg-surface-1 border-hairline text-ink-muted hover:text-ink hover:bg-surface-2'
             }`}
           >
             Tất cả ({total})
@@ -162,10 +161,10 @@ function TodoListContent() {
               params.set('status', 'active');
               window.history.replaceState(null, '', `?${params.toString()}`);
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
               statusFilter === 'active'
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
-                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
+                : 'bg-surface-1 border-hairline text-ink-muted hover:text-ink hover:bg-surface-2'
             }`}
           >
             Đang làm ({activeCount})
@@ -176,10 +175,10 @@ function TodoListContent() {
               params.set('status', 'completed');
               window.history.replaceState(null, '', `?${params.toString()}`);
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border cursor-pointer ${
               statusFilter === 'completed'
-                ? 'bg-indigo-600 text-white border-indigo-600 shadow-md shadow-indigo-500/20'
-                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
+                : 'bg-surface-1 border-hairline text-ink-muted hover:text-ink hover:bg-surface-2'
             }`}
           >
             Đã xong ({completedCount})
@@ -188,11 +187,11 @@ function TodoListContent() {
           {/* Tag Select Filter */}
           {tags.length > 0 && (
             <div className="flex items-center gap-1">
-              <TagIcon className="w-3.5 h-3.5 text-slate-400" />
+              <TagIcon className="w-3.5 h-3.5 text-ink-subtle" />
               <select
                 value={tagFilter}
                 onChange={(e) => setTagFilter(e.target.value)}
-                className="bg-white/60 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 focus:outline-none cursor-pointer"
+                className="bg-surface-1 px-2 py-1 rounded-md text-xs font-medium text-ink border border-hairline focus:outline-none cursor-pointer"
               >
                 <option value="all">Tất cả thẻ</option>
                 {tags.map((t) => (
@@ -206,7 +205,7 @@ function TodoListContent() {
 
           {/* Priority Select Filter */}
           <div className="flex items-center gap-1 pl-1">
-            <Filter className="w-3.5 h-3.5 text-slate-400" />
+            <Filter className="w-3.5 h-3.5 text-ink-subtle" />
             <select
               value={priorityFilter}
               onChange={(e) => {
@@ -215,7 +214,7 @@ function TodoListContent() {
                 else params.set('priority', e.target.value);
                 window.history.replaceState(null, '', `?${params.toString()}`);
               }}
-              className="bg-white/60 dark:bg-slate-800/60 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700 focus:outline-none cursor-pointer"
+              className="bg-surface-1 px-2 py-1 rounded-md text-xs font-medium text-ink border border-hairline focus:outline-none cursor-pointer"
             >
               <option value="all">Tất cả ưu tiên</option>
               <option value="high">Cao (High)</option>
@@ -231,14 +230,14 @@ function TodoListContent() {
               setShowBulkMode(!showBulkMode);
               if (showBulkMode) clearSelection();
             }}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all border flex items-center gap-1 cursor-pointer ${
+            className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors border flex items-center gap-1 cursor-pointer ${
               showBulkMode
-                ? 'bg-indigo-600 text-white border-indigo-600'
-                : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-600 dark:text-slate-400'
+                ? 'bg-primary text-on-primary border-primary'
+                : 'bg-surface-1 border-hairline text-ink-muted hover:text-ink hover:bg-surface-2'
             }`}
           >
             <CheckSquare className="w-3.5 h-3.5" />
-            <span>{showBulkMode ? 'Tắt chọn hàng loạt' : 'Chọn hàng loạt'}</span>
+            <span>{showBulkMode ? 'Tắt chọn' : 'Chọn nhiều'}</span>
           </button>
         </div>
       </div>
@@ -246,7 +245,7 @@ function TodoListContent() {
       {/* Task List Rendering with DnD Context */}
       <motion.div layout transition={springPillMotion}>
         {isLoading ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             <LoadingSkeleton variant="card" count={3} />
           </div>
         ) : isError ? (
@@ -269,15 +268,16 @@ function TodoListContent() {
                   <motion.div
                     key={item.id}
                     layout
-                    initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.94, filter: 'blur(4px)' }}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
                     transition={{
                       type: 'spring',
                       damping: 22,
                       stiffness: 300,
-                      delay: Math.min(index * 0.03, 0.2),
+                      delay: Math.min(index * 0.02, 0.15),
                     }}
+                    className="mb-2"
                   >
                     <SortableTodoItem
                       item={item}
@@ -298,11 +298,11 @@ function TodoListContent() {
 
       {/* Pagination Bar */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-between pt-4 border-t border-slate-200/60 dark:border-slate-800/60 text-xs font-semibold text-slate-500">
+        <div className="flex items-center justify-between pt-3 border-t border-hairline text-xs font-medium text-ink-subtle">
           <span>
             Trang {page} / {totalPages} (Tổng {total} công việc)
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               disabled={page <= 1}
               onClick={() => {
@@ -310,7 +310,7 @@ function TodoListContent() {
                 params.set('page', String(page - 1));
                 window.history.replaceState(null, '', `?${params.toString()}`);
               }}
-              className="px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-md border border-hairline hover:bg-surface-2 text-ink disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
               <span>Trước</span>
@@ -322,7 +322,7 @@ function TodoListContent() {
                 params.set('page', String(page + 1));
                 window.history.replaceState(null, '', `?${params.toString()}`);
               }}
-              className="px-3 py-1.5 rounded-xl border border-slate-200/80 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
+              className="px-2.5 py-1 rounded-md border border-hairline hover:bg-surface-2 text-ink disabled:opacity-40 transition-colors flex items-center gap-1 cursor-pointer"
             >
               <span>Sau</span>
               <ChevronRight className="w-3.5 h-3.5" />

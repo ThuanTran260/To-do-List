@@ -100,13 +100,13 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
   return (
     <>
       <div
-        className={`group relative p-4 rounded-2xl border backdrop-blur-md transition-all duration-200 hover:shadow-xl ${
+        className={`group relative p-3.5 sm:p-4 rounded-lg border transition-colors card-hover ${
           item.is_completed
-            ? 'bg-slate-100/60 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800/40 opacity-75'
+            ? 'bg-surface-2/60 border-hairline opacity-75'
             : isOverdue
-            ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200/80 dark:border-rose-900/40'
-            : 'glass-panel bg-white/80 dark:bg-slate-900/80 border-slate-200/80 dark:border-slate-800/80 hover:border-indigo-400 dark:hover:border-indigo-700'
-        } ${isSelected ? 'ring-2 ring-indigo-500 border-indigo-500' : ''}`}
+            ? 'bg-danger/8 border-danger/30'
+            : 'bg-surface-1 border-hairline hover:border-hairline-strong'
+        } ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
       >
         <div className="flex items-start justify-between gap-3 sm:gap-4">
           {/* Multi-select checkbox */}
@@ -115,7 +115,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
               type="checkbox"
               checked={isSelected}
               onChange={() => onToggleSelect(item.id)}
-              className="mt-1 w-4 h-4 rounded border-slate-700 bg-slate-800 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              className="mt-1 w-4 h-4 rounded border-hairline-strong bg-surface-2 text-primary focus:ring-primary cursor-pointer"
             />
           )}
 
@@ -130,24 +130,24 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
                 })
               }
               disabled={toggleMutation.isPending}
-              className={`mt-0.5 w-5 h-5 rounded-lg border flex items-center justify-center transition-all flex-shrink-0 cursor-pointer ${
+              className={`mt-0.5 w-4.5 h-4.5 rounded-md border flex items-center justify-center transition-colors flex-shrink-0 cursor-pointer ${
                 item.is_completed
-                  ? 'bg-indigo-600 border-indigo-600 text-white shadow-sm shadow-indigo-500/30'
-                  : 'border-slate-300 dark:border-slate-600 hover:border-indigo-500 bg-white dark:bg-slate-800'
+                  ? 'bg-primary border-primary text-on-primary'
+                  : 'border-hairline-strong hover:border-primary bg-surface-1'
               }`}
               title={item.is_completed ? 'Đánh dấu chưa hoàn thành' : 'Đánh dấu hoàn thành'}
             >
-              {item.is_completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+              {item.is_completed && <Check className="w-3 h-3 stroke-[3]" />}
             </button>
 
-            <div className="space-y-1.5 min-w-0 flex-1">
+            <div className="space-y-1 min-w-0 flex-1">
               <div className="flex items-center gap-2 flex-wrap">
                 <span
                   onClick={handleOpenDetail}
-                  className={`font-bold text-sm sm:text-base cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors break-words ${
+                  className={`font-medium text-sm sm:text-base cursor-pointer hover:text-primary transition-colors break-words ${
                     item.is_completed
-                      ? 'line-through text-slate-400 dark:text-slate-500'
-                      : 'text-slate-900 dark:text-slate-100'
+                      ? 'line-through text-ink-subtle'
+                      : 'text-ink'
                   }`}
                 >
                   {item.title}
@@ -160,7 +160,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
                     type="button"
                     onClick={(e) => handleSelectCategoryFilter(e, itemCategory.id)}
                     style={{ backgroundColor: itemCategory.color, color: categoryTextColor }}
-                    className="px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1.5 shadow-2xs border border-white/20 transition-transform active:scale-95 cursor-pointer"
+                    className="px-2 py-0.5 rounded text-[10px] font-medium flex items-center gap-1 shadow-2xs border border-white/20 transition-transform active:scale-98 cursor-pointer"
                   >
                     <span>📁</span>
                     <span>{itemCategory.name}</span>
@@ -172,14 +172,14 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
                 )}
 
                 {item.recurrence_rule && (
-                  <span className="px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 text-[10px] font-semibold flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-primary-subtle text-primary border border-primary-border flex items-center gap-1">
                     <Repeat className="w-3 h-3" />
                     <span>{getRRuleDescription(item.recurrence_rule)}</span>
                   </span>
                 )}
 
                 {item.pomodoro_count && item.pomodoro_count > 0 ? (
-                  <span className="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 text-[10px] font-semibold flex items-center gap-1">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-danger/10 text-danger border border-danger/20 flex items-center gap-1">
                     <Timer className="w-3 h-3" />
                     <span>🍅 {item.pomodoro_count}</span>
                   </span>
@@ -187,19 +187,19 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
               </div>
 
               {item.description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 font-medium">
+                <p className="text-xs text-ink-muted line-clamp-2 font-normal">
                   {item.description}
                 </p>
               )}
 
               {/* Meta information & Action Links */}
-              <div className="flex items-center gap-3 text-xs text-slate-400 dark:text-slate-500 flex-wrap pt-0.5">
+              <div className="flex items-center gap-3 text-xs text-ink-subtle flex-wrap pt-0.5">
                 {item.due_date && (
                   <div
-                    className={`flex items-center gap-1 font-semibold text-[11px] ${
+                    className={`flex items-center gap-1 font-medium text-[11px] ${
                       isOverdue
-                        ? 'text-rose-600 dark:text-rose-400 font-bold'
-                        : 'text-slate-500 dark:text-slate-400'
+                        ? 'text-danger font-semibold'
+                        : 'text-ink-subtle'
                     }`}
                   >
                     {isOverdue ? <Clock className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
@@ -212,7 +212,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
                 <button
                   type="button"
                   onClick={handleOpenDetail}
-                  className="text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  className="text-[11px] font-medium text-primary hover:text-primary-hover flex items-center gap-1 cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>Xem chi tiết</span>
@@ -225,34 +225,34 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
           {item.image_url && (
             <div
               onClick={handleOpenDetail}
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border border-slate-200/80 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 flex-shrink-0 cursor-pointer group-hover:shadow-md transition-all relative"
+              className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-hairline bg-surface-2 flex-shrink-0 cursor-pointer hover:border-hairline-strong transition-colors relative"
             >
               {/* eslint-disable-next-html-link */}
               <img
                 src={item.image_url}
                 alt={item.title}
                 loading="lazy"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 rounded-2xl"
+                className="w-full h-full object-cover rounded-lg"
               />
             </div>
           )}
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1 opacity-70 group-hover:opacity-100 transition-opacity">
             <button
               onClick={() => setIsEditing(true)}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1 rounded-md text-ink-subtle hover:text-primary hover:bg-surface-2 transition-colors cursor-pointer"
               title="Chỉnh sửa"
             >
-              <Edit3 className="w-4 h-4" />
+              <Edit3 className="w-3.5 h-3.5" />
             </button>
             <button
               onClick={handleDeleteWithUndo}
               disabled={deleteMutation.isPending}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+              className="p-1 rounded-md text-ink-subtle hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer"
               title="Xóa công việc"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>

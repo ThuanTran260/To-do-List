@@ -154,17 +154,17 @@ export function TodoForm() {
     <>
       <form
         onSubmit={handleSubmit}
-        className="relative rounded-3xl glass-panel bg-white/90 dark:bg-slate-900/80 border border-slate-200/80 dark:border-slate-800 shadow-xl overflow-hidden"
+        className="relative rounded-xl surface-panel bg-surface-1 border border-hairline overflow-hidden"
       >
-        <div className="p-4 sm:p-6 space-y-4 max-h-[70dvh] overflow-y-auto overscroll-contain no-scrollbar">
+        <div className="p-4 sm:p-5 space-y-4 max-h-[70dvh] overflow-y-auto overscroll-contain no-scrollbar">
           {/* Header Bar with TemplatePicker */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-indigo-600/10 text-indigo-600 dark:text-indigo-400">
-                <Sparkles className="w-4 h-4" />
+              <div className="p-1.5 rounded-md bg-primary-subtle text-primary border border-primary-border">
+                <Sparkles className="w-3.5 h-3.5" />
               </div>
-              <h3 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-slate-100 uppercase tracking-wider">
-                Add New Task (Tạo công việc mới)
+              <h3 className="font-semibold text-xs sm:text-sm text-ink uppercase tracking-wider">
+                Tạo công việc mới
               </h3>
             </div>
 
@@ -174,20 +174,23 @@ export function TodoForm() {
               <button
                 type="button"
                 onClick={() => setShowExtra(!showExtra)}
-                className={`text-xs font-bold transition-all px-3 py-1.5 rounded-xl flex items-center gap-1.5 border shadow-2xs cursor-pointer ${
-                  showExtra || description || categoryId || selectedFile || selectedTagIds.length > 0
-                    ? 'bg-indigo-50 dark:bg-indigo-950/70 border-indigo-200 dark:border-indigo-700 text-indigo-600 dark:text-indigo-300'
-                    : 'bg-white/60 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                className={`relative text-xs font-medium transition-colors px-2.5 py-1.5 rounded-md flex items-center gap-1.5 border cursor-pointer ${
+                  showExtra || description || categoryId || selectedFile
+                    ? 'bg-primary-subtle border-primary-border text-primary'
+                    : 'bg-surface-2 border-hairline text-ink-muted hover:text-ink hover:bg-surface-3'
                 }`}
               >
                 <AlignLeft className="w-3.5 h-3.5" />
                 <span>{showExtra ? 'Thu gọn' : 'Chi tiết'}</span>
+                {!showExtra && (description || categoryId || selectedFile) && (
+                  <span className="w-2 h-2 rounded-full bg-primary" title="Đã có nội dung đính kèm bên trong" />
+                )}
               </button>
             </div>
           </div>
 
           {errorMsg && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
+            <div className="p-2.5 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
@@ -196,8 +199,8 @@ export function TodoForm() {
           {/* Main Form Fields */}
           <div className="space-y-3">
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                Title (Tiêu đề - Gõ "ngày mai", "thứ 2" để tự phát hiện ngày)
+              <label className="block text-[11px] font-medium text-ink-subtle uppercase tracking-wider mb-1">
+                Tiêu đề (gõ &quot;ngày mai&quot;, &quot;thứ 2&quot; để tự phát hiện hạn)
               </label>
               <input
                 id="todo-title-input"
@@ -205,7 +208,7 @@ export function TodoForm() {
                 value={title}
                 onChange={(e) => handleTitleChange(e.target.value)}
                 placeholder="Tên công việc (ví dụ: Nộp báo cáo ngày mai 3h...)"
-                className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3.5 py-2.5 rounded-xl text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-semibold"
+                className="w-full bg-surface-2 px-3 py-2 rounded-md text-xs sm:text-sm text-ink placeholder:text-ink-subtle border border-hairline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border font-medium"
               />
 
               {/* Natural Language Date Suggestion Pill */}
@@ -214,9 +217,9 @@ export function TodoForm() {
                   <button
                     type="button"
                     onClick={applyNlpDate}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-medium hover:bg-indigo-500/20 transition-colors"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-primary-subtle border border-primary-border text-primary text-xs font-medium hover:bg-primary-subtle/80 transition-colors"
                   >
-                    <Wand2 className="w-3.5 h-3.5 text-amber-400" />
+                    <Wand2 className="w-3.5 h-3.5 text-warning" />
                     <span>Phát hiện hạn: {nlpPreview.toLocaleString('vi-VN')} — <b>Áp dụng</b></span>
                   </button>
                 </div>
@@ -226,25 +229,25 @@ export function TodoForm() {
             {/* Date & Priority Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Due Date (Hạn hoàn thành)
+                <label className="block text-[11px] font-medium text-ink-subtle uppercase tracking-wider mb-1">
+                  Hạn hoàn thành (Due date)
                 </label>
                 <button
                   type="button"
                   onClick={() => setIsDatePickerOpen(true)}
-                  className="w-full bg-slate-100/80 dark:bg-slate-800/80 px-3 py-2.5 rounded-xl text-xs text-slate-900 dark:text-slate-100 border border-slate-200/60 dark:border-slate-700 hover:border-indigo-500 focus:outline-none font-semibold flex items-center justify-between transition-colors cursor-pointer"
+                  className="w-full bg-surface-2 px-3 py-2 rounded-md text-xs text-ink border border-hairline hover:border-hairline-strong focus:outline-none font-medium flex items-center justify-between transition-colors cursor-pointer"
                 >
                   <div className="flex items-center gap-2 truncate">
-                    <Calendar className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                    <Calendar className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                     <span className="truncate">{formattedDueDateDisplay}</span>
                   </div>
-                  <Clock className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                  <Clock className="w-3.5 h-3.5 text-ink-subtle flex-shrink-0" />
                 </button>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                  Priority (Mức ưu tiên)
+                <label className="block text-[11px] font-medium text-ink-subtle uppercase tracking-wider mb-1">
+                  Mức ưu tiên (Priority)
                 </label>
                 <CustomPrioritySelect
                   value={priority}
@@ -261,7 +264,7 @@ export function TodoForm() {
 
             {/* Expandable Extra Panel */}
             <AnimatePresence initial={false}>
-              {(showExtra || description || categoryId || selectedFile) && (
+              {showExtra && (
                 <motion.div
                   key="expandable-extra-panel"
                   initial={{ height: 0, opacity: 0 }}
@@ -270,10 +273,10 @@ export function TodoForm() {
                   transition={springPillMotion}
                   className="overflow-visible"
                 >
-                  <div className="space-y-3 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
+                  <div className="space-y-3 pt-3 border-t border-hairline">
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Category (Danh mục)
+                      <label className="block text-[11px] font-medium text-ink-subtle uppercase tracking-wider mb-1">
+                        Danh mục (Category)
                       </label>
                       <CustomCategorySelect
                         categories={categories}
@@ -283,15 +286,15 @@ export function TodoForm() {
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
-                        Task Description (Mô tả chi tiết)
+                      <label className="block text-[11px] font-medium text-ink-subtle uppercase tracking-wider mb-1">
+                        Mô tả chi tiết (Description)
                       </label>
                       <textarea
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Nội dung chi tiết, mục tiêu, yêu cầu công việc..."
                         rows={3}
-                        className="w-full bg-slate-100/80 dark:bg-slate-800/80 p-3 rounded-xl text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 border border-slate-200/60 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-medium resize-y"
+                        className="w-full bg-surface-2 p-2.5 rounded-md text-xs text-ink placeholder:text-ink-subtle border border-hairline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border font-medium resize-y"
                       />
                     </div>
 
@@ -308,22 +311,22 @@ export function TodoForm() {
         </div>
 
         {/* Sticky Action Footer */}
-        <div className="sticky bottom-0 z-[60] px-4 py-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between gap-3 shadow-lg">
-          <div className="text-[11px] font-bold text-slate-400 hidden sm:block">
+        <div className="sticky bottom-0 z-[60] px-4 py-3 bg-surface-1/95 backdrop-blur-md border-t border-hairline flex items-center justify-between gap-3">
+          <div className="text-[11px] font-medium text-ink-subtle hidden sm:block">
             {showExtra ? 'Chế độ nhập chi tiết' : 'Chế độ tạo nhanh'}
           </div>
 
           <button
             type="submit"
             disabled={isSubmitting || createMutation.isPending}
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-extrabold text-xs shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-1.5 active:scale-95 disabled:opacity-50 cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs transition-colors flex items-center justify-center gap-1.5 active:scale-98 disabled:opacity-50 cursor-pointer shadow-xs"
           >
             {isSubmitting || createMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (
-              <Plus className="w-4 h-4 stroke-[3]" />
+              <Plus className="w-4 h-4 stroke-[2.5]" />
             )}
-            <span>Done (Tạo công việc)</span>
+            <span>Tạo công việc</span>
           </button>
         </div>
       </form>

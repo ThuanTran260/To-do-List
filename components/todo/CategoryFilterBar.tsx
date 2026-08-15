@@ -25,22 +25,18 @@ function CategoryFilterBarContent() {
   const { data: categories = [] } = useCategories();
 
   const handleSelectCategory = (catId: string | null) => {
-    // 1. Instant 60fps local state update (prevents Framer Motion layoutId reset)
     setActiveCategoryId(catId);
 
-    // 2. In-place URL update without triggering Next.js App Router Suspense unmounting
     const params = new URLSearchParams(window.location.search);
     if (catId) {
       params.set('category', catId);
     } else {
       params.delete('category');
     }
-    params.delete('page'); // Reset page to 1 on category change
+    params.delete('page');
 
     const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
     window.history.replaceState(null, '', newUrl);
-
-    // Dispatch popstate event so searchParams listeners update instantly
     window.dispatchEvent(new Event('popstate'));
   };
 
@@ -59,23 +55,23 @@ function CategoryFilterBarContent() {
   };
 
   const items = [
-    { id: null, name: 'Tất cả (All)', color: null },
-    { id: 'uncategorized', name: 'Chưa phân loại', color: '#94a3b8' },
+    { id: null, name: 'Tất cả', color: null },
+    { id: 'uncategorized', name: 'Chưa phân loại', color: '#8a8f98' },
     ...categories.map((c) => ({ id: c.id, name: c.name, color: c.color })),
   ];
 
   return (
     <LayoutGroup id="category-filter">
-      <div className="space-y-1.5 pb-2">
-        <div className="flex items-center justify-between text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-          <span>Lọc theo Danh mục (Categories Filter)</span>
-          <span>Dùng ◄ ► để chuyển</span>
+      <div className="space-y-1 pb-1">
+        <div className="flex items-center justify-between text-[11px] font-medium uppercase tracking-wider text-ink-subtle">
+          <span>Lọc theo Danh mục</span>
+          <span>◄ ► Chuyển nhanh</span>
         </div>
 
         <div
           role="tablist"
           aria-label="Category Filter List"
-          className="flex items-center gap-1.5 overflow-x-auto py-1.5 no-scrollbar scroll-smooth"
+          className="flex items-center gap-1.5 overflow-x-auto py-1 no-scrollbar scroll-smooth"
         >
           {items.map((item, index) => {
             const isActive =
@@ -91,28 +87,28 @@ function CategoryFilterBarContent() {
                 tabIndex={isActive ? 0 : -1}
                 onClick={() => handleSelectCategory(item.id)}
                 onKeyDown={(e) => handleKeyDown(e, index, items.length)}
-                className={`relative px-3.5 py-1.5 rounded-xl text-xs font-bold transition-colors flex items-center gap-1.5 flex-shrink-0 border focus:outline-none focus:ring-2 focus:ring-indigo-500/50 cursor-pointer ${
+                className={`relative px-3 py-1.5 rounded-md text-xs font-medium transition-colors flex items-center gap-1.5 flex-shrink-0 border focus:outline-none focus:ring-2 focus:ring-primary/50 cursor-pointer ${
                   isActive
-                    ? 'text-white border-transparent shadow-md shadow-indigo-500/20 font-black'
-                    : 'bg-white/80 dark:bg-slate-900/60 border-slate-200/80 dark:border-slate-800/80 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 font-bold'
+                    ? 'text-on-primary border-transparent font-semibold shadow-xs'
+                    : 'bg-surface-1 border-hairline text-ink-muted hover:bg-surface-2 hover:text-ink'
                 }`}
               >
                 {isActive && (
                   <motion.div
                     layoutId="category-filter-active-pill"
                     transition={springPillMotion}
-                    className="absolute inset-0 rounded-xl bg-indigo-600 dark:bg-indigo-600 z-0 shadow-md shadow-indigo-500/30"
+                    className="absolute inset-0 rounded-md bg-primary z-0 shadow-xs"
                   />
                 )}
 
                 <div className="flex items-center gap-1.5 relative z-10">
                   {item.color ? (
                     <span
-                      className="w-2.5 h-2.5 rounded-full shadow-xs"
+                      className="w-2 h-2 rounded-full shadow-xs"
                       style={{ backgroundColor: item.color }}
                     />
                   ) : (
-                    <Layers className="w-3.5 h-3.5 flex-shrink-0 opacity-80" />
+                    <Layers className="w-3 h-3 flex-shrink-0 opacity-80" />
                   )}
                   <span className="truncate">{item.name}</span>
                 </div>

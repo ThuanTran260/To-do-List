@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { UploadCloud, Image as ImageIcon, X, Loader2, AlertCircle } from 'lucide-react';
+import { UploadCloud, X, Loader2, AlertCircle } from 'lucide-react';
 
 interface ImageUploadProps {
   value?: string | null;
@@ -98,31 +98,31 @@ export function ImageUpload({
   };
 
   return (
-    <div className="space-y-2">
-      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-        Upload Image (Ảnh minh họa công việc)
+    <div className="space-y-1.5">
+      <label className="block text-xs font-medium text-ink-muted">
+        Ảnh minh họa công việc (Attachment)
       </label>
 
       {errorMsg && (
-        <div className="p-2.5 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs flex items-center gap-1.5 font-medium">
-          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+        <div className="p-2 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-1.5 font-medium">
+          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {displayUrl ? (
-        <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-slate-900/5 dark:bg-slate-900/40 group aspect-video sm:aspect-[2/1] max-h-56 flex items-center justify-center">
+        <div className="relative rounded-lg overflow-hidden border border-hairline bg-surface-2 group aspect-video sm:aspect-[2/1] max-h-56 flex items-center justify-center">
           {/* eslint-disable-next-html-link */}
           <img
             src={displayUrl}
             alt="Task attachment preview"
-            className="w-full h-full object-cover rounded-2xl transition-transform group-hover:scale-105"
+            className="w-full h-full object-cover rounded-lg"
           />
 
           {isUploading && (
-            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-2">
-              <Loader2 className="w-6 h-6 animate-spin text-indigo-400" />
-              <span className="text-xs font-bold">{statusText || 'Đang tải ảnh lên...'}</span>
+            <div className="absolute inset-0 bg-overlay backdrop-blur-xs flex flex-col items-center justify-center text-white space-y-1.5">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <span className="text-xs font-medium">{statusText || 'Đang tải ảnh lên...'}</span>
             </div>
           )}
 
@@ -130,10 +130,10 @@ export function ImageUpload({
             <button
               type="button"
               onClick={handleRemove}
-              className="absolute top-3 right-3 p-1.5 rounded-xl bg-slate-900/70 hover:bg-rose-600 text-white backdrop-blur-md transition-colors shadow-lg"
+              className="absolute top-2.5 right-2.5 p-1.5 rounded-md bg-surface-1/90 hover:bg-danger text-ink hover:text-white border border-hairline transition-colors shadow-md cursor-pointer"
               title="Gỡ ảnh"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
@@ -144,10 +144,10 @@ export function ImageUpload({
           onDragOver={handleDrag}
           onDrop={handleDrop}
           onClick={() => inputRef.current?.click()}
-          className={`p-6 rounded-2xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 ${
+          className={`p-5 rounded-lg border border-dashed transition-colors cursor-pointer flex flex-col items-center justify-center text-center space-y-1.5 ${
             dragActive
-              ? 'border-indigo-500 bg-indigo-500/10'
-              : 'border-slate-300 dark:border-slate-800 hover:border-indigo-500/50 hover:bg-slate-100/50 dark:hover:bg-slate-900/40 bg-slate-50/50 dark:bg-slate-900/20'
+              ? 'border-primary bg-primary-subtle'
+              : 'border-hairline hover:border-hairline-strong bg-surface-2/50'
           }`}
         >
           <input
@@ -157,16 +157,16 @@ export function ImageUpload({
             onChange={handleSelect}
             className="hidden"
           />
-          <div className="p-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400">
-            <UploadCloud className="w-6 h-6" />
+          <div className="p-2 rounded-lg bg-primary-subtle text-primary border border-primary-border">
+            <UploadCloud className="w-5 h-5" />
           </div>
           <div className="space-y-0.5">
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
-              Drag & Drop files here <span className="text-slate-400 font-normal">OR</span>{' '}
-              <span className="text-indigo-600 dark:text-indigo-400 hover:underline">Browse</span>
+            <p className="text-xs font-medium text-ink">
+              Kéo thả ảnh vào đây <span className="text-ink-subtle font-normal">hoặc</span>{' '}
+              <span className="text-primary hover:underline">Chọn từ máy</span>
             </p>
-            <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Hỗ trợ JPG, PNG, WebP (Tối đa 10MB)
+            <p className="text-[11px] text-ink-subtle">
+              JPG, PNG, WebP (Tối đa 10MB)
             </p>
           </div>
         </div>

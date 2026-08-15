@@ -1,7 +1,6 @@
 'use client';
 
 import { ReactNode, useRef, useEffect } from 'react';
-import { popoverMotion } from '@/lib/motion';
 
 interface FloatingPanelProps {
   isOpen: boolean;
@@ -32,15 +31,15 @@ export function FloatingPanel({ isOpen, onClose, children, className = '' }: Flo
     <div
       ref={panelRef}
       style={{
-        animation: 'popoverIn 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+        animation: 'popoverIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       }}
-      className={`absolute right-0 top-full mt-2 z-50 rounded-2xl glass-panel bg-white/95 dark:bg-slate-900/95 border border-slate-200/80 dark:border-slate-800 shadow-2xl backdrop-blur-2xl ${className}`}
+      className={`absolute right-0 top-full mt-1.5 z-50 rounded-xl surface-panel bg-surface-1 border border-hairline shadow-xl ${className}`}
     >
       <style jsx>{`
         @keyframes popoverIn {
           from {
             opacity: 0;
-            transform: translateY(-8px) scale(0.96);
+            transform: translateY(-4px) scale(0.98);
           }
           to {
             opacity: 1;

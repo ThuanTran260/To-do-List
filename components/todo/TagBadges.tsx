@@ -19,8 +19,8 @@ export function TagBadges({ tags }: TagBadgesProps) {
       {tags.map((tag) => (
         <span
           key={tag.id}
-          style={{ backgroundColor: `${tag.color}15`, color: tag.color, borderColor: `${tag.color}40` }}
-          className="px-2 py-0.5 rounded-md text-[10px] font-extrabold border uppercase tracking-wider"
+          style={{ backgroundColor: `${tag.color}15`, color: tag.color, borderColor: `${tag.color}35` }}
+          className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
         >
           #{tag.name}
         </span>

@@ -6,7 +6,7 @@ import { useTrashTodos, useRestoreTodo, usePermanentDeleteTodo } from '@/hooks/u
 import { deleteTaskImage } from '@/lib/storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { RotateCcw, Trash2, Calendar, AlertCircle, Loader2, Sparkles } from 'lucide-react';
+import { RotateCcw, Trash2, Calendar, AlertCircle, Loader2 } from 'lucide-react';
 import { PriorityBadge } from '@/components/ui/Badge';
 
 interface TrashModalProps {
@@ -37,7 +37,6 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
     setBulkStatus('Đang dọn dẹp ảnh storage...');
 
     try {
-      // 1. Delete image attachments from Storage for all trashed items
       for (const item of trashList) {
         if (item.image_url) {
           await deleteTaskImage(item.image_url);
@@ -93,8 +92,8 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Thùng rác Todo">
       <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-1">
-        <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-200/60 dark:border-slate-800/60">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+        <div className="flex items-center justify-between gap-2 pb-2 border-b border-hairline">
+          <p className="text-xs text-ink-subtle">
             Các mục trong thùng rác sẽ tự động được xóa vĩnh viễn sau 30 ngày.
           </p>
 
@@ -103,14 +102,14 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
               <button
                 onClick={handleRestoreAllTrash}
                 disabled={isBulkProcessing}
-                className="px-2.5 py-1 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 transition-colors border border-indigo-200 dark:border-indigo-800 disabled:opacity-50"
+                className="px-2.5 py-1 rounded-md bg-primary-subtle text-primary text-xs font-medium hover:bg-primary-subtle/80 transition-colors border border-primary-border disabled:opacity-50 cursor-pointer"
               >
                 Khôi phục tất cả
               </button>
               <button
                 onClick={handleClearAllTrash}
                 disabled={isBulkProcessing}
-                className="px-2.5 py-1 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold hover:bg-rose-500/20 transition-colors border border-rose-500/20 disabled:opacity-50"
+                className="px-2.5 py-1 rounded-md bg-danger/10 text-danger text-xs font-medium hover:bg-danger/20 transition-colors border border-danger/20 disabled:opacity-50 cursor-pointer"
               >
                 Xóa tất cả
               </button>
@@ -119,35 +118,35 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
         </div>
 
         {isBulkProcessing && (
-          <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-xs font-bold flex items-center justify-center gap-2">
+          <div className="p-2.5 rounded-md bg-primary-subtle border border-primary-border text-primary text-xs font-medium flex items-center justify-center gap-2">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>{bulkStatus || 'Đang xử lý hàng loạt...'}</span>
           </div>
         )}
 
         {isLoading ? (
-          <div className="py-8 text-center text-sm text-slate-400">Đang tải...</div>
+          <div className="py-8 text-center text-xs text-ink-subtle">Đang tải...</div>
         ) : trashList.length === 0 ? (
-          <div className="py-8 text-center flex flex-col items-center justify-center text-slate-400 gap-2">
-            <AlertCircle className="w-8 h-8 opacity-40" />
-            <p className="text-sm font-medium">Thùng rác trống</p>
+          <div className="py-8 text-center flex flex-col items-center justify-center text-ink-subtle gap-2">
+            <AlertCircle className="w-6 h-6 opacity-40" />
+            <p className="text-xs font-medium">Thùng rác trống</p>
           </div>
         ) : (
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             {trashList.map((item) => (
               <div
                 key={item.id}
-                className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 text-slate-800 dark:text-slate-200"
+                className="flex items-center justify-between p-3 rounded-lg border border-hairline bg-surface-2 text-ink"
               >
                 <div className="space-y-1 max-w-[70%]">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-sm truncate line-through text-slate-500">
+                    <span className="font-medium text-xs truncate line-through text-ink-subtle">
                       {item.title}
                     </span>
                     <PriorityBadge priority={item.priority} />
                   </div>
                   {item.deleted_at && (
-                    <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                    <div className="flex items-center gap-1 text-[10px] text-ink-subtle">
                       <Calendar className="w-3 h-3" />
                       <span>Đã xóa: {new Date(item.deleted_at).toLocaleDateString('vi-VN')}</span>
                     </div>
@@ -158,10 +157,10 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
                   <button
                     onClick={() => restoreMutation.mutate(item.id)}
                     disabled={restoreMutation.isPending || isBulkProcessing}
-                    className="p-2 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors text-xs font-medium flex items-center gap-1"
+                    className="p-1.5 rounded-md text-primary hover:bg-primary-subtle transition-colors text-xs font-medium flex items-center gap-1 cursor-pointer"
                     title="Khôi phục"
                   >
-                    <RotateCcw className="w-4 h-4" />
+                    <RotateCcw className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">Khôi phục</span>
                   </button>
                   <button
@@ -174,10 +173,10 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
                       }
                     }}
                     disabled={permanentDeleteMutation.isPending || isBulkProcessing}
-                    className="p-2 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors"
+                    className="p-1.5 rounded-md text-danger hover:bg-danger/10 transition-colors cursor-pointer"
                     title="Xóa vĩnh viễn"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>

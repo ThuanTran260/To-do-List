@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -12,6 +13,12 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' }: ModalProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
@@ -26,29 +33,29 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
     };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[9000] flex items-center justify-center p-3 sm:p-6">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-950/65 backdrop-blur-md transition-opacity"
+        className="fixed inset-0 bg-overlay backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Modal Container with max-h-[85dvh] and flex layout */}
       <div
-        className={`relative w-full ${maxWidth} max-h-[85dvh] flex flex-col overflow-hidden rounded-3xl shadow-2xl transition-all duration-300 border border-slate-200/80 dark:border-slate-800/80 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 z-[9500] backdrop-blur-xl`}
+        className={`relative w-full ${maxWidth} max-h-[85dvh] flex flex-col overflow-hidden rounded-xl shadow-2xl transition-all duration-200 border border-hairline bg-surface-1 text-ink z-[9500]`}
       >
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200/60 dark:border-slate-800/60 flex-shrink-0">
-          <h3 className="text-base sm:text-lg font-extrabold bg-gradient-to-r from-indigo-600 to-violet-600 dark:from-indigo-400 dark:to-violet-400 bg-clip-text text-transparent">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-hairline flex-shrink-0">
+          <h3 className="text-sm sm:text-base font-semibold text-ink">
             {title}
           </h3>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-1 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 transition-colors cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
@@ -57,6 +64,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

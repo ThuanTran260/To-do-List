@@ -8,9 +8,9 @@ export function AppToaster() {
       position="bottom-right"
       toastOptions={{
         className:
-          'glass-panel border border-slate-200/80 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 text-slate-900 dark:text-slate-100 font-sans shadow-2xl rounded-2xl',
+          'surface-panel border border-hairline bg-surface-1 text-ink font-sans shadow-lg rounded-lg text-xs',
         style: {
-          padding: '12px 16px',
+          padding: '10px 14px',
         },
       }}
     />
