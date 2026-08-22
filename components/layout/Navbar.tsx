@@ -13,7 +13,7 @@ export function Navbar() {
   const handleSignOut = async () => {
     try {
       Object.keys(localStorage)
-        .filter((key) => key.startsWith('sb-'))
+        .filter((key) => key.startsWith('sb-') || key.startsWith('note_draft_') || key.startsWith('note_emergency_draft_'))
         .forEach((key) => localStorage.removeItem(key));
     } catch {}
     try { sessionStorage.clear(); } catch {}
