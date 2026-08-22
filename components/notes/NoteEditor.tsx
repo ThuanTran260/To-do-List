@@ -93,7 +93,7 @@ export function NoteEditor({
     editorProps: {
       attributes: {
         class:
-          'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[140px] px-3 py-2 text-ink text-sm leading-relaxed',
+          'tiptap-editor prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[140px] px-3 py-2 text-ink text-sm leading-relaxed',
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
