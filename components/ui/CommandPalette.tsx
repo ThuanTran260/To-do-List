@@ -15,6 +15,7 @@ import {
   Database,
   ArrowRight,
   Sparkles,
+  StickyNote,
 } from 'lucide-react';
 
 interface CommandPaletteProps {
@@ -70,6 +71,16 @@ export function CommandPalette({ isOpen, onClose, onOpenNewTask }: CommandPalett
       action: () => {
         onClose();
         router.push('/dashboard/categories');
+      },
+    },
+    {
+      id: 'nav-notes',
+      title: 'Đi đến Ghi chú (Notes)',
+      icon: StickyNote,
+      shortcut: 'G N',
+      action: () => {
+        onClose();
+        router.push('/dashboard/notes');
       },
     },
     {

@@ -19,6 +19,7 @@ import {
   Calendar,
   Columns3,
   Target,
+  StickyNote,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -54,7 +55,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     // Selectively purge client storage keys
     try {
       Object.keys(localStorage)
-        .filter((key) => key.startsWith('sb-'))
+        .filter((key) => key.startsWith('sb-') || key.startsWith('note_draft_') || key.startsWith('note_emergency_draft_'))
         .forEach((key) => localStorage.removeItem(key));
     } catch {}
     try { sessionStorage.clear(); } catch {}
@@ -70,6 +71,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     { label: 'Calendar View', href: '/dashboard/calendar', icon: Calendar },
     { label: 'Kanban Board', href: '/dashboard/board', icon: Columns3 },
     { label: 'My Tasks', href: '/dashboard/tasks', icon: CheckSquare },
+    { label: 'Ghi chú & Note', href: '/dashboard/notes', icon: StickyNote },
     { label: 'Task Categories', href: '/dashboard/categories', icon: FolderKanban },
   ];
 
