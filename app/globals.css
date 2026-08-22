@@ -263,45 +263,59 @@ body {
   color: var(--ink-muted);
 }
 
+/* TipTap TaskList Styles — Bulletproof Inline Alignment */
+.tiptap-editor ul[data-type="taskList"],
 .ProseMirror ul[data-type="taskList"] {
   list-style: none !important;
   padding: 0 !important;
-  margin: 0.5rem 0 !important;
+  margin: 0.35rem 0 !important;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"],
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] {
   display: flex !important;
   flex-direction: row !important;
-  align-items: flex-start !important;
+  align-items: center !important;
   gap: 0.5rem !important;
-  margin: 0.25rem 0 !important;
+  margin: 0.2rem 0 !important;
   padding: 0 !important;
-  list-style-type: none !important;
+  list-style: none !important;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"]::marker,
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"]::before,
+.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"]::marker,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"]::before {
   display: none !important;
+  content: none !important;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > label,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label {
   display: inline-flex !important;
   align-items: center !important;
   justify-content: center !important;
-  user-select: none;
-  margin: 0.2rem 0 0 0 !important;
-  cursor: pointer;
   flex-shrink: 0 !important;
+  user-select: none;
+  cursor: pointer;
+  margin: 0 !important;
+  padding: 0 !important;
+  line-height: 1 !important;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"],
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"] {
   cursor: pointer;
   accent-color: var(--primary);
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 1rem !important;
+  height: 1rem !important;
   border-radius: 4px;
   margin: 0 !important;
+  padding: 0 !important;
+  vertical-align: middle;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > div,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > div {
   flex: 1 1 auto !important;
   min-width: 0 !important;
@@ -309,11 +323,15 @@ body {
   padding: 0 !important;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > div > p,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > div > p {
   margin: 0 !important;
+  padding: 0 !important;
   line-height: 1.5 !important;
 }
 
+.tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div > p,
+.ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div > p,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
   text-decoration: line-through;
   color: var(--ink-subtle);
