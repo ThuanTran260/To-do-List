@@ -66,9 +66,14 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
         top = rect.bottom + 8;
       }
 
-      setCoords({
-        left: left + window.scrollX,
-        top: top + window.scrollY,
+      const newLeft = left + window.scrollX;
+      const newTop = top + window.scrollY;
+
+      setCoords((prev) => {
+        if (prev && Math.abs(prev.left - newLeft) < 1 && Math.abs(prev.top - newTop) < 1) {
+          return prev;
+        }
+        return { left: newLeft, top: newTop };
       });
     };
 

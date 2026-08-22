@@ -103,9 +103,18 @@ export function NoteEditor({
 
   // Keep editor content updated if incoming content changes remotely
   useEffect(() => {
-    if (editor && content !== undefined && editor.getHTML() !== content) {
-      // Only set content if editor is not currently focused by user
-      if (!editor.isFocused) {
+    if (editor && content !== undefined) {
+      const normalize = (val?: string) => {
+        if (!val) return '';
+        const trimmed = val.trim();
+        if (trimmed === '<p></p>' || trimmed === '<p><br></p>' || trimmed === '<p></p>\n') return '';
+        return trimmed;
+      };
+
+      const currentHtml = normalize(editor.getHTML());
+      const incomingHtml = normalize(content);
+
+      if (currentHtml !== incomingHtml && !editor.isFocused) {
         editor.commands.setContent(content || '', { emitUpdate: false });
       }
     }
