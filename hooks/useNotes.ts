@@ -183,23 +183,15 @@ export function useUpdateNote() {
         updateData.content = sanitizeHtml(updateData.content);
       }
 
-      let query = supabase
+      const { data, error } = await supabase
         .from('notes')
         .update(updateData)
         .eq('id', id)
-        .eq('user_id', user.id);
-
-      // Optimistic lock check if lastKnownUpdatedAt is passed
-      if (lastKnownUpdatedAt) {
-        query = query.eq('updated_at', lastKnownUpdatedAt);
-      }
-
-      const { data, error } = await query.select().single();
+        .eq('user_id', user.id)
+        .select()
+        .single();
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          throw new Error('VERSION_CONFLICT');
-        }
         throw error;
       }
 
