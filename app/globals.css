@@ -263,7 +263,9 @@ body {
   color: var(--ink-muted);
 }
 
-/* TipTap TaskList Styles — Geometric Line-Height Alignment & A11y */
+/* TipTap TaskList Styles — Bulletproof not-prose & Geometric Alignment */
+ul.task-list,
+.not-prose.task-list,
 .tiptap-editor ul[data-type="taskList"],
 .ProseMirror ul[data-type="taskList"],
 ul[data-type="taskList"] {
@@ -272,6 +274,8 @@ ul[data-type="taskList"] {
   margin: 0.35rem 0 !important;
 }
 
+ul.task-list li,
+.not-prose.task-list li,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"],
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"],
 ul[data-type="taskList"] li[data-type="taskItem"] {
@@ -284,6 +288,8 @@ ul[data-type="taskList"] li[data-type="taskItem"] {
   list-style: none !important;
 }
 
+ul.task-list li::marker,
+ul.task-list li::before,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"]::marker,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"]::before,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"]::marker,
@@ -294,6 +300,8 @@ ul[data-type="taskList"] li[data-type="taskItem"]::before {
   content: none !important;
 }
 
+ul.task-list li > label,
+.not-prose.task-list li > label,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > label,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label,
 ul[data-type="taskList"] li[data-type="taskItem"] > label {
@@ -303,32 +311,38 @@ ul[data-type="taskList"] li[data-type="taskItem"] > label {
   flex: 0 0 1.25rem !important;
   width: 1.25rem !important;
   height: 1.5rem !important;
-  user-select: none;
-  cursor: pointer;
+  user-select: none !important;
+  cursor: pointer !important;
   margin: 0 !important;
   padding: 0 !important;
   line-height: 1.5rem !important;
 }
 
+ul.task-list li > label input[type="checkbox"],
+.not-prose.task-list li > label input[type="checkbox"],
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"],
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"],
 ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"] {
-  cursor: pointer;
-  accent-color: var(--primary);
+  cursor: pointer !important;
+  accent-color: var(--primary) !important;
   width: 1rem !important;
   height: 1rem !important;
-  border-radius: 4px;
+  border-radius: 4px !important;
   margin: 0 !important;
   padding: 0 !important;
-  vertical-align: middle;
+  vertical-align: middle !important;
 }
 
+ul.task-list li > label input[type="checkbox"]:focus-visible,
+.not-prose.task-list li > label input[type="checkbox"]:focus-visible,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"]:focus-visible,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > label input[type="checkbox"]:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
+  outline: 2px solid var(--primary) !important;
+  outline-offset: 2px !important;
 }
 
+ul.task-list li > div,
+.not-prose.task-list li > div,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > div,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > div,
 ul[data-type="taskList"] li[data-type="taskItem"] > div {
@@ -338,6 +352,8 @@ ul[data-type="taskList"] li[data-type="taskItem"] > div {
   padding: 0 !important;
 }
 
+ul.task-list li > div > p,
+.not-prose.task-list li > div > p,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"] > div > p,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"] > div > p,
 ul[data-type="taskList"] li[data-type="taskItem"] > div > p {
@@ -347,12 +363,14 @@ ul[data-type="taskList"] li[data-type="taskItem"] > div > p {
   min-height: 1.5rem !important;
 }
 
+ul.task-list li[data-checked="true"] > div > p,
+.not-prose.task-list li[data-checked="true"] > div > p,
 .tiptap-editor ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div > p,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div > p,
 .ProseMirror ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div,
 ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
-  text-decoration: line-through;
-  color: var(--ink-subtle);
+  text-decoration: line-through !important;
+  color: var(--ink-subtle) !important;
 }
 
 .ProseMirror mark {

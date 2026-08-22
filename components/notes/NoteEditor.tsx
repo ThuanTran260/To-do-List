@@ -81,8 +81,17 @@ export function NoteEditor({
         heading: { levels: [1, 2, 3] },
       }),
       Highlight.configure({ multicolor: true }),
-      TaskList,
-      TaskItem.configure({ nested: true }),
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'not-prose task-list space-y-1 my-2 p-0 list-none',
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: 'flex flex-row items-start gap-2.5 my-1 list-none',
+        },
+      }),
       Placeholder.configure({
         placeholder: 'Ghi chú ý tưởng, danh sách việc, hoặc dán nội dung...',
       }),
