@@ -194,3 +194,45 @@ todo-app/
 ├── .gitignore
 └── package.json
 ```
+
+---
+
+## 6. TipTap / ProseMirror & Rich Text Editor Invariants (Quy Tắc Bắt Buộc Khi Soạn Thảo)
+
+Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, và Tailwind CSS Typography (`.prose`):
+
+1. **QUY TẮC CÔ LẬP `not-prose` (Not-Prose Isolation Invariant):**
+   - Không bao giờ để `.prose` tự do can thiệp vào các thành phần có cấu trúc con đặc biệt như `TaskList`, `TaskItem`, `CodeBlock`.
+   - Bắt buộc phải cấu hình `HTMLAttributes` trực tiếp trong Extension:
+     ```tsx
+     TaskList.configure({
+       HTMLAttributes: {
+         class: 'not-prose task-list space-y-1 my-2 p-0 list-none',
+       },
+     }),
+     TaskItem.configure({
+       nested: true,
+       HTMLAttributes: {
+         class: 'flex flex-row items-start gap-2.5 my-1 list-none',
+       },
+     }),
+     ```
+
+2. **QUY TẮC HÌNH HỌC ĐƯỜNG CƠ SỞ (Geometric Line-Height Equality):**
+   - Để tránh checkbox và con trỏ văn bản bị tách thành 2 dòng:
+     - Khóa cứng `height: 1.5rem !important; line-height: 1.5rem !important;` trên `<label>` bọc checkbox.
+     - Khóa cứng `line-height: 1.5rem !important; min-height: 1.5rem !important; margin: 0 !important;` trên thẻ `<p>` bên trong `<div>`.
+     - Đặt `align-items: flex-start !important;` trên `li[data-type="taskItem"]` để ô checkbox luôn bám cố định vào dòng đầu tiên.
+
+3. **QUY TẮC CHỐNG CƯỚP FOCUS (Toolbar Focus Stealing Prevention):**
+   - Mọi `<button>` trên thanh công cụ soạn thảo **bắt buộc phải có `onMouseDown={(e) => e.preventDefault()}`** để ngăn trình duyệt cướp focus khỏi vùng văn bản.
+
+4. **QUY TẮC LUỒNG DỮ LIỆU 1 CHIỀU CHO AUTOSAVE (Unidirectional Buffer Engine):**
+   - TipTap ProseMirror AST là **Single Source of Truth** duy nhất khi đang soạn thảo.
+   - Tuyệt đối không dùng 2-way sync `useEffect` gọi `editor.commands.setContent()` khi `content` state thay đổi trong cùng 1 ghi chú (nguyên nhân gây ra `Maximum update depth exceeded`).
+   - Chỉ gọi `setContent` khi chuyển hẳn sang một `note.id` khác.
+   - Lưu trữ dữ liệu đang gõ vào `refs` (`dataRef.current`) để hàm debounce autosave đọc trực tiếp, triệt tiêu 100% Stale Closures.
+
+5. **QUY TẮC CẬP NHẬT SUPABASE POSTGREST (Optimistic Lock Invariant):**
+   - Không so sánh chuỗi `updated_at` trong mệnh đề `.eq('updated_at', ...)` của REST URL query trên Supabase vì sự sai lệch độ chính xác microsecond (6 chữ số trong PostgreSQL vs 3 chữ số trong JS `toISOString()`) gây ra lỗi `406 Not Acceptable (PGRST116)`.
+   - Update trực tiếp bằng `.eq('id', id).eq('user_id', user.id)` và để PostgreSQL trigger tự sinh `updated_at` mới nhất.
