@@ -1,12 +1,19 @@
 # Context Engineering & AI Execution Rules: Flow State (Next.js + Supabase + Superpowers)
 
-> Tài liệu này vừa là "bộ nào" tham chiếu kiến trúc, vừa chứa các QUY TẮC BẮT BUỘC (System Rules) dành cho AI Agent khi làm việc với dự án này.
+> Tài liệu này vừa là "bộ não" tham chiếu kiến trúc, vừa chứa các QUY TẮC BẮT BUỘC (System Rules) dành cho AI Agent khi làm việc với dự án này.
+
+---
+
+## 🚫 QUY TẮC GIT & REMOTE REPOSITORY (BẮT BUỘC)
+- **TUYỆT ĐỐI KHÔNG TỰ ĐỘNG `git push`**:
+  - AI Assistant chỉ thực hiện các thao tác Git cục bộ (`git add`, `git commit`, `git status`, `git diff`, `git branch`).
+  - Sau khi hoàn thành và commit xong, chỉ thông báo cho người dùng và để người dùng tự quyết định thời điểm push lên GitHub.
 
 ---
 
 ## 0. Quy Tắc Bắt Buộc Sử Dụng Superpowers Skills (Superpowers Mandatory Execution Rules)
 
-AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải áp dụng bộ quy trình kỹ năng trong thư mục `.agents/skills/superpowers/skills/`:
+AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải áp dụng bộ quy trình kỹ năng trong thư mục `.agents/skills/superpowers/skills/` và `.agents/skills/`:
 
 1. **BẮT BUỘC ÁP DỤNG `systematic-debugging` KHI CÓ LỖI / BUG:**
    - Tuân thủ nghiêm ngặt **The Iron Law**: **KHÔNG BAO GIỜ SỬA CODE KHI CHƯA TÌM RA NGUYÊN NHÂN GỐC RỄ (ROOT CAUSE ANALYSIS - RCA)**.
@@ -236,3 +243,56 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, và Tailwi
 5. **QUY TẮC CẬP NHẬT SUPABASE POSTGREST (Optimistic Lock Invariant):**
    - Không so sánh chuỗi `updated_at` trong mệnh đề `.eq('updated_at', ...)` của REST URL query trên Supabase vì sự sai lệch độ chính xác microsecond (6 chữ số trong PostgreSQL vs 3 chữ số trong JS `toISOString()`) gây ra lỗi `406 Not Acceptable (PGRST116)`.
    - Update trực tiếp bằng `.eq('id', id).eq('user_id', user.id)` và để PostgreSQL trigger tự sinh `updated_at` mới nhất.
+
+---
+
+## 7. 🚀 Bảng Tra Cứu 15 Skills (Superpowers & TipTap) & Kế Hoạch Vận Hành 4 Pha
+
+| # | Skill Name | Mục đích & Mô tả cốt lõi | Bối cảnh kích hoạt | Quy tắc bắt buộc (Iron Rules) |
+|---|---|---|---|---|
+| 1 | **`systematic-debugging`** | Phân tích nguyên nhân gốc rễ (Root Cause Analysis - RCA) và sửa lỗi hệ thống | Khi gặp bug, crash, lỗi hydration, sai lệch hành vi | **THE IRON LAW:** KHÔNG BAO GIỜ sửa code khi chưa tìm ra RCA. |
+| 2 | **`verification-before-completion`** | Thẩm định & kiểm thử thực tế trước khi tuyên bố hoàn thành | Trước khi kết thúc turn làm việc hoặc báo "đã fix" | **BẮT BUỘC:** Chạy `npx tsc --noEmit` (0 lỗi) & `npm run build` (Build OK 100%). |
+| 3 | **`writing-plans`** | Lập tài liệu kiến trúc & kế hoạch thực thi chi tiết (`implementation_plan.md`) | Khi thay đổi kiến trúc nặng, refactor lớn, tính năng mới | Phân tích rủi ro, open questions và chờ user phê duyệt trước khi code. |
+| 4 | **`executing-plans`** | Thực thi theo kế hoạch đã phê duyệt | Ngay sau khi user duyệt `implementation_plan.md` | Thực hiện từng step, verify liên tục và báo cáo minh bạch. |
+| 5 | **`brainstorming`** | Phân tích ý tưởng, khảo sát phương án và trade-offs | Đầu nhiệm vụ mới, khi yêu cầu chưa rõ ràng | Đưa ra các lựa chọn cụ thể kèm ưu/nhược điểm. |
+| 6 | **`test-driven-development`** | Viết test case trước khi viết code triển khai (Red ➔ Green ➔ Refactor) | Tạo helper, utility, Zod schemas, API handlers nhạy cảm | Viết test fail trước ➔ viết code pass ➔ tối ưu. |
+| 7 | **`subagent-driven-development`** | Phân rã nhiệm vụ và ủy quyền cho AI Subagents chuyên biệt | Tác vụ phức tạp gồm nhiều pha độc lập (Worker, Reviewer) | Mỗi subagent làm đúng phạm vi role, có nghiệm thu độc lập. |
+| 8 | **`dispatching-parallel-agents`** | Kích hoạt nhiều subagent chạy song song | Quét bảo mật toàn repo, audit song song | Tự động tổng hợp kết quả khi subagents hoàn thành. |
+| 9 | **`requesting-code-review`** | Gửi yêu cầu review code độc lập | Sau khi hoàn thành một milestone quan trọng | Cung cấp diff chi tiết cho reviewer. |
+| 10 | **`receiving-code-review`** | Tiếp thu và xử lý phản hồi code review | Khi nhận phản hồi từ reviewer hoặc user | Kiểm tra lại lập luận, sửa triệt để các edge cases. |
+| 11 | **`using-git-worktrees`** | Cô lập môi trường nhánh tính năng bằng Git Worktree | Làm việc trên nhiều tính năng mà không làm dơ workspace | Giữ nhánh `main` luôn sạch và build được production. |
+| 12 | **`finishing-a-development-branch`** | Đóng nhánh phát triển, nghiệm thu, merge và dọn dẹp | Khi tính năng đã hoàn thành 100% và qua kiểm định | Rebase/merge sạch, chạy verification cuối cùng. |
+| 13 | **`using-superpowers`** | Harness điều phối trung tâm định hướng gọi các skills | Khi bắt đầu bất kỳ tác vụ nào để xác định skill phù hợp | Luôn tuân thủ luồng: Brainstorm ➔ Plan ➔ Execute ➔ Verify. |
+| 14 | **`writing-skills`** | Cấu trúc, tác giả và kiểm thử các Superpowers Skills mới | Khi cần mở rộng bộ kỹ năng AI cho dự án | Tuân thủ định dạng YAML frontmatter + markdown chuẩn. |
+| 15 | **`tiptap-prosemirror-best-practices`** | Cẩm nang quy chuẩn TipTap, Tailwind Typography, Autosave & PostgREST | Soạn thảo rich text, checklist, format, autosave | Tuân thủ 5 TipTap Invariants tại Mục 6. |
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 1: KHẢO SÁT & ĐỀ XUẤT (Brainstorming & Skill Selection)          │
+│  - Kích hoạt `using-superpowers` ➔ Xác định bài toán                   │
+│  - Sử dụng `brainstorming` đưa ra phương án & trade-offs               │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 2: KẾ HOẠCH & XÁC NHẬN (Writing Plans)                           │
+│  - Sử dụng `writing-plans` tạo `implementation_plan.md`                 │
+│  - Đặt câu hỏi clarification (nếu có) ➔ Chờ người dùng phê duyệt      │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 3: THỰC THI & SỬA LỖI (Executing Plans & Systematic Debugging)    │
+│  - Sử dụng `executing-plans` hoặc `subagent-driven-development`        │
+│  - Nếu có bug: BẮT BUỘC dùng `systematic-debugging` (Iron Law RCA)     │
+│  - Áp dụng `test-driven-development` cho các hàm tính toán cốt lõi     │
+└──────────────────────────────────┬─────────────────────────────────────┘
+                                   │
+                                   ▼
+┌────────────────────────────────────────────────────────────────────────┐
+│  PHA 4: NGHIỆM THU & BẢO VỆ (Verification Before Completion)           │
+│  - BẮT BUỘC dùng `verification-before-completion`                      │
+│  - Chạy `npx tsc --noEmit` (0 lỗi) & `npm run build` (Build OK 100%)    │
+│  - Tạo `walkthrough.md` tổng kết trước khi báo hoàn thành               │
+└────────────────────────────────────────────────────────────────────────┘
+```
