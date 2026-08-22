@@ -154,14 +154,14 @@ export function NoteEditor({
             title={isPinned ? 'Bỏ ghim' : 'Ghim ghi chú lên đầu'}
             className={`p-1.5 rounded-md transition-colors cursor-pointer ${
               isPinned
-                ? 'text-primary bg-primary-subtle'
+                ? 'text-primary bg-primary-subtle border border-primary-border'
                 : 'text-ink-muted hover:text-ink hover:bg-surface-2'
             }`}
           >
             {isPinned ? <Pin className="w-4 h-4 fill-current" /> : <PinOff className="w-4 h-4" />}
           </button>
 
-          {/* Color Picker */}
+          {/* Color Picker with collision-aware alignment */}
           <NoteColorPicker selectedColor={color} onChange={updateColor} />
 
           {/* Expand/Modal toggle if inline */}
@@ -181,96 +181,136 @@ export function NoteEditor({
       {/* Floating Selection Toolbar for Quick Highlights */}
       <FloatingHighlightToolbar editor={editor} />
 
-      {/* Formatting Toolbar */}
-      <div className="flex items-center flex-wrap gap-0.5 px-2 py-1 bg-surface-2/40 border-b border-hairline/40 text-ink-muted text-xs">
+      {/* Formatting Toolbar with onMouseDown preventDefault to prevent Focus Stealing */}
+      <div className="flex items-center flex-wrap gap-1 px-2 py-1.5 bg-surface-2/40 border-b border-hairline/40 text-ink-muted text-xs">
+        {/* Heading 1 */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={`p-1 rounded hover:bg-surface-2 transition-colors ${
-            editor?.isActive('heading', { level: 1 }) ? 'bg-surface-3 text-ink font-bold' : ''
+          className={`px-2 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 font-semibold text-xs ${
+            editor?.isActive('heading', { level: 1 })
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs font-bold'
+              : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
-          title="Tiêu đề lớn (H1)"
+          title="Tiêu đề lớn (Heading 1)"
         >
-          <Heading1 className="w-3.5 h-3.5" />
+          <Heading1 className="w-4 h-4" />
+          <span className="text-[11px]">H1</span>
         </button>
 
+        {/* Heading 2 */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={`p-1 rounded hover:bg-surface-2 transition-colors ${
-            editor?.isActive('heading', { level: 2 }) ? 'bg-surface-3 text-ink font-bold' : ''
+          className={`px-2 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 font-semibold text-xs ${
+            editor?.isActive('heading', { level: 2 })
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs font-bold'
+              : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
-          title="Tiêu đề phụ (H2)"
+          title="Tiêu đề phụ (Heading 2)"
         >
-          <Heading2 className="w-3.5 h-3.5" />
+          <Heading2 className="w-4 h-4" />
+          <span className="text-[11px]">H2</span>
         </button>
 
+        <div className="w-px h-4 bg-hairline mx-0.5" />
+
+        {/* Bullet List */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleBulletList().run()}
-          className={`p-1 rounded hover:bg-surface-2 transition-colors ${
-            editor?.isActive('bulletList') ? 'bg-surface-3 text-ink' : ''
+          className={`p-1.5 rounded-md transition-all cursor-pointer ${
+            editor?.isActive('bulletList')
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs'
+              : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
-          title="Danh sách gạch đầu dòng"
+          title="Danh sách gạch đầu dòng (Bullet List)"
         >
-          <List className="w-3.5 h-3.5" />
+          <List className="w-4 h-4" />
         </button>
 
+        {/* Task List (Checklist) */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleTaskList().run()}
-          className={`p-1 rounded hover:bg-surface-2 transition-colors ${
-            editor?.isActive('taskList') ? 'bg-surface-3 text-ink' : ''
+          className={`p-1.5 rounded-md transition-all cursor-pointer ${
+            editor?.isActive('taskList')
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs'
+              : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
-          title="Checklist công việc"
+          title="Danh sách việc cần làm (Checklist việc)"
         >
-          <ListTodo className="w-3.5 h-3.5" />
+          <ListTodo className="w-4 h-4" />
         </button>
 
+        {/* Blockquote */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleBlockquote().run()}
-          className={`p-1 rounded hover:bg-surface-2 transition-colors ${
-            editor?.isActive('blockquote') ? 'bg-surface-3 text-ink' : ''
+          className={`p-1.5 rounded-md transition-all cursor-pointer ${
+            editor?.isActive('blockquote')
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs'
+              : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
-          title="Trích dẫn"
+          title="Khối trích dẫn (Blockquote)"
         >
-          <Quote className="w-3.5 h-3.5" />
+          <Quote className="w-4 h-4" />
         </button>
 
-        <div className="w-px h-3.5 bg-hairline mx-1" />
+        <div className="w-px h-4 bg-hairline mx-0.5" />
 
-        {/* Quick highlight color picker */}
-        <div className="flex items-center gap-1">
-          {HIGHLIGHT_COLORS.map((hc) => (
-            <button
-              key={hc.id}
-              type="button"
-              onClick={() => editor?.chain().focus().toggleHighlight({ color: hc.color }).run()}
-              className="w-3.5 h-3.5 rounded-full border border-hairline hover:scale-110 transition-transform cursor-pointer"
-              style={{ backgroundColor: hc.color }}
-              title={`Highlight ${hc.label}`}
-            />
-          ))}
+        {/* 6 Quick Highlight Pastel Color Buttons */}
+        <div className="flex items-center gap-1 px-1">
+          {HIGHLIGHT_COLORS.map((hc) => {
+            const isActive = editor?.isActive('highlight', { color: hc.color });
+            return (
+              <button
+                key={hc.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  if (isActive) {
+                    editor?.chain().focus().unsetHighlight().run();
+                  } else {
+                    editor?.chain().focus().setHighlight({ color: hc.color }).run();
+                  }
+                }}
+                className={`w-4 h-4 rounded-full border transition-all cursor-pointer hover:scale-115 ${
+                  isActive ? 'border-primary ring-2 ring-primary/40 scale-110' : 'border-hairline/80'
+                }`}
+                style={{ backgroundColor: hc.color }}
+                title={`Highlight màu ${hc.label}`}
+              />
+            );
+          })}
         </div>
 
-        <div className="w-px h-3.5 bg-hairline mx-1" />
+        <div className="w-px h-4 bg-hairline mx-0.5" />
 
+        {/* Undo */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().undo().run()}
           disabled={!editor?.can().undo()}
-          className="p-1 rounded hover:bg-surface-2 transition-colors disabled:opacity-30 cursor-pointer"
+          className="p-1.5 rounded-md hover:bg-surface-2 transition-colors disabled:opacity-30 cursor-pointer text-ink-muted"
           title="Hoàn tác (Ctrl+Z)"
         >
           <Undo className="w-3.5 h-3.5" />
         </button>
 
+        {/* Redo */}
         <button
           type="button"
+          onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().redo().run()}
           disabled={!editor?.can().redo()}
-          className="p-1 rounded hover:bg-surface-2 transition-colors disabled:opacity-30 cursor-pointer"
+          className="p-1.5 rounded-md hover:bg-surface-2 transition-colors disabled:opacity-30 cursor-pointer text-ink-muted"
           title="Làm lại (Ctrl+Y)"
         >
           <Redo className="w-3.5 h-3.5" />
