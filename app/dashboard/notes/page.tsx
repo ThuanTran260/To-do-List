@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { StickyNote, Pin, Plus, Search, Sparkles } from 'lucide-react';
 import { useNotes } from '@/hooks/useNotes';
 import { NoteCard } from '@/components/notes/NoteCard';
@@ -10,6 +10,8 @@ import { NoteTrashModal } from '@/components/notes/NoteTrashModal';
 import { NoteFilterBar } from '@/components/notes/NoteFilterBar';
 import { normalizeSearchText, extractPlainText } from '@/lib/textHighlight';
 import { Note } from '@/types/note';
+
+const EMPTY_NOTES: Note[] = [];
 
 export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,12 +23,20 @@ export default function NotesPage() {
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [isTrashOpen, setIsTrashOpen] = useState(false);
 
+  const handleCloseNew = useCallback(() => {
+    setIsCreatingNew(false);
+  }, []);
+
+  const handleNoteCreated = useCallback((newNote: Note) => {
+    // Note created successfully
+  }, []);
+
   const { data, isLoading } = useNotes({
     tagId: selectedTag,
     color: selectedColor,
   });
 
-  const allNotes = data?.notes || [];
+  const allNotes = data?.notes ?? EMPTY_NOTES;
 
   // Filter notes in memory by search query using Vietnamese unaccent matching
   const filteredNotes = useMemo(() => {
@@ -77,10 +87,8 @@ export default function NotesPage() {
       <div className="max-w-2xl mx-auto">
         {isCreatingNew ? (
           <NoteEditor
-            onClose={() => setIsCreatingNew(false)}
-            onNoteCreated={(newNote) => {
-              // Stay open or close based on preference
-            }}
+            onClose={handleCloseNew}
+            onNoteCreated={handleNoteCreated}
           />
         ) : (
           <div
