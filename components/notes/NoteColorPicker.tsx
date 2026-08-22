@@ -41,6 +41,7 @@ export function NoteColorPicker({
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         triggerRef={triggerRef}
+        align="end"
       >
         <div className="p-2 w-48 bg-surface-1 border border-hairline rounded-lg shadow-xl text-ink">
           <div className="text-[11px] font-semibold uppercase tracking-wider text-ink-subtle px-1.5 py-1 mb-1 border-b border-hairline">

@@ -3,9 +3,8 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { type Editor } from '@tiptap/react';
-import { Bold, Italic, Strikethrough, Code, Highlighter } from 'lucide-react';
+import { Bold, Italic, Strikethrough, Code } from 'lucide-react';
 import { HIGHLIGHT_COLORS } from '@/lib/noteColors';
-import { HighlightColor } from '@/types/note';
 
 interface FloatingHighlightToolbarProps {
   editor: Editor | null;
@@ -14,7 +13,6 @@ interface FloatingHighlightToolbarProps {
 export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarProps) {
   const [mounted, setMounted] = useState(false);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
-  const [showColorPicker, setShowColorPicker] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -24,15 +22,13 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
     if (!editor) return;
 
     const updatePosition = () => {
-      const { from, to, empty } = editor.state.selection;
+      const { empty } = editor.state.selection;
 
       if (empty) {
         setCoords(null);
-        setShowColorPicker(false);
         return;
       }
 
-      // Compute coordinates from selection range
       const domSelection = window.getSelection();
       if (!domSelection || domSelection.rangeCount === 0) {
         setCoords(null);
@@ -66,23 +62,18 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
         top = rect.bottom + 8;
       }
 
-      const newLeft = left + window.scrollX;
-      const newTop = top + window.scrollY;
-
       setCoords((prev) => {
-        if (prev && Math.abs(prev.left - newLeft) < 1 && Math.abs(prev.top - newTop) < 1) {
+        if (prev && Math.abs(prev.left - left) < 1 && Math.abs(prev.top - top) < 1) {
           return prev;
         }
-        return { left: newLeft, top: newTop };
+        return { left, top };
       });
     };
 
     const handleBlur = () => {
-      // Delay closing slightly so button clicks inside toolbar can register
       setTimeout(() => {
         if (!document.activeElement?.closest('#floating-highlight-toolbar')) {
           setCoords(null);
-          setShowColorPicker(false);
         }
       }, 200);
     };
@@ -110,7 +101,7 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
     <div
       id="floating-highlight-toolbar"
       style={{
-        position: 'absolute',
+        position: 'fixed',
         top: `${coords.top}px`,
         left: `${coords.left}px`,
         zIndex: 9999,
@@ -120,8 +111,9 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
     >
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => editor.chain().focus().toggleBold().run()}
-        className={`p-1.5 rounded hover:bg-surface-2 transition-colors ${
+        className={`p-1.5 rounded hover:bg-surface-2 transition-colors cursor-pointer ${
           editor.isActive('bold') ? 'bg-primary-subtle text-primary' : 'text-ink-muted'
         }`}
         title="In đậm (Ctrl+B)"
@@ -131,8 +123,9 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
 
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => editor.chain().focus().toggleItalic().run()}
-        className={`p-1.5 rounded hover:bg-surface-2 transition-colors ${
+        className={`p-1.5 rounded hover:bg-surface-2 transition-colors cursor-pointer ${
           editor.isActive('italic') ? 'bg-primary-subtle text-primary' : 'text-ink-muted'
         }`}
         title="In nghiêng (Ctrl+I)"
@@ -142,8 +135,9 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
 
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => editor.chain().focus().toggleStrike().run()}
-        className={`p-1.5 rounded hover:bg-surface-2 transition-colors ${
+        className={`p-1.5 rounded hover:bg-surface-2 transition-colors cursor-pointer ${
           editor.isActive('strike') ? 'bg-primary-subtle text-primary' : 'text-ink-muted'
         }`}
         title="Gạch ngang"
@@ -153,8 +147,9 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
 
       <button
         type="button"
+        onMouseDown={(e) => e.preventDefault()}
         onClick={() => editor.chain().focus().toggleCode().run()}
-        className={`p-1.5 rounded hover:bg-surface-2 transition-colors ${
+        className={`p-1.5 rounded hover:bg-surface-2 transition-colors cursor-pointer ${
           editor.isActive('code') ? 'bg-primary-subtle text-primary' : 'text-ink-muted'
         }`}
         title="Mã code"
@@ -172,9 +167,10 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
             <button
               key={hc.id}
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleApplyHighlight(hc.color)}
               className={`w-5 h-5 rounded-full border flex items-center justify-center transition-transform hover:scale-110 cursor-pointer ${
-                isActive ? 'border-primary ring-2 ring-primary/30 scale-105' : 'border-hairline'
+                isActive ? 'border-primary ring-2 ring-primary/40 scale-105' : 'border-hairline'
               }`}
               style={{ backgroundColor: hc.color }}
               title={`Highlight ${hc.label}`}

@@ -11,6 +11,8 @@ interface PortalPopoverProps {
   triggerRef: React.RefObject<HTMLElement | null>;
   children: ReactNode;
   maxPopoverHeight?: number;
+  align?: 'start' | 'end' | 'auto';
+  className?: string;
 }
 
 export function PortalPopover({
@@ -19,9 +21,16 @@ export function PortalPopover({
   triggerRef,
   children,
   maxPopoverHeight = 240,
+  align = 'auto',
+  className = '',
 }: PortalPopoverProps) {
   const [mounted, setMounted] = useState(false);
-  const [coords, setCoords] = useState<{ top: number; left: number; width: number; isFlippedAbove: boolean }>({
+  const [coords, setCoords] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    isFlippedAbove: boolean;
+  }>({
     top: 0,
     left: 0,
     width: 0,
@@ -39,16 +48,31 @@ export function PortalPopover({
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const windowHeight = window.innerHeight;
+    const windowWidth = window.innerWidth;
 
     const spaceBelow = windowHeight - rect.bottom;
     const spaceAbove = rect.top;
 
-    // Collision detection: Flip above if space below is less than maxPopoverHeight
+    // Vertical collision detection
     const shouldFlip = spaceBelow < maxPopoverHeight && spaceAbove > spaceBelow;
+
+    // Horizontal collision detection & alignment
+    const popoverWidth = popoverRef.current?.offsetWidth || 192;
+    const spaceRight = windowWidth - rect.left;
+    const isAlignEnd = align === 'end' || (align !== 'start' && spaceRight < popoverWidth + 16);
+
+    let left = isAlignEnd ? rect.right - popoverWidth : rect.left;
+
+    // Viewport padding clamping (12px minimum from edges)
+    const padding = 12;
+    if (left < padding) left = padding;
+    if (left + popoverWidth > windowWidth - padding) {
+      left = windowWidth - popoverWidth - padding;
+    }
 
     setCoords({
       top: shouldFlip ? rect.top - 6 : rect.bottom + 4,
-      left: rect.left,
+      left,
       width: rect.width,
       isFlippedAbove: shouldFlip,
     });
@@ -103,8 +127,9 @@ export function PortalPopover({
             top: coords.isFlippedAbove ? undefined : `${coords.top}px`,
             bottom: coords.isFlippedAbove ? `${window.innerHeight - coords.top}px` : undefined,
             left: `${coords.left}px`,
-            width: `${coords.width}px`,
             zIndex: 9999, // z-portal-popover token
+            width: 'max-content',
+            maxWidth: 'calc(100vw - 24px)',
           }}
         >
           <motion.div
@@ -112,7 +137,7 @@ export function PortalPopover({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.97, y: coords.isFlippedAbove ? 4 : -4 }}
             transition={springPillMotion}
-            className="p-1 rounded-lg surface-panel bg-surface-1 border border-hairline shadow-xl space-y-0.5 overflow-hidden text-ink"
+            className={`p-1 rounded-lg surface-panel bg-surface-1 border border-hairline shadow-xl space-y-0.5 text-ink ${className}`}
           >
             {children}
           </motion.div>
