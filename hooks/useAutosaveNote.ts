@@ -231,32 +231,32 @@ export function useAutosaveNote({
     };
   }, [title, content, color, isPinned]);
 
-  // Multi-tab BroadcastChannel listener
+  const stateRef = useRef({ title, content, color, is_pinned: isPinned });
+  stateRef.current = { title, content, color, is_pinned: isPinned };
+
+  // Multi-tab BroadcastChannel listener (mounts once)
   useEffect(() => {
     const unsubscribe = createNotesSyncChannel(
       (incoming) => {
         if (incoming.noteId === activeNoteIdRef.current && !isDirtyRef.current) {
-          setTitle(incoming.title);
-          setContent(incoming.content);
-          setColor(incoming.color);
-          setIsPinned(incoming.is_pinned);
+          setTitle((prev) => (prev !== incoming.title ? incoming.title : prev));
+          setContent((prev) => (prev !== incoming.content ? incoming.content : prev));
+          setColor((prev) => (prev !== incoming.color ? incoming.color : prev));
+          setIsPinned((prev) => (prev !== incoming.is_pinned ? incoming.is_pinned : prev));
         }
       },
       () => {
         if (!activeNoteIdRef.current) return null;
         return {
           noteId: activeNoteIdRef.current,
-          title,
-          content,
-          color,
-          is_pinned: isPinned,
+          ...stateRef.current,
           timestamp: Date.now(),
         };
       }
     );
 
     return unsubscribe;
-  }, [title, content, color, isPinned]);
+  }, []);
 
   // Public state setters that trigger autosave
   const updateTitle = (newTitle: string) => {

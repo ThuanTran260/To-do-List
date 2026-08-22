@@ -81,6 +81,8 @@ export function clearAllNoteDrafts(): void {
   } catch {}
 }
 
+const TAB_SESSION_ID = typeof window !== 'undefined' ? Math.random().toString(36).slice(2) : '';
+
 /**
  * Creates a BroadcastChannel or fallback handler for multi-tab draft sync
  */
@@ -94,12 +96,21 @@ export function createNotesSyncChannel(
     const channel = new BroadcastChannel('flowstate_notes_sync');
 
     channel.onmessage = (event) => {
+      // Ignore messages emitted by the same tab session
+      if (event.data?.senderId === TAB_SESSION_ID) {
+        return;
+      }
+
       const { type, payload } = event.data || {};
 
       if (type === 'DRAFT_REQUEST' && getActivePayload) {
         const current = getActivePayload();
         if (current && current.noteId === payload?.noteId) {
-          channel.postMessage({ type: 'DRAFT_RESPONSE', payload: current });
+          channel.postMessage({
+            type: 'DRAFT_RESPONSE',
+            payload: current,
+            senderId: TAB_SESSION_ID,
+          });
         }
       } else if (type === 'DRAFT_RESPONSE' || type === 'DRAFT_UPDATED') {
         if (payload && onDraftReceived) {
@@ -136,7 +147,11 @@ export function broadcastDraftUpdate(payload: NoteSyncPayload): void {
   if (typeof BroadcastChannel !== 'undefined') {
     try {
       const channel = new BroadcastChannel('flowstate_notes_sync');
-      channel.postMessage({ type: 'DRAFT_UPDATED', payload });
+      channel.postMessage({
+        type: 'DRAFT_UPDATED',
+        payload,
+        senderId: TAB_SESSION_ID,
+      });
       channel.close();
     } catch {}
   }
