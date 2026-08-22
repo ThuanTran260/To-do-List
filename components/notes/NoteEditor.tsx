@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Highlight from '@tiptap/extension-highlight';
@@ -20,7 +20,6 @@ import {
   Quote,
   Undo,
   Redo,
-  Sparkles,
   Maximize2,
   Minimize2,
 } from 'lucide-react';
@@ -52,6 +51,7 @@ export function NoteEditor({
   isModal = false,
 }: NoteEditorProps) {
   const [isExpanded, setIsExpanded] = useState(isModal);
+  const currentNoteIdRef = useRef<string | null>(note?.id || null);
 
   const {
     title,
@@ -89,36 +89,25 @@ export function NoteEditor({
     ],
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
-    content: content || '',
+    content: initialContent || note?.content || '',
     editorProps: {
       attributes: {
         class:
           'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[140px] px-3 py-2 text-ink text-sm leading-relaxed',
       },
     },
-    onUpdate: ({ editor }) => {
-      updateContent(editor.getHTML());
+    onUpdate: ({ editor: currentEditor }) => {
+      updateContent(currentEditor.getHTML());
     },
   });
 
-  // Keep editor content updated if incoming content changes remotely
+  // Only update editor content when switching to a completely different note
   useEffect(() => {
-    if (editor && content !== undefined) {
-      const normalize = (val?: string) => {
-        if (!val) return '';
-        const trimmed = val.trim();
-        if (trimmed === '<p></p>' || trimmed === '<p><br></p>' || trimmed === '<p></p>\n') return '';
-        return trimmed;
-      };
-
-      const currentHtml = normalize(editor.getHTML());
-      const incomingHtml = normalize(content);
-
-      if (currentHtml !== incomingHtml && !editor.isFocused) {
-        editor.commands.setContent(content || '', { emitUpdate: false });
-      }
+    if (editor && note?.id && note.id !== currentNoteIdRef.current) {
+      currentNoteIdRef.current = note.id;
+      editor.commands.setContent(note.content || '', { emitUpdate: false });
     }
-  }, [content, editor]);
+  }, [editor, note?.id, note?.content]);
 
   // Handle editor-level keyboard shortcuts
   useEffect(() => {

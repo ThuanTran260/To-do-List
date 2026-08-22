@@ -27,9 +27,10 @@ export function useAutosaveNote({
   initialPinned = false,
   onNoteCreated,
 }: UseAutosaveNoteProps) {
-  const isNew = !note?.id;
   const activeNoteIdRef = useRef<string | null>(note?.id || null);
   const lastKnownUpdatedAtRef = useRef<string | undefined>(note?.updated_at);
+  const onNoteCreatedRef = useRef(onNoteCreated);
+  onNoteCreatedRef.current = onNoteCreated;
 
   const [title, setTitle] = useState(note?.title ?? initialTitle);
   const [content, setContent] = useState(note?.content ?? initialContent);
@@ -39,6 +40,22 @@ export function useAutosaveNote({
   const [status, setStatus] = useState<AutosaveStatus>('saved');
   const [hasConflict, setHasConflict] = useState(false);
 
+  // Single Ref Buffer holding freshest editing state — avoids stale closures & endless re-renders
+  const dataRef = useRef({
+    title: note?.title ?? initialTitle,
+    content: note?.content ?? initialContent,
+    color: (note?.color ?? initialColor) as NoteColor,
+    is_pinned: note?.is_pinned ?? initialPinned,
+  });
+
+  // Keep dataRef in sync
+  dataRef.current = {
+    title,
+    content,
+    color,
+    is_pinned: isPinned,
+  };
+
   const isDirtyRef = useRef(false);
   const saveSeqRef = useRef(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -46,36 +63,48 @@ export function useAutosaveNote({
   const createMutation = useCreateNote();
   const updateMutation = useUpdateNote();
 
-  // Keep state synced when the incoming note prop changes (e.g. user selected another note)
+  // Switch note context if the incoming note prop changes (user opened a different note)
   useEffect(() => {
     if (note?.id && note.id !== activeNoteIdRef.current) {
-      // Flush previous note before switching if dirty
-      flush();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
 
       activeNoteIdRef.current = note.id;
       lastKnownUpdatedAtRef.current = note.updated_at;
-      setTitle(note.title || '');
-      setContent(note.content || '');
-      setColor(note.color || 'default');
-      setIsPinned(note.is_pinned || false);
+
+      const nextTitle = note.title || '';
+      const nextContent = note.content || '';
+      const nextColor = (note.color || 'default') as NoteColor;
+      const nextPinned = note.is_pinned || false;
+
+      dataRef.current = {
+        title: nextTitle,
+        content: nextContent,
+        color: nextColor,
+        is_pinned: nextPinned,
+      };
+
+      setTitle(nextTitle);
+      setContent(nextContent);
+      setColor(nextColor);
+      setIsPinned(nextPinned);
       setStatus('saved');
       setHasConflict(false);
       isDirtyRef.current = false;
     }
   }, [note?.id, note?.updated_at]);
 
-  // Handle actual save mutation
+  // Stable executeSave: Reads freshest data directly from dataRef.current
   const executeSave = useCallback(async () => {
     if (!isDirtyRef.current) return;
 
     const currentSeq = ++saveSeqRef.current;
     setStatus('saving');
 
+    const { title: currentTitle, content: currentContent, color: currentColor, is_pinned: currentPinned } = dataRef.current;
     const noteId = activeNoteIdRef.current;
-    const currentTitle = title;
-    const currentContent = content;
-    const currentColor = color;
-    const currentPinned = isPinned;
 
     try {
       if (!noteId) {
@@ -99,7 +128,7 @@ export function useAutosaveNote({
           isDirtyRef.current = false;
           setStatus('saved');
           clearLocalDraft(created.id);
-          onNoteCreated?.(created);
+          onNoteCreatedRef.current?.(created);
         }
       } else {
         const updated = await updateMutation.mutateAsync({
@@ -123,10 +152,8 @@ export function useAutosaveNote({
       if (currentSeq === saveSeqRef.current) {
         if (err.message === 'VERSION_CONFLICT') {
           setHasConflict(true);
-          setStatus('error');
-        } else {
-          setStatus('error');
         }
+        setStatus('error');
 
         // Save emergency draft locally
         const targetId = activeNoteIdRef.current || 'draft-new';
@@ -140,21 +167,17 @@ export function useAutosaveNote({
         });
       }
     }
-  }, [title, content, color, isPinned, createMutation, updateMutation, onNoteCreated]);
+  }, [createMutation, updateMutation]);
 
-  // Schedule debounced save on changes
+  // Trigger debounced save
   const triggerDebouncedSave = useCallback(() => {
     isDirtyRef.current = true;
     setStatus('dirty');
 
-    // Broadcast local draft to other tabs
     if (activeNoteIdRef.current) {
       broadcastDraftUpdate({
         noteId: activeNoteIdRef.current,
-        title,
-        content,
-        color,
-        is_pinned: isPinned,
+        ...dataRef.current,
         timestamp: Date.now(),
       });
     }
@@ -166,7 +189,7 @@ export function useAutosaveNote({
     debounceTimerRef.current = setTimeout(() => {
       executeSave();
     }, 600);
-  }, [title, content, color, isPinned, executeSave]);
+  }, [executeSave]);
 
   const flush = useCallback(() => {
     if (debounceTimerRef.current) {
@@ -181,9 +204,24 @@ export function useAutosaveNote({
   // Flush on unmount
   useEffect(() => {
     return () => {
-      flush();
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      if (isDirtyRef.current) {
+        // Execute synchronous emergency flush
+        const { title: t, content: c, color: col, is_pinned: p } = dataRef.current;
+        const nId = activeNoteIdRef.current || 'draft-new';
+        safeSetDraft(`note_emergency_draft_${nId}`, {
+          noteId: nId,
+          title: t,
+          content: c,
+          color: col,
+          is_pinned: p,
+          timestamp: Date.now(),
+        });
+      }
     };
-  }, [flush]);
+  }, []);
 
   // Mobile Lifecycle: visibilitychange & pagehide with keepalive emergency sync
   useEffect(() => {
@@ -191,23 +229,25 @@ export function useAutosaveNote({
       if (document.visibilityState === 'hidden' && isDirtyRef.current) {
         const noteId = activeNoteIdRef.current;
         if (noteId) {
+          const { title: t, content: c, color: col, is_pinned: p } = dataRef.current;
+
           // 1. Synchronously store in localStorage
           safeSetDraft(`note_emergency_draft_${noteId}`, {
             noteId,
-            title,
-            content,
-            color,
-            is_pinned: isPinned,
+            title: t,
+            content: c,
+            color: col,
+            is_pinned: p,
             timestamp: Date.now(),
           });
 
           // 2. Fire lightweight keepalive request (< 60KB buffer safe)
           const payload = JSON.stringify({
             noteId,
-            title,
-            content: content.length > 50000 ? content.slice(0, 50000) : content,
-            color,
-            is_pinned: isPinned,
+            title: t,
+            content: c.length > 50000 ? c.slice(0, 50000) : c,
+            color: col,
+            is_pinned: p,
           });
 
           try {
@@ -229,27 +269,30 @@ export function useAutosaveNote({
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('pagehide', handleVisibilityChange);
     };
-  }, [title, content, color, isPinned]);
-
-  const stateRef = useRef({ title, content, color, is_pinned: isPinned });
-  stateRef.current = { title, content, color, is_pinned: isPinned };
+  }, []);
 
   // Multi-tab BroadcastChannel listener (mounts once)
   useEffect(() => {
     const unsubscribe = createNotesSyncChannel(
       (incoming) => {
         if (incoming.noteId === activeNoteIdRef.current && !isDirtyRef.current) {
-          setTitle((prev) => (prev !== incoming.title ? incoming.title : prev));
-          setContent((prev) => (prev !== incoming.content ? incoming.content : prev));
-          setColor((prev) => (prev !== incoming.color ? incoming.color : prev));
-          setIsPinned((prev) => (prev !== incoming.is_pinned ? incoming.is_pinned : prev));
+          dataRef.current = {
+            title: incoming.title,
+            content: incoming.content,
+            color: incoming.color,
+            is_pinned: incoming.is_pinned,
+          };
+          setTitle(incoming.title);
+          setContent(incoming.content);
+          setColor(incoming.color);
+          setIsPinned(incoming.is_pinned);
         }
       },
       () => {
         if (!activeNoteIdRef.current) return null;
         return {
           noteId: activeNoteIdRef.current,
-          ...stateRef.current,
+          ...dataRef.current,
           timestamp: Date.now(),
         };
       }
@@ -258,26 +301,30 @@ export function useAutosaveNote({
     return unsubscribe;
   }, []);
 
-  // Public state setters that trigger autosave
-  const updateTitle = (newTitle: string) => {
+  // Public state setters that update ref + state + trigger debounced save
+  const updateTitle = useCallback((newTitle: string) => {
+    dataRef.current.title = newTitle;
     setTitle(newTitle);
     triggerDebouncedSave();
-  };
+  }, [triggerDebouncedSave]);
 
-  const updateContent = (newContent: string) => {
+  const updateContent = useCallback((newContent: string) => {
+    dataRef.current.content = newContent;
     setContent(newContent);
     triggerDebouncedSave();
-  };
+  }, [triggerDebouncedSave]);
 
-  const updateColor = (newColor: NoteColor) => {
+  const updateColor = useCallback((newColor: NoteColor) => {
+    dataRef.current.color = newColor;
     setColor(newColor);
     triggerDebouncedSave();
-  };
+  }, [triggerDebouncedSave]);
 
-  const updatePinned = (newPinned: boolean) => {
+  const updatePinned = useCallback((newPinned: boolean) => {
+    dataRef.current.is_pinned = newPinned;
     setIsPinned(newPinned);
     triggerDebouncedSave();
-  };
+  }, [triggerDebouncedSave]);
 
   return {
     title,

@@ -77,8 +77,7 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
       });
     };
 
-    editor.on('selectionUpdate', updatePosition);
-    editor.on('blur', () => {
+    const handleBlur = () => {
       // Delay closing slightly so button clicks inside toolbar can register
       setTimeout(() => {
         if (!document.activeElement?.closest('#floating-highlight-toolbar')) {
@@ -86,10 +85,14 @@ export function FloatingHighlightToolbar({ editor }: FloatingHighlightToolbarPro
           setShowColorPicker(false);
         }
       }, 200);
-    });
+    };
+
+    editor.on('selectionUpdate', updatePosition);
+    editor.on('blur', handleBlur);
 
     return () => {
       editor.off('selectionUpdate', updatePosition);
+      editor.off('blur', handleBlur);
     };
   }, [editor]);
 
