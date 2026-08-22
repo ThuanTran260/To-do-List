@@ -4,6 +4,13 @@
 
 ---
 
+## 🚫 QUY TẮC GIT & REMOTE REPOSITORY (BẮT BUỘC)
+- **TUYỆT ĐỐI KHÔNG TỰ ĐỘNG `git push`**:
+  - AI Assistant chỉ thực hiện các thao tác Git cục bộ (`git add`, `git commit`, `git status`, `git diff`, `git branch`).
+  - Sau khi hoàn thành và commit xong, chỉ thông báo cho người dùng và để người dùng tự quyết định thời điểm push lên GitHub.
+
+---
+
 ## 1. Kiến trúc tổng thể
 
 ```
