@@ -188,15 +188,14 @@ export function NoteEditor({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 1 }).run()}
-          className={`px-2 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 font-semibold text-xs ${
+          className={`p-1.5 rounded-md transition-all cursor-pointer ${
             editor?.isActive('heading', { level: 1 })
-              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs font-bold'
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs'
               : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
           title="Tiêu đề lớn (Heading 1)"
         >
           <Heading1 className="w-4 h-4" />
-          <span className="text-[11px]">H1</span>
         </button>
 
         {/* Heading 2 */}
@@ -204,15 +203,14 @@ export function NoteEditor({
           type="button"
           onMouseDown={(e) => e.preventDefault()}
           onClick={() => editor?.chain().focus().toggleHeading({ level: 2 }).run()}
-          className={`px-2 py-1 rounded-md transition-all cursor-pointer flex items-center gap-1 font-semibold text-xs ${
+          className={`p-1.5 rounded-md transition-all cursor-pointer ${
             editor?.isActive('heading', { level: 2 })
-              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs font-bold'
+              ? 'bg-primary-subtle text-primary border border-primary-border shadow-2xs'
               : 'hover:bg-surface-2 text-ink-muted hover:text-ink'
           }`}
           title="Tiêu đề phụ (Heading 2)"
         >
           <Heading2 className="w-4 h-4" />
-          <span className="text-[11px]">H2</span>
         </button>
 
         <div className="w-px h-4 bg-hairline mx-0.5" />
