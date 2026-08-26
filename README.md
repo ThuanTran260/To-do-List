@@ -1,4 +1,4 @@
-# 🌊 Flow State — Smooth Flow Task Manager
+# 🌊 Flow State — Fluid Productivity & Task Management Platform
 
 [![Next.js](https://img.shields.io/badge/Next.js-16.2.12-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.4-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
@@ -6,90 +6,90 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?style=for-the-badge&logo=supabase)](https://supabase.com/)
 [![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?style=for-the-badge&logo=githubactions)](https://github.com/features/actions)
+[![License MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
-**Flow State** là ứng dụng quản lý công việc (Task Manager) hiện đại với giao diện **Glassmorphism**, hiệu ứng mượt mà và hệ thống quản lý dữ liệu thời gian thực (Realtime) an toàn tuyệt đối. Được thiết kế theo phong cách thiết kế từ **Google Stitch**, tối ưu hóa trải nghiệm làm việc tập trung cao độ (Flow State).
-
----
-
-## ✨ Tính Năng Nổi Bật (Key Features)
-
-### 🎯 Quản Lý Công Việc & Vital Tasks
-- **Dashboard Tập Trung:** Theo dõi tổng quan công việc, thống kê tỷ lệ hoàn thành và thông tin quan trọng.
-- **Vital Tasks (Công việc quan trọng):** Bộ lọc ưu tiên tự động cho các công việc mức độ `High` hoặc được đánh dấu quan trọng.
-- **Optimistic Updates:** Thao tác check hoàn thành, tạo mới, chỉnh sửa phản hồi ngay lập tức trên UI trước khi đồng bộ Server.
-- **Thùng Rác & Khôi Phục (Soft Delete):** Xóa tạm thời công việc vào thùng rác, hỗ trợ khôi phục hoặc xóa vĩnh viễn trong 30 ngày.
-
-### 🏷️ Danh Mục Realtime (Task Categories)
-- Quản lý danh mục công việc với bảng màu sắc tùy chỉnh.
-- **Supabase Realtime Sync:** Tự động đồng bộ các thay đổi danh mục tức thì giữa các thiết bị mà không cần reload trang.
-
-### 🔍 Tìm Kiếm Thông Minh (Search Autocomplete)
-- Tìm kiếm tức thì không phân biệt dấu Tiếng Việt (Diacritic-insensitive).
-- **Keyboard Navigation:** Sử dụng phím `🠗`, `🠕`, `Enter` và `Esc` để duyệt và chọn công việc mượt mà.
-- Highlight từ khóa chính xác và an toàn với regex escape.
-
-### 📅 Lịch Công Việc Mượt Mà (Calendar Popover)
-- Giao diện lịch nhỏ gọn tích hợp trực tiếp trên thanh công cụ.
-- Hiển thị chấm màu đánh dấu mức độ ưu tiên của công việc theo từng ngày.
-- Thêm nhanh công việc trực tiếp theo ngày đã chọn.
-
-### 🔔 Trung Tâm Thông Báo (Notification Center)
-- Cảnh báo thời gian thực các việc **Đã quá hạn (Overdue)**, **Sắp đến hạn trong 24h (Due Soon)** và **Công việc quan trọng (Vital Tasks)**.
-- Thao tác nhanh (Đã xong, Ẩn thông báo) và hỗ trợ Toast Hoàn tác (Undo).
-
-### 🛡️ Bảo Mật & Tài Khoản (Security & User Profile)
-- **Supabase Auth & RLS:** Phân quyền Row Level Security trực tiếp ở tầng Database (User A tuyệt đối không thể đọc/ghi dữ liệu của User B).
-- **Cập Nhật Hồ Sơ & Avatar:** Tải lên avatar cá nhân, nén ảnh tự động trên client và cập nhật thông tin tài khoản.
-- **Đổi Mật Khẩu An Toàn:** Tích hợp quy trình đổi mật khẩu bảo mật qua Supabase Auth.
-- **Chống XSS & CSP:** Lọc dữ liệu đầu vào không dùng thư viện ngoài nặng nề, tích hợp Security Headers (Content Security Policy) chặt chẽ.
-
-### 🌗 Giao Diện Glassmorphic & Dark Mode
-- Đầy đủ 3 chế độ chủ đề: `Light Mode`, `Dark Mode` và `System`.
-- Giao diện mượt mà với tông màu Indigo/Purple Glassmorphism hiện đại.
+**Flow State** is a modern task management and productivity suite engineered with a sleek **Glassmorphism** visual language, fluid micro-interactions, optimistic updates, and real-time database synchronization. Designed for deep work and high cognitive focus, it combines intuitive UX with a zero-trust security architecture guarded by PostgreSQL Row Level Security (RLS).
 
 ---
 
-## 🛠️ Công Nghệ Sử Dụng (Tech Stack)
+## ✨ Key Features
 
-| Thành phần | Công nghệ / Thư viện |
-|---|---|
+### 🎯 1. Vital Task Management & Focus Dashboard
+- **Cognitive Focus Dashboard**: High-level overview of active workflows, progress metrics, and actionable items.
+- **Vital Tasks Filter**: Priority filter automatically highlighting `High` severity and starred urgent tasks.
+- **Optimistic UI Updates**: Task toggles, creation, and edits reflect instantly on the UI before asynchronous server synchronization.
+- **30-Day Soft Delete & Recovery**: Dedicated trash bin supporting temporary archiving, one-click restoration, or permanent purge.
+
+### 🏷️ 2. Real-Time Category Engine
+- Custom category creation with dynamic hex color palettes.
+- **Supabase Realtime Sync**: Bi-directional live synchronization updating category metadata across multiple devices simultaneously without full page reloads.
+
+### 🔍 3. Intelligent Search Autocomplete
+- **Diacritic-Insensitive Search**: Fast fuzzy search across task titles and notes.
+- **Full Keyboard Navigation**: Seamless traversal using `🠗`, `🠕`, `Enter`, and `Esc` hotkeys.
+- Dynamic keyword highlighting with regex injection safety.
+
+### 📅 4. Embedded Calendar Popover
+- Compact calendar widget directly integrated into the action toolbar.
+- Color-coded priority indicator dots representing daily task distribution.
+- Instant task creation and deadline assignment directly from the selected date.
+
+### 🔔 5. Proactive Notification Center
+- Real-time alerts categorizing tasks into **Overdue**, **Due Within 24h**, and **Vital Attention**.
+- Inline quick-actions (Mark as Complete, Dismiss) with undoable toast notifications.
+
+### 🛡️ 6. Security Architecture & User Profile
+- **Supabase Auth & Deny-by-Default RLS**: Row Level Security enforced at the PostgreSQL layer ensuring total tenant data isolation (`auth.uid() = user_id`).
+- **Profile & Avatar Management**: User avatar uploads with client-side image compression and safe storage.
+- **XSS Sanitization & Security Headers**: Zero-dependency input sanitization paired with strict Content Security Policy (CSP) headers.
+
+### 🌗 7. Glassmorphic Design System & Dark Mode
+- Seamless tri-mode theme switcher: `Light Mode`, `Dark Mode`, and `System Default`.
+- Premium Indigo/Purple frosted glass UI with smooth backdrop-filter blur effects.
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Technology & Libraries |
+| :--- | :--- |
 | **Frontend Framework** | Next.js 16 (App Router + Turbopack) |
 | **UI Library** | React 19 + TypeScript |
-| **Styling** | Tailwind CSS v4 + Custom Glassmorphism |
+| **Styling** | Tailwind CSS v4 + Custom Glassmorphism Design System |
 | **Icon Set** | Lucide React |
-| **Backend & Database** | Supabase (PostgreSQL + RLS + Realtime) |
+| **Backend & Database** | Supabase (PostgreSQL + RLS + Realtime Engine) |
 | **Authentication** | Supabase Auth (Email/Password & Session Cookies) |
 | **State & Cache** | TanStack React Query v5 |
-| **Validation & Security** | Zod + Custom XSS Sanitizer |
-| **CI/CD Pipeline** | GitHub Actions (Node.js 22 LTS, Type-check & Production Build) |
+| **Validation & Security** | Zod + Custom HTML Sanitizer |
+| **CI/CD Pipeline** | GitHub Actions (Node.js 22 LTS, Type-checking & Production Build) |
 
 ---
 
-## 📁 Cấu Trúc Dự Án (Project Structure)
+## 📁 Project Structure
 
 ```text
 Flow State/
-├── .github/workflows/      # Cấu hình CI/CD Pipeline (GitHub Actions)
+├── .github/workflows/      # CI/CD Pipeline configurations (GitHub Actions)
 ├── app/                    # Next.js App Router
-│   ├── (auth)/             # Route Đăng nhập / Đăng ký
+│   ├── (auth)/             # Authentication routes (Login / Signup)
 │   │   ├── login/
 │   │   └── signup/
-│   ├── dashboard/          # Giao diện chính ứng dụng
-│   │   ├── categories/     # Quản lý danh mục
-│   │   ├── settings/       # Cài đặt tài khoản & Mật khẩu
-│   │   ├── tasks/          # Toàn bộ danh sách công việc
-│   │   ├── vital/          # Công việc quan trọng
-│   │   └── page.tsx        # Dashboard tổng quan
-│   ├── globals.css         # Custom Glassmorphism CSS design system
+│   ├── dashboard/          # Core authenticated application
+│   │   ├── categories/     # Category management
+│   │   ├── settings/       # Account & password settings
+│   │   ├── tasks/          # Complete task ledger
+│   │   ├── vital/          # High-priority vital tasks
+│   │   └── page.tsx        # Main focus dashboard
+│   ├── globals.css         # Custom Glassmorphic design tokens
 │   └── layout.tsx          # Root Layout & Theme Provider
-├── components/             # UI Components
-│   ├── auth/               # Form Đăng nhập/Đăng ký
+├── components/             # Reusable UI Components
+│   ├── auth/               # Auth form controllers
 │   ├── layout/             # Header, Sidebar, Navbar, ThemeToggle
-│   ├── todo/               # TodoForm, TodoList, TodoItem, TrashModal...
-│   ├── ui/                 # Modal, Badge, FloatingPanel, State Skeletons
+│   ├── todo/               # TodoForm, TodoList, TodoItem, TrashModal
+│   ├── ui/                 # Modal, Badge, FloatingPanel, Skeleton Loaders
 │   └── widget/             # SearchAutocomplete, CalendarPopover, NotificationPopover
-├── hooks/                  # Custom React Hooks & React Query (useTodos, useCategories, useAuth...)
-├── lib/                    # Supabase Client/Server, Validation Zod, Sanitizer, Logger
+├── hooks/                  # Custom React Hooks (useTodos, useCategories, useAuth)
+├── lib/                    # Supabase Client/Server, Zod Schemas, Sanitizer, Logger
 ├── supabase/               # Database SQL Migrations & RLS Policies
 ├── proxy.ts                # Next.js Middleware Security Headers & Auth Guard
 └── package.json
@@ -97,58 +97,60 @@ Flow State/
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Chạy Cục Bộ (Getting Started)
+## 🚀 Getting Started
 
-### 1. Yêu cầu môi trường
-- **Node.js**: `v22.0.0` trở lên
-- **npm**: `v10.0.0` trở lên
+### 1. Prerequisites
+- **Node.js**: `v22.0.0` or higher
+- **npm** or **pnpm**
 
-### 2. Cài đặt Dependencies
+### 2. Clone & Install
 ```bash
 git clone https://github.com/ThuanTran260/To-do-List.git
 cd "Flow State"
 npm install
 ```
 
-### 3. Cấu hình Biến Môi Trường (`.env.local`)
-Tạo file `.env.local` ở thư mục gốc dự án:
+### 3. Environment Variables (`.env.local`)
+Create a `.env.local` file in the root directory:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://your-supabase-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-### 4. Khởi Chạy Server Phát Triển (Dev Server)
+### 4. Run Development Server
 ```bash
 npm run dev
 ```
-Mở trình duyệt tại đường dẫn `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-### 5. Lệnh Kiểm Tra & Build Production
+### 5. Verification & Build
 ```bash
-# Kiểm tra Type-check TypeScript
+# Type check with TypeScript compiler
 npx tsc --noEmit
 
-# Kiểm tra Linter
+# Lint code quality
 npm run lint
 
-# Thử nghiệm Build Production thành phẩm
+# Production build
 npm run build
 ```
 
 ---
 
-## 🔒 Kiến Trúc Bảo Mật & RLS (Security Architecture)
+## 🔒 Security & Defense Architecture
 
-Dự án áp dụng chặt chẽ quy tắc **Zero-Trust Frontend**:
-- **Row Level Security (RLS):** Mọi bảng trong Database Postgres (`todos`, `categories`) đều bật RLS. Dữ liệu truy vấn luôn được lọc theo `auth.uid() = user_id`.
-- **An Toàn Key:** Chỉ lộ `NEXT_PUBLIC_SUPABASE_ANON_KEY` phía Frontend. `SERVICE_ROLE_KEY` tuyệt đối không xuất hiện ở client.
-- **Chống XSS & CSRF:** Tự động lọc các thẻ HTML/Script độc hại từ Input và áp dụng bộ Security Headers HTTP (CSP, X-Frame-Options DENY, SameSite Cookie).
+The platform strictly adheres to **Zero-Trust Frontend** principles:
+- **Row Level Security (RLS):** Every PostgreSQL table (`todos`, `categories`) enforces RLS policies scoping every query to `auth.uid() = user_id`.
+- **Public vs. Private Secret Isolation:** Only `NEXT_PUBLIC_SUPABASE_ANON_KEY` is exposed client-side. Privileged keys are never leaked to browser bundles.
+- **XSS & Injection Protection:** User inputs are sanitized prior to storage, guarded by comprehensive HTTP security headers (CSP, X-Frame-Options DENY, SameSite Cookie policies).
 
 ---
 
-## 🤝 Đóng Góp & Giấy Phép (License)
+## 📄 License
 
-Dự án thuộc sở hữu cá nhân và được phát triển nhằm mục đích tối ưu trải nghiệm quản lý công việc mượt mà.
+Distributed under the [MIT License](LICENSE).
 
-© 2026 **Flow State**. All rights reserved.
+<div align="center">
+  <sub>Developed with ❤️ by Tran Thuan • Software Engineering Portfolio</sub>
+</div>
