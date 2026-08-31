@@ -3,9 +3,10 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 
 /**
- * S-09 fix: Filter realtime subscription by user_id to avoid receiving all users' events.
+ * FIX MD-06: Filter realtime subscription by user_id for notes table
+ * (registered in supabase_realtime via 20260824000000_notes_schema.sql).
  */
-export function useRealtimeTodos(userId?: string) {
+export function useRealtimeNotes(userId?: string) {
   const queryClient = useQueryClient();
   const [resolvedUserId, setResolvedUserId] = useState<string | undefined>(userId);
 
@@ -28,17 +29,17 @@ export function useRealtimeTodos(userId?: string) {
 
     const supabase = createClient();
     const channel = supabase
-      .channel(`todos-realtime-${resolvedUserId}`)
+      .channel(`notes-realtime-${resolvedUserId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'todos',
+          table: 'notes',
           filter: `user_id=eq.${resolvedUserId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['todos'] });
+          queryClient.invalidateQueries({ queryKey: ['notes'] });
         }
       )
       .subscribe();

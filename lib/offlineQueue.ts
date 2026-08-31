@@ -1,5 +1,5 @@
 /**
- * Offline Mutation Queue helper using IndexedDB / localStorage.
+ * Offline Mutation Queue helper using localStorage.
  * Automatically queues failed mutations when network is offline,
  * and syncs them back when connection is restored.
  */
@@ -12,6 +12,7 @@ export interface PendingMutation {
 }
 
 const QUEUE_KEY = 'flow_state_offline_queue';
+const MAX_QUEUE_SIZE = 100;
 
 export function getOfflineQueue(): PendingMutation[] {
   if (typeof window === 'undefined') return [];
@@ -23,19 +24,37 @@ export function getOfflineQueue(): PendingMutation[] {
   }
 }
 
-export function addToOfflineQueue(type: PendingMutation['type'], payload: any) {
+export function addToOfflineQueue(type: PendingMutation['type'], payload: any): void {
   if (typeof window === 'undefined') return;
-  const queue = getOfflineQueue();
-  queue.push({
-    id: 'off-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-    type,
-    payload,
-    timestamp: Date.now(),
-  });
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  try {
+    const queue = getOfflineQueue();
+    // Bounded queue: prevent unbounded growth
+    if (queue.length >= MAX_QUEUE_SIZE) {
+      queue.shift(); // evict oldest
+    }
+    queue.push({
+      id: `off-${Date.now()}-${crypto.randomUUID().slice(0, 8)}`,
+      type,
+      payload,
+      timestamp: Date.now(),
+    });
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  } catch {
+    // LocalStorage quota or access error
+  }
 }
 
-export function clearOfflineQueue() {
+export function removeFromOfflineQueue(id: string): void {
   if (typeof window === 'undefined') return;
-  localStorage.removeItem(QUEUE_KEY);
+  try {
+    const queue = getOfflineQueue().filter((item) => item.id !== id);
+    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  } catch {}
+}
+
+export function clearOfflineQueue(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(QUEUE_KEY);
+  } catch {}
 }
