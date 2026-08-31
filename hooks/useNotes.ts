@@ -41,6 +41,7 @@ export function useTrashNotes(enabled: boolean = true) {
       return fetchTrashNotes(supabase);
     },
     enabled,
+    retry: 1,
   });
 }
 
