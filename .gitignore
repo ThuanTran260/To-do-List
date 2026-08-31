@@ -48,8 +48,10 @@ next-env.d.ts
 !.agents/AGENTS.md
 !.agents/skills/
 
-# Local AI working docs & reference libraries (not part of the codebase)
-/fix.md
-/NEXTJS_PREFETCH_BUG_REPORT.md
+# Local notes, working docs & reference libraries (not part of public codebase)
+/docs/local/
 /docs/superpowers/
 /design-md/
+/frontend.md
+/fix.md
+/NEXTJS_PREFETCH_BUG_REPORT.md
