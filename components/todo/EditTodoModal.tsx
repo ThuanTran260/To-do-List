@@ -94,6 +94,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
             recurrence_rule: recurrenceRule,
             image_url: newImageUrl || undefined,
+            image_path: newImageUrl || undefined,
             is_vital: priority === 'high',
           },
         },
