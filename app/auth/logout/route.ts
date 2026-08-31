@@ -1,31 +1,43 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { validateCsrfToken } from '@/lib/security/csrf';
 
 /**
- * Server-Side Logout Route Handler
+ * Server-Side Logout Route Handler (POST-only, CSRF-protected)
  *
- * This handler executes on the server to ensure complete cookie invalidation
- * for browsers and mobile in-app WebViews (such as Discord Mobile WebView) that
- * do not allow client-side JavaScript (`document.cookie`) to delete server-set cookies.
+ * S-01 (P0): GET handler cũ thực thi signOut → CSRF via <img src>/prefetch.
+ * GET giờ trả 405; logout chỉ chạy qua POST kèm double-submit CSRF token
+ * (header `x-csrf-token` hoặc body.csrfToken khớp cookie `csrf-token`).
  *
  * Actions:
- * 1. Call supabase.auth.signOut({ scope: 'global' }) on the server.
- * 2. Explicitly append `Set-Cookie` HTTP response headers with `Max-Age=0`
- *    and `Expires=Thu, 01 Jan 1970 00:00:00 GMT` for all `sb-*` auth cookies.
- * 3. Redirect back to /login.
+ * 1. Validate CSRF token.
+ * 2. Call supabase.auth.signOut({ scope: 'global' }) on the server.
+ * 3. Explicitly expire all `sb-*` auth cookies with `Max-Age=0`.
+ * 4. Redirect back to /login.
  */
-export async function GET(request: Request) {
+export async function POST(request: Request) {
   const cookieStore = await cookies();
-  const requestUrl = new URL(request.url);
-  const redirectUrl = new URL('/login', requestUrl.origin);
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+  const headerToken = request.headers.get('x-csrf-token');
+  let bodyToken: string | undefined;
+  try {
+    const body = await request.json();
+    if (body && typeof body.csrfToken === 'string') bodyToken = body.csrfToken;
+  } catch {}
 
-  const response = NextResponse.redirect(redirectUrl);
+  const cookieToken = cookieStore.get('csrf-token')?.value;
+  if (!headerToken || !validateCsrfToken(headerToken, cookieToken || '')) {
+    return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+  }
+  void bodyToken;
 
-  if (!supabaseUrl.includes('placeholder')) {
+  const response = NextResponse.json({ success: true });
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (supabaseUrl && anonKey && !supabaseUrl.includes('placeholder')) {
     const supabase = createServerClient(supabaseUrl, anonKey, {
       cookies: {
         getAll() {
@@ -59,6 +71,9 @@ export async function GET(request: Request) {
   return response;
 }
 
-export async function POST(request: Request) {
-  return GET(request);
+export function GET() {
+  return NextResponse.json(
+    { error: 'Method Not Allowed — use POST with CSRF token' },
+    { status: 405 }
+  );
 }

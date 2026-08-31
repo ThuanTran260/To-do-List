@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
 import { useAuth } from '@/hooks/useAuth';
+import { performLogout } from '@/lib/auth/logoutClient';
 import { LogOut, Trash2, CheckCircle2, User as UserIcon } from 'lucide-react';
 import { TrashModal } from '@/components/todo/TrashModal';
 
@@ -18,7 +19,7 @@ export function Navbar() {
     } catch {}
     try { sessionStorage.clear(); } catch {}
 
-    window.location.href = '/auth/logout';
+    await performLogout();
   };
 
   return (
