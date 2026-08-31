@@ -7,35 +7,33 @@ import { createClient } from '@/lib/supabase/client';
  */
 export function useRealtimeTodos(userId?: string) {
   const queryClient = useQueryClient();
-  const [resolvedUserId, setResolvedUserId] = useState<string | undefined>(userId);
+  const [authUserId, setAuthUserId] = useState<string | undefined>();
 
   useEffect(() => {
-    if (userId) {
-      setResolvedUserId(userId);
-      return;
-    }
-
+    if (userId) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.id) {
-        setResolvedUserId(user.id);
+        setAuthUserId(user.id);
       }
     });
   }, [userId]);
 
+  const targetUserId = userId || authUserId;
+
   useEffect(() => {
-    if (!resolvedUserId) return;
+    if (!targetUserId) return;
 
     const supabase = createClient();
     const channel = supabase
-      .channel(`todos-realtime-${resolvedUserId}`)
+      .channel(`todos-realtime-${targetUserId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'todos',
-          filter: `user_id=eq.${resolvedUserId}`,
+          filter: `user_id=eq.${targetUserId}`,
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ['todos'] });
@@ -46,5 +44,5 @@ export function useRealtimeTodos(userId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [resolvedUserId, queryClient]);
+  }, [targetUserId, queryClient]);
 }

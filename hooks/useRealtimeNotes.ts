@@ -3,40 +3,37 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 
 /**
- * FIX MD-06: Filter realtime subscription by user_id for notes table
- * (registered in supabase_realtime via 20260824000000_notes_schema.sql).
+ * FIX MD-06: Filter realtime subscription by user_id for notes table.
  */
 export function useRealtimeNotes(userId?: string) {
   const queryClient = useQueryClient();
-  const [resolvedUserId, setResolvedUserId] = useState<string | undefined>(userId);
+  const [authUserId, setAuthUserId] = useState<string | undefined>();
 
   useEffect(() => {
-    if (userId) {
-      setResolvedUserId(userId);
-      return;
-    }
-
+    if (userId) return;
     const supabase = createClient();
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user?.id) {
-        setResolvedUserId(user.id);
+        setAuthUserId(user.id);
       }
     });
   }, [userId]);
 
+  const targetUserId = userId || authUserId;
+
   useEffect(() => {
-    if (!resolvedUserId) return;
+    if (!targetUserId) return;
 
     const supabase = createClient();
     const channel = supabase
-      .channel(`notes-realtime-${resolvedUserId}`)
+      .channel(`notes-realtime-${targetUserId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'notes',
-          filter: `user_id=eq.${resolvedUserId}`,
+          filter: `user_id=eq.${targetUserId}`,
         },
         () => {
           queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -47,5 +44,5 @@ export function useRealtimeNotes(userId?: string) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [resolvedUserId, queryClient]);
+  }, [targetUserId, queryClient]);
 }
