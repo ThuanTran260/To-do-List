@@ -221,10 +221,17 @@ export function useReorderTodos() {
   return useMutation({
     mutationFn: async (orderedIds: string[]) => {
       const supabase = createClient();
-      const updates = orderedIds.map((id, index) =>
+      // L-04 fix: Promise.allSettled + bounds check thay Promise.all (partial failure
+      // trước đây âm thầm để lại thứ tự rác; index âm/ngoài bounds bị chặn)
+      const boundedIds = orderedIds.slice(0, 1000);
+      const updates = boundedIds.map((id, index) =>
         supabase.from('todos').update({ sort_order: index }).eq('id', id)
       );
-      await Promise.all(updates);
+      const results = await Promise.allSettled(updates);
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        throw new Error(`Reorder failed for ${failed.length}/${boundedIds.length} items`);
+      }
     },
     onMutate: async (orderedIds) => {
       await queryClient.cancelQueries({ queryKey: ['todos'] });

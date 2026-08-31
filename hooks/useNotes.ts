@@ -35,6 +35,12 @@ export function useNotes(options: UseNotesOptions = {}) {
         query = query.eq('color', color);
       }
 
+      // L-02 fix: searchQuery trước đây chỉ nằm trong queryKey, không bao giờ áp vào query
+      if (searchQuery && searchQuery.trim().length > 0) {
+        const escaped = searchQuery.trim().replace(/[%,()]/g, '');
+        query = query.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+      }
+
       const result = await query;
 
       let data = result.data;
