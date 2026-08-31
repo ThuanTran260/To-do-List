@@ -2,7 +2,6 @@
 
 import { Search, LayoutGrid, List, Trash2, Tag as TagIcon, X } from 'lucide-react';
 import { useTags } from '@/hooks/useTags';
-import { useTrashNotes } from '@/hooks/useNotes';
 import { NOTE_COLORS } from '@/lib/noteColors';
 import { NoteColor } from '@/types/note';
 
@@ -16,6 +15,7 @@ interface NoteFilterBarProps {
   viewMode: 'grid' | 'list';
   onViewModeChange: (mode: 'grid' | 'list') => void;
   onOpenTrash: () => void;
+  trashCount?: number;
 }
 
 export function NoteFilterBar({
@@ -28,9 +28,9 @@ export function NoteFilterBar({
   viewMode,
   onViewModeChange,
   onOpenTrash,
+  trashCount,
 }: NoteFilterBarProps) {
   const { data: tags = [] } = useTags();
-  const { data: trashNotes = [] } = useTrashNotes();
 
   const colorKeys = Object.keys(NOTE_COLORS) as NoteColor[];
 
@@ -96,9 +96,9 @@ export function NoteFilterBar({
             className="relative p-2 rounded-lg bg-surface-1 hover:bg-surface-2 border border-hairline text-ink-muted hover:text-danger transition-colors cursor-pointer flex items-center justify-center shadow-2xs"
           >
             <Trash2 className="w-4 h-4" />
-            {trashNotes.length > 0 && (
+            {typeof trashCount === 'number' && trashCount > 0 && (
               <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-danger text-on-primary text-[10px] font-bold flex items-center justify-center">
-                {trashNotes.length}
+                {trashCount}
               </span>
             )}
           </button>

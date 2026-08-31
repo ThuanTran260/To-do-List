@@ -41,6 +41,7 @@ export function useTrashTodos(enabled: boolean = true) {
       return fetchTrashTodos(supabase);
     },
     enabled,
+    retry: 1,
   });
 }
 

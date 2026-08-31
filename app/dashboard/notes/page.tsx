@@ -27,7 +27,7 @@ export default function NotesPage() {
     setIsCreatingNew(false);
   }, []);
 
-  const handleNoteCreated = useCallback((newNote: Note) => {
+  const handleNoteCreated = useCallback((_newNote: Note) => {
     // Note created successfully
   }, []);
 
