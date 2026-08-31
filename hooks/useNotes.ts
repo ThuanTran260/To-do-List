@@ -35,9 +35,11 @@ export function useNotes(options: UseNotesOptions = {}) {
         query = query.eq('color', color);
       }
 
-      // L-02 fix: searchQuery trước đây chỉ nằm trong queryKey, không bao giờ áp vào query
+      // L-02 fix: searchQuery trước đây chỉ nằm trong queryKey, không bao giờ áp vào query.
+      // Strip ký tự đặc biệt PostgREST: % wildcard, () grouping, và QUAN TRỌNG dấu phẩy
+      // (comma tách conditions trong .or() → parse lỗi → fallback âm thầm bỏ search)
       if (searchQuery && searchQuery.trim().length > 0) {
-        const escaped = searchQuery.trim().replace(/[%,()]/g, '');
+        const escaped = searchQuery.trim().replace(/[%,()"]/g, '');
         query = query.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
       }
 

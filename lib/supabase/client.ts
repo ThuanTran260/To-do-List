@@ -28,6 +28,35 @@ export function parseDocumentCookies() {
     });
 }
 
+/**
+ * Pure helper cho test — build cookie string với sb-remember-me contract.
+ * Được export để unit test có thể kiểm tra maxAge/Secure/encode mà không cần mock document.
+ */
+export function buildCookieString(
+  name: string,
+  value: string,
+  options: { path?: string; domain?: string; sameSite?: string; maxAge?: number | null } | undefined,
+  isRemembered: boolean,
+  env: string = process.env.NODE_ENV || 'development'
+): string {
+  const maxAge = options?.maxAge === 0 ? 0 : isRemembered ? 2592000 : undefined;
+  let cookieStr = `${name}=${encodeURIComponent(value)}; path=${options?.path || '/'}; SameSite=${options?.sameSite || 'Lax'}`;
+
+  if (options?.domain) {
+    cookieStr += `; domain=${options.domain}`;
+  }
+
+  if (maxAge !== undefined) {
+    cookieStr += `; max-age=${maxAge}`;
+  }
+
+  if (env === 'production') {
+    cookieStr += '; Secure';
+  }
+
+  return cookieStr;
+}
+
 export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
@@ -51,23 +80,7 @@ export function createClient() {
         );
 
         cookiesToSet.forEach(({ name, value, options }) => {
-          // remember=true → 30 ngày; false → Session Cookie (maxAge undefined)
-          const maxAge = isRemembered ? 2592000 : undefined;
-          let cookieStr = `${name}=${encodeURIComponent(value)}; path=${options?.path || '/'}; SameSite=${options?.sameSite || 'Lax'}`;
-
-          if (options?.domain) {
-            cookieStr += `; domain=${options.domain}`;
-          }
-
-          if (maxAge) {
-            cookieStr += `; max-age=${maxAge}`;
-          }
-
-          if (process.env.NODE_ENV === 'production') {
-            cookieStr += '; Secure';
-          }
-
-          document.cookie = cookieStr;
+          document.cookie = buildCookieString(name, value, options as never, isRemembered);
         });
       },
     },
