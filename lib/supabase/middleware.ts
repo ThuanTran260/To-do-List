@@ -1,17 +1,15 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { generateCsrfToken } from '@/lib/security/csrf';
+import { generateNonce, buildCspHeader } from '@/lib/security/csp';
 
 /**
  * Helper duy nhất gán Security Headers lên response cuối cùng trước khi return.
  * Đảm bảo 100% response (kể cả sau khi setAll tạo mới response hoặc redirect)
  * luôn có đầy đủ CSP, HSTS, X-Frame-Options, X-Content-Type-Options...
  */
-function applySecurityHeaders(response: NextResponse): NextResponse {
+function applySecurityHeaders(response: NextResponse, nonce: string): NextResponse {
   const isDev = process.env.NODE_ENV === 'development';
-  const scriptSrc = isDev
-    ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-    : "script-src 'self' 'unsafe-inline' https:";
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
   response.headers.set('X-Frame-Options', 'DENY');
@@ -22,21 +20,11 @@ function applySecurityHeaders(response: NextResponse): NextResponse {
     'Strict-Transport-Security',
     'max-age=63072000; includeSubDomains; preload'
   );
-  response.headers.set(
-    'Content-Security-Policy',
-    [
-      "default-src 'self'",
-      scriptSrc,
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://*.supabase.co",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
-      "object-src 'none'",
-      "frame-ancestors 'none'",
-      "base-uri 'self'",
-      "form-action 'self'",
-    ].join('; ')
-  );
+  // S-02 (P0): CSP nonce thực per-request thay cho 'unsafe-inline'.
+  // Middleware là NGUỒN DUY NHẤT của CSP (MD-11) — next.config.ts/vercel.json chỉ giữ non-CSP headers.
+  response.headers.set('Content-Security-Policy', buildCspHeader(nonce, isDev));
+  // MD-10: expose nonce cho app/layout.tsx để gắn vào <html nonce>
+  response.headers.set('x-nonce', nonce);
 
   return response;
 }
@@ -56,6 +44,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const { pathname } = request.nextUrl;
   const isDashboardRoute = pathname.startsWith('/dashboard');
   const isAuthRoute = pathname === '/login' || pathname === '/signup';
+
+  // Nonce per-request (S-02) — áp cho MỌI response kể cả redirect
+  const nonce = generateNonce();
 
   let supabaseResponse = NextResponse.next({ request });
 
@@ -86,9 +77,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     if (isDashboardRoute) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
-      return applySecurityHeaders(NextResponse.redirect(loginUrl));
+      return applySecurityHeaders(NextResponse.redirect(loginUrl), nonce);
     }
-    return applySecurityHeaders(supabaseResponse);
+    return applySecurityHeaders(supabaseResponse, nonce);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -124,7 +115,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     supabaseResponse.cookies.getAll().forEach((c) => {
       redirectResponse.cookies.set(c.name, c.value, c);
     });
-    return applySecurityHeaders(redirectResponse);
+    return applySecurityHeaders(redirectResponse, nonce);
   }
 
   // 2. Đã auth mà truy cập /login hoặc /signup -> Redirect /dashboard
@@ -135,11 +126,11 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     supabaseResponse.cookies.getAll().forEach((c) => {
       redirectResponse.cookies.set(c.name, c.value, c);
     });
-    return applySecurityHeaders(redirectResponse);
+    return applySecurityHeaders(redirectResponse, nonce);
   }
 
   // Áp dụng Security Headers SAU CÙNG lên duy nhất 1 response sẽ trả về
-  return applySecurityHeaders(supabaseResponse);
+  return applySecurityHeaders(supabaseResponse, nonce);
 }
 
 /**
