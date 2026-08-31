@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTodos, useDeleteTodo, useToggleTodo, useUpdateTodo } from '@/hooks/useTodos';
+import { useSignedImageUrl } from '@/hooks/useSignedImageUrl';
 import { deleteTaskImage } from '@/lib/storage';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
@@ -30,6 +31,9 @@ function TaskDetailContent() {
   const updateMutation = useUpdateTodo();
 
   const currentTask = data?.todos.find((t) => t.id === activeTaskId);
+
+  const { data: signedImageUrl } = useSignedImageUrl(currentTask?.image_path || currentTask?.image_url);
+  const displayImageUrl = signedImageUrl || currentTask?.image_url;
 
   const handleClose = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -182,11 +186,11 @@ function TaskDetailContent() {
                 <div className="space-y-6">
                   {/* Hero Layout */}
                   <div className="flex flex-col md:flex-row items-stretch gap-5">
-                    {currentTask.image_url ? (
+                    {displayImageUrl ? (
                       <div className="w-full md:w-1/2 aspect-video md:aspect-square rounded-xl overflow-hidden border border-hairline bg-surface-2 flex-shrink-0">
                         {/* eslint-disable-next-html-link */}
                         <img
-                          src={currentTask.image_url}
+                          src={displayImageUrl}
                           alt={currentTask.title}
                           className="w-full h-full object-cover rounded-xl"
                         />

@@ -23,6 +23,7 @@ export const todoCreateSchema = z.object({
   category_id: z.string().uuid().optional(),
   is_vital: z.boolean().optional(),
   image_url: z.string().url().optional(),
+  image_path: z.string().optional().nullable(),
   checklist: z.array(checklistItemSchema).optional(),
   recurrence_rule: z.string().nullable().optional(),
   sort_order: z.number().optional(),

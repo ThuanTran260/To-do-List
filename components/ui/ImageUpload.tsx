@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, X, Loader2, AlertCircle } from 'lucide-react';
+import { useSignedImageUrl } from '@/hooks/useSignedImageUrl';
 
 interface ImageUploadProps {
   value?: string | null;
@@ -23,7 +24,8 @@ export function ImageUpload({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const displayUrl = localPreviewUrl || value;
+  const { data: signedValueUrl } = useSignedImageUrl(value);
+  const displayUrl = localPreviewUrl || signedValueUrl || value;
 
   // Cleanup object URL on unmount
   useEffect(() => {

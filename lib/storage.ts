@@ -1,5 +1,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { log } from '@/lib/logger';
+import { extractPath } from '@/lib/storage/signedUrl';
+
+export { extractPath } from '@/lib/storage/signedUrl';
 
 /**
  * Compresses an image file on the client side using HTML5 Canvas.
@@ -50,9 +53,9 @@ export async function compressTaskImage(file: File): Promise<Blob> {
 }
 
 /**
- * Uploads a compressed image blob to Supabase Storage 'task-attachments' bucket
+ * Uploads a compressed image blob to Supabase Storage 'task-attachments' bucket.
  * Path structure: {user_id}/{filename}
- * S-07: validate MIME type + file size + crypto.randomUUID filename trước khi upload.
+ * Returns the storage path (e.g. "userId/task-xxx.webp").
  */
 const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
@@ -84,7 +87,7 @@ export async function uploadTaskImage(
     .from('task-attachments')
     .upload(filename, compressedBlob, {
       contentType: 'image/webp',
-      upsert: true,
+      upsert: false,
     });
 
   if (uploadError) {
@@ -92,27 +95,21 @@ export async function uploadTaskImage(
     throw new Error(`Lỗi tải ảnh lên: ${uploadError.message}`);
   }
 
-  const { data: publicUrlData } = supabase.storage
-    .from('task-attachments')
-    .getPublicUrl(filename);
-
-  return publicUrlData.publicUrl;
+  return filename;
 }
 
 /**
- * Safely deletes a task image from Supabase Storage bucket 'task-attachments'
- * if the image URL belongs to Supabase Storage.
+ * Safely deletes a task image from Supabase Storage bucket 'task-attachments'.
+ * Supports both legacy public URLs and new relative storage paths.
  */
-export async function deleteTaskImage(imageUrl: string | null | undefined): Promise<void> {
-  if (!imageUrl || !imageUrl.includes('task-attachments')) return;
+export async function deleteTaskImage(imageUrlOrPath: string | null | undefined): Promise<void> {
+  if (!imageUrlOrPath) return;
 
   try {
-    const supabase = createClient();
-    // Extract path after 'task-attachments/'
-    const parts = imageUrl.split('/task-attachments/');
-    if (parts.length < 2) return;
+    const path = extractPath(imageUrlOrPath);
+    if (!path) return;
 
-    const path = parts[1].split('?')[0]; // Remove query params if any
+    const supabase = createClient();
     const { error } = await supabase.storage.from('task-attachments').remove([path]);
     if (error) {
       log('warn', 'Failed to delete task image from storage', { path, error: error.message });
