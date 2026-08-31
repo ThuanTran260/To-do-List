@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest';
 import { buildCspHeader, generateNonce } from '@/lib/security/csp';
 
 describe('CSP nonce', () => {
-  it('contains nonce and no unsafe-inline in prod', () => {
+  it('contains nonce and no unsafe-inline in prod script-src', () => {
     const nonce = generateNonce();
     const header = buildCspHeader(nonce, false);
-    expect(header).toContain(`'nonce-${nonce}'`);
-    expect(header).not.toContain(`'unsafe-inline'`);
+    const scriptSrc = header.split('; ').find((d) => d.startsWith('script-src'));
+    expect(scriptSrc).toContain(`'nonce-${nonce}'`);
+    expect(scriptSrc).not.toContain(`'unsafe-inline'`);
+    expect(scriptSrc).not.toContain('https:');
   });
 
   it('allows unsafe-eval only in dev', () => {
@@ -14,13 +16,16 @@ describe('CSP nonce', () => {
     expect(buildCspHeader('abc', false)).not.toContain('unsafe-eval');
   });
 
-  it('interpolates nonce in script-src AND style-src (CR-04)', () => {
+  it('style-src uses unsafe-inline WITHOUT nonce (C-2: nonce blocks style attributes)', () => {
     const header = buildCspHeader('xyz', false);
-    const scriptSrc = header.split('; ').find((d) => d.startsWith('script-src'));
     const styleSrc = header.split('; ').find((d) => d.startsWith('style-src'));
-    expect(scriptSrc).toContain("'nonce-abc'".replace('abc', 'xyz')); // sanity: wrong nonce must not match
-    expect(scriptSrc).toContain("'nonce-xyz'");
-    expect(styleSrc).toContain("'nonce-xyz'");
+    expect(styleSrc).toContain("'unsafe-inline'");
+    expect(styleSrc).not.toContain("'nonce-");
+  });
+
+  it('allows Google OAuth avatars (I-2)', () => {
+    const header = buildCspHeader('xyz', false);
+    expect(header).toContain('https://*.googleusercontent.com');
   });
 
   it('includes hardening directives', () => {

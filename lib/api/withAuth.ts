@@ -39,14 +39,21 @@ export function withAuth(
       },
     });
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    // I-4 fix (review): getUser phải được guard — lỗi mạng tạm thời trả 503 có cấu trúc,
+    // không để exception nổ ra default 500 của Next.
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      if (!user) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      return handler(req, user, supabase);
+    } catch (err) {
+      console.error('[withAuth] getUser failed', err);
+      return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 });
     }
-
-    return handler(req, user, supabase);
   };
 }

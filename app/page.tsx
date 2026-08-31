@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useAuth } from '@/hooks/useAuth';
+import { performLogout } from '@/lib/auth/logoutClient';
 import { CheckCircle2, ShieldCheck, Zap, Smartphone, ArrowRight, LogOut, User } from 'lucide-react';
 
 export default function HomePage() {
@@ -27,13 +28,14 @@ export default function HomePage() {
                 <User className="w-3.5 h-3.5 text-primary" />
                 <span>{user.email}</span>
               </span>
-              <a
-                href="/auth/logout"
+              <button
+                type="button"
+                onClick={() => void performLogout()}
                 className="px-3 py-1.5 rounded-md border border-hairline text-xs font-medium text-danger hover:bg-danger/10 transition-colors flex items-center gap-1 cursor-pointer"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 <span>Đăng xuất</span>
-              </a>
+              </button>
             </div>
           ) : (
             <>

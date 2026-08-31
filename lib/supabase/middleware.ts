@@ -8,7 +8,11 @@ import { generateNonce, buildCspHeader } from '@/lib/security/csp';
  * Đảm bảo 100% response (kể cả sau khi setAll tạo mới response hoặc redirect)
  * luôn có đầy đủ CSP, HSTS, X-Frame-Options, X-Content-Type-Options...
  */
-function applySecurityHeaders(response: NextResponse, nonce: string): NextResponse {
+function applySecurityHeaders(
+  response: NextResponse,
+  nonce: string,
+  request: NextRequest
+): NextResponse {
   const isDev = process.env.NODE_ENV === 'development';
 
   response.headers.set('X-Content-Type-Options', 'nosniff');
@@ -25,6 +29,19 @@ function applySecurityHeaders(response: NextResponse, nonce: string): NextRespon
   response.headers.set('Content-Security-Policy', buildCspHeader(nonce, isDev));
   // MD-10: expose nonce cho app/layout.tsx để gắn vào <html nonce>
   response.headers.set('x-nonce', nonce);
+
+  // C-4: setAll của @supabase/ssr có thể THAY THẾ supabaseResponse (token refresh)
+  // → csrf cookie bị mất khỏi response jar. Mirror từ request lên response cuối để đảm bảo không rơi.
+  const csrfFromRequest = request.cookies.get('csrf-token')?.value;
+  if (csrfFromRequest && !response.cookies.get('csrf-token')) {
+    response.cookies.set('csrf-token', csrfFromRequest, {
+      httpOnly: false,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+  }
 
   return response;
 }
@@ -47,8 +64,15 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
 
   // Nonce per-request (S-02) — áp cho MỌI response kể cả redirect
   const nonce = generateNonce();
+  const isDev = process.env.NODE_ENV === 'development';
 
-  let supabaseResponse = NextResponse.next({ request });
+  // C-1: Next.js đọc nonce từ CSP header của REQUEST (không phải response)
+  // để gắn vào các inline bootstrap/flight scripts. Phải forward qua requestHeaders.
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-nonce', nonce);
+  requestHeaders.set('Content-Security-Policy', buildCspHeader(nonce, isDev));
+
+  let supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
 
   // MD-03: Nếu chưa có csrf-token cookie, tạo mới và set vào response (double-submit).
   // httpOnly:false để JS đọc được cho header x-csrf-token khi POST logout/mutations.
@@ -77,9 +101,9 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     if (isDashboardRoute) {
       const loginUrl = request.nextUrl.clone();
       loginUrl.pathname = '/login';
-      return applySecurityHeaders(NextResponse.redirect(loginUrl), nonce);
+      return applySecurityHeaders(NextResponse.redirect(loginUrl), nonce, request);
     }
-    return applySecurityHeaders(supabaseResponse, nonce);
+    return applySecurityHeaders(supabaseResponse, nonce, request);
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -89,7 +113,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
         // Chuẩn 100% của @supabase/ssr: Giữ nguyên options để trình duyệt HTTPS Vercel chấp nhận Secure/SameSite
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, options)
@@ -115,7 +139,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     supabaseResponse.cookies.getAll().forEach((c) => {
       redirectResponse.cookies.set(c.name, c.value, c);
     });
-    return applySecurityHeaders(redirectResponse, nonce);
+    return applySecurityHeaders(redirectResponse, nonce, request);
   }
 
   // 2. Đã auth mà truy cập /login hoặc /signup -> Redirect /dashboard
@@ -126,11 +150,11 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
     supabaseResponse.cookies.getAll().forEach((c) => {
       redirectResponse.cookies.set(c.name, c.value, c);
     });
-    return applySecurityHeaders(redirectResponse, nonce);
+    return applySecurityHeaders(redirectResponse, nonce, request);
   }
 
   // Áp dụng Security Headers SAU CÙNG lên duy nhất 1 response sẽ trả về
-  return applySecurityHeaders(supabaseResponse, nonce);
+  return applySecurityHeaders(supabaseResponse, nonce, request);
 }
 
 /**
