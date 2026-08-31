@@ -105,6 +105,7 @@ export function TodoForm() {
           due_date: finalDueDate,
           category_id: categoryId || undefined,
           image_url: imageUrl,
+          image_path: imageUrl,
           tag_ids: selectedTagIds,
           recurrence_rule: recurrenceRule,
         },
