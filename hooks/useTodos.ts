@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { todoCreateSchema, type TodoInput, type TodoUpdate } from '@/lib/validations/todo';
 import { log } from '@/lib/logger';
-import { getNextOccurrenceDate } from '@/lib/recurrence';
+import { createNextRecurringTodo } from '@/lib/services/recurrenceService';
 import type { TodoItemData, ChecklistItem } from '@/types/todo';
 
 export type { TodoItemData, ChecklistItem };
@@ -159,55 +159,10 @@ export function useToggleTodo() {
 
       // Handle recurrence if completing a task with recurrence_rule
       if (is_completed && currentTodo?.recurrence_rule) {
-        const nextDate = getNextOccurrenceDate(
-          currentTodo.recurrence_rule,
-          currentTodo.due_date ? new Date(currentTodo.due_date) : new Date(),
-          currentTodo.recurrence_end
-        );
-        if (nextDate) {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (user) {
-            const { data: newTodo, error: insertError } = await supabase
-              .from('todos')
-              .insert({
-                title: currentTodo.title,
-                description: currentTodo.description,
-                priority: currentTodo.priority,
-                due_date: nextDate.toISOString(),
-                user_id: user.id,
-                recurrence_rule: currentTodo.recurrence_rule,
-                recurrence_end: currentTodo.recurrence_end,
-                parent_id: currentTodo.id,
-                category_id: currentTodo.category_id,
-                checklist: currentTodo.checklist
-                  ? currentTodo.checklist.map((item) => ({ ...item, is_done: false }))
-                  : [],
-              })
-              .select()
-              .single();
-
-            if (!insertError && newTodo) {
-              if (currentTodo.tags && currentTodo.tags.length > 0) {
-                const tagRows = currentTodo.tags.map((tag) => ({
-                  todo_id: newTodo.id,
-                  tag_id: tag.id,
-                }));
-                await supabase.from('todo_tags').insert(tagRows);
-              } else {
-                const { data: existingTags } = await supabase
-                  .from('todo_tags')
-                  .select('tag_id')
-                  .eq('todo_id', currentTodo.id);
-                if (existingTags && existingTags.length > 0) {
-                  const tagRows = existingTags.map((row) => ({
-                    todo_id: newTodo.id,
-                    tag_id: row.tag_id,
-                  }));
-                  await supabase.from('todo_tags').insert(tagRows);
-                }
-              }
-            }
-          }
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // L-03 fix: single source — clone next occurrence qua service
+          await createNextRecurringTodo(supabase, currentTodo, user.id);
         }
       }
     },
@@ -345,46 +300,9 @@ export function useBulkActions() {
       if (recurringTasks && recurringTasks.length > 0) {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
+          // L-03 fix: single source — clone next occurrence qua service
           for (const task of recurringTasks) {
-            const nextDate = getNextOccurrenceDate(
-              task.recurrence_rule!,
-              task.due_date ? new Date(task.due_date) : new Date(),
-              task.recurrence_end
-            );
-            if (nextDate) {
-              const { data: newTodo } = await supabase
-                .from('todos')
-                .insert({
-                  title: task.title,
-                  description: task.description,
-                  priority: task.priority,
-                  due_date: nextDate.toISOString(),
-                  user_id: user.id,
-                  recurrence_rule: task.recurrence_rule,
-                  recurrence_end: task.recurrence_end,
-                  parent_id: task.id,
-                  category_id: task.category_id,
-                  checklist: task.checklist
-                    ? task.checklist.map((item: any) => ({ ...item, is_done: false }))
-                    : [],
-                })
-                .select()
-                .single();
-
-              if (newTodo) {
-                const { data: existingTags } = await supabase
-                  .from('todo_tags')
-                  .select('tag_id')
-                  .eq('todo_id', task.id);
-                if (existingTags && existingTags.length > 0) {
-                  const tagRows = existingTags.map((row) => ({
-                    todo_id: newTodo.id,
-                    tag_id: row.tag_id,
-                  }));
-                  await supabase.from('todo_tags').insert(tagRows);
-                }
-              }
-            }
+            await createNextRecurringTodo(supabase, task, user.id);
           }
         }
       }
