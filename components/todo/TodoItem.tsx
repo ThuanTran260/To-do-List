@@ -29,6 +29,8 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
   const { data: categories = [] } = useCategories();
+  const { data: signedImageUrl } = useSignedImageUrl(item.image_path || item.image_url);
+  const displayImageUrl = signedImageUrl || item.image_url;
 
   const itemCategory = item.category_id
     ? categories.find((c) => c.id === item.category_id)
@@ -97,9 +99,6 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
   }
 
   const categoryTextColor = itemCategory ? getReadableTextColor(itemCategory.color) : '#ffffff';
-
-  const { data: signedImageUrl } = useSignedImageUrl(item.image_path || item.image_url);
-  const displayImageUrl = signedImageUrl || item.image_url;
 
   return (
     <>
