@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
+import { headers } from 'next/headers';
 import QueryProvider from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { DropdownManagerProvider } from '@/hooks/useDropdownManager';
@@ -24,13 +25,21 @@ export const metadata: Metadata = {
   description: 'Ứng dụng Todo List thông minh với bảo mật Supabase RLS, Realtime sync và hiệu ứng tối ưu.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // MD-10: passthrough nonce từ middleware để Next.js gắn vào script/style inline
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
+
   return (
-    <html lang="vi" suppressHydrationWarning className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html
+      lang="vi"
+      nonce={nonce}
+      suppressHydrationWarning
+      className={`${inter.variable} ${jetbrainsMono.variable}`}
+    >
       <body className="antialiased selection:bg-primary selection:text-white">
         <ThemeProvider defaultTheme="dark" storageKey="flowstate-theme">
           <QueryProvider>
