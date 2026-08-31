@@ -1,18 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { noteCreateSchema, type NoteInput, type NoteUpdate } from '@/lib/validations/note';
-import { sanitizeHtml } from '@/lib/clientSanitize';
+import type { NoteInput, NoteUpdate } from '@/lib/validations/note';
 import { clearLocalDraft } from '@/lib/notesDraftSync';
+import {
+  fetchActiveNotes,
+  fetchTrashNotes,
+  createNote,
+  updateNote,
+  togglePinNote,
+  changeNoteColor,
+  softDeleteNote,
+  restoreNote,
+  permanentDeleteNote,
+  type FetchActiveNotesOptions,
+} from '@/lib/services/noteService';
 import type { Note } from '@/types/note';
 
 export type { Note };
-
-interface UseNotesOptions {
-  searchQuery?: string;
-  tagId?: string;
-  color?: string;
-  isArchived?: boolean;
-}
+export type UseNotesOptions = FetchActiveNotesOptions;
 
 // Fetch active notes with tags
 export function useNotes(options: UseNotesOptions = {}) {
@@ -22,60 +27,7 @@ export function useNotes(options: UseNotesOptions = {}) {
     queryKey: ['notes', 'active', { searchQuery, tagId, color, isArchived }],
     queryFn: async () => {
       const supabase = createClient();
-
-      let query = supabase
-        .from('notes')
-        .select('*, note_tags(tags(*))', { count: 'exact' })
-        .is('deleted_at', null)
-        .eq('is_archived', isArchived)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false });
-
-      if (color && color !== 'all') {
-        query = query.eq('color', color);
-      }
-
-      // L-02 fix: searchQuery trước đây chỉ nằm trong queryKey, không bao giờ áp vào query.
-      // Strip ký tự đặc biệt PostgREST: % wildcard, () grouping, và QUAN TRỌNG dấu phẩy
-      // (comma tách conditions trong .or() → parse lỗi → fallback âm thầm bỏ search)
-      if (searchQuery && searchQuery.trim().length > 0) {
-        const escaped = searchQuery.trim().replace(/[%,()"]/g, '');
-        query = query.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
-      }
-
-      const result = await query;
-
-      let data = result.data;
-      if (result.error) {
-        // Fallback: If note_tags relationship is missing or unmigrated, query notes alone
-        const fallback = await supabase
-          .from('notes')
-          .select('*', { count: 'exact' })
-          .is('deleted_at', null)
-          .eq('is_archived', isArchived)
-          .order('is_pinned', { ascending: false })
-          .order('created_at', { ascending: false });
-
-        if (fallback.error) throw fallback.error;
-        data = fallback.data;
-      }
-
-      let mapped = (data || []).map((item: any) => ({
-        ...item,
-        tags: item.note_tags ? item.note_tags.map((nt: any) => nt.tags).filter(Boolean) : [],
-      })) as Note[];
-
-      // Filter by tag if selected
-      if (tagId && tagId !== 'all') {
-        mapped = mapped.filter((note) => note.tags?.some((t) => t.id === tagId));
-      }
-
-      return {
-        notes: mapped,
-        pinnedNotes: mapped.filter((n) => n.is_pinned),
-        otherNotes: mapped.filter((n) => !n.is_pinned),
-        total: mapped.length,
-      };
+      return fetchActiveNotes(supabase, options);
     },
   });
 }
@@ -86,30 +38,7 @@ export function useTrashNotes() {
     queryKey: ['notes', 'trash'],
     queryFn: async () => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('notes')
-        .select('*, note_tags(tags(*))')
-        .not('deleted_at', 'is', null)
-        .order('deleted_at', { ascending: false });
-
-      if (error) {
-        // Fallback
-        const fallback = await supabase
-          .from('notes')
-          .select('*')
-          .not('deleted_at', 'is', null)
-          .order('deleted_at', { ascending: false });
-
-        if (fallback.error) throw fallback.error;
-        return (fallback.data as Note[]) || [];
-      }
-
-      return (
-        (data || []).map((item: any) => ({
-          ...item,
-          tags: item.note_tags ? item.note_tags.map((nt: any) => nt.tags).filter(Boolean) : [],
-        })) as Note[]
-      );
+      return fetchTrashNotes(supabase);
     },
   });
 }
@@ -121,9 +50,6 @@ export function useCreateNote() {
   return useMutation({
     mutationFn: async (input: NoteInput & { tag_ids?: string[] }) => {
       const supabase = createClient();
-      const { tag_ids, ...rawInput } = input;
-      const validated = noteCreateSchema.parse(rawInput);
-
       const {
         data: { user },
         error: authError,
@@ -133,28 +59,7 @@ export function useCreateNote() {
         throw new Error('Bạn cần đăng nhập để tạo ghi chú.');
       }
 
-      const { data, error } = await supabase
-        .from('notes')
-        .insert({
-          ...validated,
-          content: sanitizeHtml(validated.content),
-          user_id: user.id,
-        })
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Link tags if provided
-      if (tag_ids && tag_ids.length > 0) {
-        const rows = tag_ids.map((tagId) => ({
-          note_id: data.id,
-          tag_id: tagId,
-        }));
-        await supabase.from('note_tags').insert(rows);
-      }
-
-      return data as Note;
+      return createNote(supabase, user.id, input);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -182,40 +87,7 @@ export function useUpdateNote() {
         throw new Error('Bạn cần đăng nhập để cập nhật ghi chú.');
       }
 
-      const updateData: any = {
-        ...rawUpdate,
-        updated_at: new Date().toISOString(),
-      };
-
-      if (updateData.content) {
-        updateData.content = sanitizeHtml(updateData.content);
-      }
-
-      const { data, error } = await supabase
-        .from('notes')
-        .update(updateData)
-        .eq('id', id)
-        .eq('user_id', user.id)
-        .select()
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      // Update tags if tag_ids passed
-      if (tag_ids !== undefined) {
-        await supabase.from('note_tags').delete().eq('note_id', id);
-        if (tag_ids.length > 0) {
-          const rows = tag_ids.map((tagId) => ({
-            note_id: id,
-            tag_id: tagId,
-          }));
-          await supabase.from('note_tags').insert(rows);
-        }
-      }
-
-      return data as Note;
+      return updateNote(supabase, user.id, id, rawUpdate, tag_ids);
     },
     onMutate: async (newNote) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
@@ -247,15 +119,7 @@ export function useTogglePinNote() {
   return useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('notes')
-        .update({ is_pinned, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Note;
+      return togglePinNote(supabase, id, is_pinned);
     },
     onMutate: async ({ id, is_pinned }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
@@ -286,15 +150,7 @@ export function useChangeNoteColor() {
   return useMutation({
     mutationFn: async ({ id, color }: { id: string; color: string }) => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('notes')
-        .update({ color, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Note;
+      return changeNoteColor(supabase, id, color);
     },
     onMutate: async ({ id, color }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
@@ -325,15 +181,7 @@ export function useSoftDeleteNote() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('notes')
-        .update({ deleted_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Note;
+      return softDeleteNote(supabase, id);
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['notes'] });
@@ -365,15 +213,7 @@ export function useRestoreNote() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      const { data, error } = await supabase
-        .from('notes')
-        .update({ deleted_at: null, updated_at: new Date().toISOString() })
-        .eq('id', id)
-        .select()
-        .single();
-
-      if (error) throw error;
-      return data as Note;
+      return restoreNote(supabase, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -388,9 +228,7 @@ export function usePermanentDeleteNote() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      const { error } = await supabase.from('notes').delete().eq('id', id);
-      if (error) throw error;
-      return id;
+      return permanentDeleteNote(supabase, id);
     },
     onSuccess: (id) => {
       clearLocalDraft(id);
