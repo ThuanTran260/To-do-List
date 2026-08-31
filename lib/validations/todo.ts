@@ -1,5 +1,13 @@
 import { z } from 'zod';
 import { sanitizeInput } from '@/lib/sanitize';
+import { categorySchema } from '@/lib/validations/category';
+
+// L-05 fix: checklist từ z.array(z.any()) → strict contract khớp types/todo.ts ChecklistItem
+const checklistItemSchema = z.object({
+  id: z.string().min(1),
+  title: z.string().min(1).max(500),
+  is_done: z.boolean(),
+});
 
 export const todoCreateSchema = z.object({
   title: z.string()
@@ -15,7 +23,7 @@ export const todoCreateSchema = z.object({
   category_id: z.string().uuid().optional(),
   is_vital: z.boolean().optional(),
   image_url: z.string().url().optional(),
-  checklist: z.array(z.any()).optional(),
+  checklist: z.array(checklistItemSchema).optional(),
   recurrence_rule: z.string().nullable().optional(),
   sort_order: z.number().optional(),
   pomodoro_count: z.number().optional(),
@@ -25,11 +33,9 @@ export const todoUpdateSchema = todoCreateSchema.partial().extend({
   is_completed: z.boolean().optional(),
 });
 
-export const categorySchema = z.object({
-  name: z.string().min(1, 'Tên danh mục không được trống').max(100, 'Tối đa 100 ký tự').transform(val => sanitizeInput(val.trim())),
-  color: z.string().optional().default('#6366f1'),
-});
+// Re-export giữ backward compat với các import cũ từ '@/lib/validations/todo'
+export { categorySchema };
+export type { CategoryInput } from '@/lib/validations/category';
 
 export type TodoInput = z.infer<typeof todoCreateSchema>;
 export type TodoUpdate = z.infer<typeof todoUpdateSchema>;
-export type CategoryInput = z.infer<typeof categorySchema>;
