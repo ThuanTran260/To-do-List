@@ -75,7 +75,7 @@ export function RealtimeStreakBadge() {
     let streak = 0;
     const todayHasDone = completedDatesSet.has(todayStr);
 
-    let checkDate = new Date();
+    const checkDate = new Date();
     if (!todayHasDone) {
       // If not done today yet, check if yesterday was done (grace period)
       checkDate.setDate(checkDate.getDate() - 1);

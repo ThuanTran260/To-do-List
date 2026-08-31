@@ -44,6 +44,12 @@ jobs:
       - name: TypeScript Type Check
         run: pnpm exec tsc --noEmit
 
+      - name: ESLint Check
+        run: pnpm lint
+
+      - name: Unit Tests (Vitest)
+        run: pnpm test
+
       - name: Verify Production Next.js Build
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
