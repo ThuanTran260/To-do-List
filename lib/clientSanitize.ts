@@ -8,7 +8,7 @@ const ALLOWED_TAGS = [
   'hr', 'br', 'span'
 ];
 
-const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked', 'style'];
+const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked'];
 
 /**
  * Sanitizes HTML strings using DOMPurify with an explicit whitelist.
@@ -17,15 +17,14 @@ const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked', 'style
 export function sanitizeHtml(html: string): string {
   if (!html) return '';
   if (typeof window === 'undefined') {
-    // Basic SSR fallback: strip script and iframe tags
-    return html
-      .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-      .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '');
+    // S-04: SSR fallback — chỉ render-safe text, không fallback nửa vời.
+    // Strip TOÀN BỘ tag thay vì chỉ script/iframe (bypass qua <svg onload>, <img onerror>, <math>...).
+    return html.replace(/<[^>]*>/g, '');
   }
 
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,
-    ALLOW_DATA_ATTR: true,
+    ALLOW_DATA_ATTR: false,
   });
 }
