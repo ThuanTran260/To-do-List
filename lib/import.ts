@@ -49,6 +49,45 @@ export function parseJSONImport(jsonContent: string): { validTasks: ImportedTask
 }
 
 /**
+ * L-08 fix: state-machine CSV line splitter — tôn trọng quotes (RFC 4180),
+ * xử lý escaped double quotes ("") và dấu phẩy trong quoted fields.
+ * Thay heuristic split(',') fragile + unused `matches` variable.
+ */
+function splitCSVLine(line: string): string[] {
+  const cols: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (line[i + 1] === '"') {
+          // Escaped quote ""
+          current += '"';
+          i++; // skip next quote
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        current += char;
+      }
+    } else if (char === '"') {
+      inQuotes = true;
+    } else if (char === ',') {
+      cols.push(current.trim());
+      current = '';
+    } else {
+      current += char;
+    }
+  }
+
+  cols.push(current.trim());
+  return cols;
+}
+
+/**
  * Parses CSV file content and validates tasks.
  */
 export function parseCSVImport(csvContent: string): { validTasks: ImportedTask[]; errors: string[] } {
@@ -68,20 +107,22 @@ export function parseCSVImport(csvContent: string): { validTasks: ImportedTask[]
     const dataLines = lines.slice(1);
 
     dataLines.forEach((line, idx) => {
-      // Split CSV line taking quotes into account
-      const matches = line.match(/(".*?"|[^",\s]+)(?=\s*,|\s*$)/g);
-      const cols = line.split(',').map((c) => c.replace(/^"|"$/g, '').trim());
+      const cols = splitCSVLine(line);
 
-      if (cols.length === 0 || !cols[0]) return;
+      if (cols.length === 0 || !cols[0]) {
+        errors.push(`Dòng ${idx + 2}: Tiêu đề trống`);
+        return;
+      }
 
-      // Extract fields: title is expected at index 0 or 1 depending on whether id exists
-      const hasId = cols.length > 2 && cols[0].length > 20; // Heuristic for UUID
-      const titleIndex = hasId ? 1 : 0;
-      const descIndex = hasId ? 2 : 1;
-      const priorityIndex = hasId ? 3 : 2;
-      const completedIndex = hasId ? 4 : 3;
+      // Legacy export compatibility (Risk Mitigation): nếu header/cột đầu là UUID
+      // (36 chars, chuẩn uuid) thì layout là id,title,description,priority,is_completed
+      const looksLikeUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(cols[0]);
+      const titleIndex = looksLikeUuid ? 1 : 0;
+      const descIndex = looksLikeUuid ? 2 : 1;
+      const priorityIndex = looksLikeUuid ? 3 : 2;
+      const completedIndex = looksLikeUuid ? 4 : 3;
 
-      const title = cols[titleIndex] || cols[0];
+      const title = cols[titleIndex] || '';
       const description = cols[descIndex] || '';
       const priorityRaw = cols[priorityIndex]?.toLowerCase();
       const priority = ['low', 'medium', 'high'].includes(priorityRaw)
