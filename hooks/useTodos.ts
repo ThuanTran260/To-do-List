@@ -33,13 +33,14 @@ export function useTodos(page = 1, pageSize = 50) {
 }
 
 // Fetch trash (soft-deleted) todos
-export function useTrashTodos() {
+export function useTrashTodos(enabled: boolean = true) {
   return useQuery({
     queryKey: ['todos', 'trash'],
     queryFn: async () => {
       const supabase = createClient();
       return fetchTrashTodos(supabase);
     },
+    enabled,
   });
 }
 
