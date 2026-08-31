@@ -27,6 +27,26 @@ AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải 
 3. **BẮT BUỘC TẠO `implementation_plan.md` CHO CÁC THAY ĐỔI KIẾN TRÚC/UI NẶNG:**
    - Phân tích nguyên nhân, đề xuất giải pháp, dự đoán xung đột và chờ sự phê duyệt của người dùng trước khi tiến hành viết code.
 
+4. **BẮT BUỘC REVIEW PLAN TRƯỚC KHI CODE (Planning Review Gate — Áp dụng từ 2026-08-31 sau bài học CR-01→CR-06):**
+   - **Không được code khi plan chưa qua review:** Mọi `implementation_plan.md` phải được review bởi ít nhất 1 reviewer độc lập (human hoặc AI `requesting-code-review` / `plan-document-reviewer-prompt.md`) trước khi sang Pha 3.
+   - **Bắt buộc dùng `dispatching-parallel-agents` để audit plan:** Dispatch 2-3 subagents song song (Security / Logic / DB-Migration) cross-reference plan với source thực tế (30+ files, 6 migrations, `next.config.ts`/`vercel.json`/`app/layout.tsx`). Single-agent audit bị cấm cho plan P0.
+   - **Checklist Cross-Reference Bắt Buộc (phải tick trước khi duyệt):**
+     - [ ] `grep CREATE POLICY` vs `DROP POLICY` diff — không sót policy legacy (PERMISSIVE OR = bypass, bài học CR-06)
+     - [ ] `ls supabase/migrations | sort` vs thứ tự `DROP`/`CREATE` trong plan — đúng timestamp (CR-01)
+     - [ ] Tên policy trong plan khớp 100% với tên trong migration SQL gốc (CR-02)
+     - [ ] Thiếu `UPDATE` policy cho `upsert:true` (CR-03)
+     - [ ] Template literal `${nonce}` phải nằm trong `` ` `` không phải `"` (CR-04)
+     - [ ] In-memory structures có GC + doc serverless limitation (CR-05)
+     - [ ] End-to-end flow: middleware set header/cookie → layout đọc `headers()` → component dùng — không đứt đoạn (MD-10, MD-03)
+     - [ ] Triple header source (`middleware.ts` vs `next.config.ts` vs `vercel.json`) không overwrite CSP (MD-11)
+     - [ ] Call-site client đã sửa cùng server (Sidebar GET → POST, MD-13)
+     - [ ] Error messages đã sanitize, không leak `err.message` (MD-14)
+   - **Self-Review 3 bước của `writing-plans` phải ghi log:** Ghi rõ Spec coverage / Placeholder scan / Type consistency đã chạy, dán output vào cuối plan.
+   - **Ghi Appendix `Review Response Log`:** Mỗi vòng review phải append bảng `CR/MD → Verdict → Fix Applied` vào plan trước khi duyệt.
+
+5. **BẮT BUỘC `requesting-code-review` SAU MỖI PHASE:**
+   - Sau Phase 1 (Security), Phase 2 (Logic), Phase 4 (Storage) phải gọi `requesting-code-review` trước khi merge sang phase tiếp theo.
+
 ---
 
 ## 1. Kiến trúc tổng thể
