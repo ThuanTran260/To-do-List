@@ -8,7 +8,7 @@ import { validateCsrfToken } from '@/lib/security/csrf';
  *
  * S-01 (P0): GET handler cũ thực thi signOut → CSRF via <img src>/prefetch.
  * GET giờ trả 405; logout chỉ chạy qua POST kèm double-submit CSRF token
- * (header `x-csrf-token` hoặc body.csrfToken khớp cookie `csrf-token`).
+ * (header `x-csrf-token` phải khớp cookie `csrf-token`).
  *
  * Actions:
  * 1. Validate CSRF token.
@@ -20,17 +20,11 @@ export async function POST(request: Request) {
   const cookieStore = await cookies();
 
   const headerToken = request.headers.get('x-csrf-token');
-  let bodyToken: string | undefined;
-  try {
-    const body = await request.json();
-    if (body && typeof body.csrfToken === 'string') bodyToken = body.csrfToken;
-  } catch {}
-
   const cookieToken = cookieStore.get('csrf-token')?.value;
+
   if (!headerToken || !validateCsrfToken(headerToken, cookieToken || '')) {
     return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
   }
-  void bodyToken;
 
   const response = NextResponse.json({ success: true });
 

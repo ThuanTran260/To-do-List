@@ -13,8 +13,9 @@ const bodySchema = z.object({
 
 export const POST = withAuth(async (request, user, supabase) => {
   try {
-    // MD-05: auth đã chạy trong withAuth — rateLimit SAU auth để tránh drain bucket chung
-    if (!checkRateLimit(`notes:sync:${user.id}`, 20, 60000)) {
+    // MD-05: auth đã chạy trong withAuth — rateLimit SAU auth để tránh drain bucket chung.
+    // 60/phút: autosave debounce 600ms (~100 save/phút khi gõ liên tục) — 20/phút gây 429 khi soạn thảo (I-3).
+    if (!checkRateLimit(`notes:sync:${user.id}`, 60, 60000)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
