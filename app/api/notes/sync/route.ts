@@ -1,66 +1,56 @@
-import { createServerClient } from '@supabase/ssr';
-import { cookies } from 'next/headers';
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
+import { z } from 'zod';
+import { withAuth } from '@/lib/api/withAuth';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 import { noteUpdateSchema } from '@/lib/validations/note';
 
-export async function POST(request: NextRequest) {
+// S-05: UUID validation cho noteId + body size guard qua Zod schema
+const bodySchema = z.object({
+  noteId: z.string().uuid('Invalid noteId'),
+  ...noteUpdateSchema.shape,
+});
+
+export const POST = withAuth(async (request, user, supabase) => {
   try {
-    const cookieStore = await cookies();
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Supabase credentials not configured' }, { status: 500 });
+    // MD-05: auth đã chạy trong withAuth — rateLimit SAU auth để tránh drain bucket chung
+    if (!checkRateLimit(`notes:sync:${user.id}`, 20, 60000)) {
+      return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 
-    const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
-          } catch {}
-        },
-      },
-    });
-
-    const {
-      data: { user },
-      error: authError,
-    } = await supabase.auth.getUser();
-
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const body = await request.json().catch(() => null);
+    if (!body) {
+      return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
     }
 
-    const body = await request.json();
-    const { noteId, ...rawUpdate } = body;
-
-    if (!noteId) {
-      return NextResponse.json({ error: 'noteId is required' }, { status: 400 });
+    const parsed = bodySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid payload' },
+        { status: 400 }
+      );
     }
 
-    const validated = noteUpdateSchema.parse(rawUpdate);
+    const { noteId, ...rawUpdate } = parsed.data;
 
+    // parsed.data đã qua transform (sanitize title) từ noteUpdateSchema
     const { error: updateError } = await supabase
       .from('notes')
       .update({
-        ...validated,
+        ...rawUpdate,
         updated_at: new Date().toISOString(),
       })
       .eq('id', noteId)
       .eq('user_id', user.id);
 
+    // MD-14: log chi tiết server-side, trả generic message cho client
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      console.error('[notes/sync] update failed', { noteId, error: updateError.message });
+      return NextResponse.json({ error: 'Failed to save note' }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
-  } catch (err: any) {
-    return NextResponse.json({ error: err.message || 'Internal error' }, { status: 500 });
+  } catch (err) {
+    console.error('[notes/sync] unexpected', err);
+    return NextResponse.json({ error: 'Internal error' }, { status: 500 });
   }
-}
+});

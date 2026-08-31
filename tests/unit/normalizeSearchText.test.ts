@@ -1,21 +1,24 @@
+import { describe, it, expect } from 'vitest';
 import { normalizeSearchText, extractPlainText } from '../../lib/textHighlight';
-import assert from 'node:assert';
-import test from 'node:test';
 
-test('normalizeSearchText: removes Vietnamese accents correctly', () => {
-  assert.strictEqual(normalizeSearchText('Kế hoạch tuần tới'), 'ke hoach tuan toi');
-  assert.strictEqual(normalizeSearchText('Đồng hồ thế giới'), 'dong ho the gioi');
-  assert.strictEqual(normalizeSearchText('Ý tưởng & Mục tiêu'), 'y tuong & muc tieu');
-  assert.strictEqual(normalizeSearchText('  HỌP NHÓM  '), 'hop nhom');
+describe('normalizeSearchText', () => {
+  it('removes Vietnamese accents correctly', () => {
+    expect(normalizeSearchText('Kế hoạch tuần tới')).toBe('ke hoach tuan toi');
+    expect(normalizeSearchText('Đồng hồ thế giới')).toBe('dong ho the gioi');
+    expect(normalizeSearchText('Ý tưởng & Mục tiêu')).toBe('y tuong & muc tieu');
+    expect(normalizeSearchText('  HỌP NHÓM  ')).toBe('hop nhom');
+  });
 });
 
-test('extractPlainText: strips HTML tags preserving plain text', () => {
-  const html = '<h1>Tiêu đề</h1><p>Nội dung <strong>in đậm</strong> và <mark data-color="#fef08a">highlight</mark></p>';
-  const plain = extractPlainText(html);
-  assert.ok(plain.includes('Tiêu đề'));
-  assert.ok(plain.includes('in đậm'));
-  assert.ok(plain.includes('highlight'));
-  assert.ok(!plain.includes('<h1>'));
-  assert.ok(!plain.includes('<strong>'));
-  assert.ok(!plain.includes('<mark'));
+describe('extractPlainText', () => {
+  it('strips HTML tags preserving plain text', () => {
+    const html = '<h1>Tiêu đề</h1><p>Nội dung <strong>in đậm</strong> và <mark data-color="#fef08a">highlight</mark></p>';
+    const plain = extractPlainText(html);
+    expect(plain).toContain('Tiêu đề');
+    expect(plain).toContain('in đậm');
+    expect(plain).toContain('highlight');
+    expect(plain).not.toContain('<h1>');
+    expect(plain).not.toContain('<strong>');
+    expect(plain).not.toContain('<mark');
+  });
 });

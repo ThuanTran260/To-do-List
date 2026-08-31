@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { performLogout } from '@/lib/auth/logoutClient';
 import Link from 'next/link';
 import { signupSchema } from '@/lib/validations/auth';
 import { Mail, Lock, User, Loader2, ArrowRight, CheckCircle2, LogOut, LayoutDashboard } from 'lucide-react';
@@ -109,13 +110,14 @@ export function SignupForm() {
               <LayoutDashboard className="w-3.5 h-3.5" />
               <span>Vào Dashboard</span>
             </Link>
-            <a
-              href="/auth/logout"
-              className="py-1.5 px-3 rounded-md bg-surface-3 hover:bg-danger/10 text-ink-muted hover:text-danger text-xs font-medium flex items-center justify-center gap-1 transition-colors border border-hairline"
+            <button
+              type="button"
+              onClick={() => void performLogout()}
+              className="py-1.5 px-3 rounded-md bg-surface-3 hover:bg-danger/10 text-ink-muted hover:text-danger text-xs font-medium flex items-center justify-center gap-1 transition-colors border border-hairline cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Đăng xuất</span>
-            </a>
+            </button>
           </div>
         </motion.div>
       )}

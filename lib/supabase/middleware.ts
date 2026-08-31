@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { generateCsrfToken } from '@/lib/security/csrf';
 
 /**
  * Helper duy nhất gán Security Headers lên response cuối cùng trước khi return.
@@ -57,6 +58,20 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const isAuthRoute = pathname === '/login' || pathname === '/signup';
 
   let supabaseResponse = NextResponse.next({ request });
+
+  // MD-03: Nếu chưa có csrf-token cookie, tạo mới và set vào response (double-submit).
+  // httpOnly:false để JS đọc được cho header x-csrf-token khi POST logout/mutations.
+  if (!request.cookies.get('csrf-token')) {
+    const csrfToken = generateCsrfToken();
+    supabaseResponse.cookies.set('csrf-token', csrfToken, {
+      httpOnly: false,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+    });
+    request.cookies.set('csrf-token', csrfToken);
+  }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

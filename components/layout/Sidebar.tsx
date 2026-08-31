@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { performLogout } from '@/lib/auth/logoutClient';
 import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion, overlayMotion } from '@/lib/motion';
 import {
@@ -60,8 +61,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     } catch {}
     try { sessionStorage.clear(); } catch {}
 
-    // Navigate to server-side logout route handler which issues Set-Cookie maxAge=0 headers
-    window.location.href = '/auth/logout';
+    // Navigate via POST /auth/logout (CSRF-protected) then hard redirect to /login
+    await performLogout();
   };
 
   const navItems = [
