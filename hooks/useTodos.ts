@@ -228,7 +228,11 @@ export function useReorderTodos() {
         supabase.from('todos').update({ sort_order: index }).eq('id', id)
       );
       const results = await Promise.allSettled(updates);
-      const failed = results.filter((r) => r.status === 'rejected');
+      // supabase-js RESOLVE với {error} cho PostgREST errors (RLS, constraint) —
+      // chỉ reject với network errors. Phải check cả 2 để thấy partial failure thật.
+      const failed = results.filter(
+        (r) => r.status === 'rejected' || (r.status === 'fulfilled' && r.value?.error)
+      );
       if (failed.length > 0) {
         throw new Error(`Reorder failed for ${failed.length}/${boundedIds.length} items`);
       }

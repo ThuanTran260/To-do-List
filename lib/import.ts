@@ -97,14 +97,36 @@ export function parseCSVImport(csvContent: string): { validTasks: ImportedTask[]
   try {
     // Remove UTF-8 BOM if present
     const cleanContent = csvContent.replace(/^\uFEFF/, '');
-    const lines = cleanContent.split(/\r?\n/).filter((l) => l.trim().length > 0);
 
-    if (lines.length <= 1) {
+    // RFC 4180: quoted field có thể chứa newline — phải join các line nằm TRONG quotes
+    // trước khi split. (exportToCSV của app escape " nhưng không escape \n trong description)
+    const lines: string[] = [];
+    let currentLine = '';
+    let inQuotes = false;
+    for (const rawLine of cleanContent.split(/\r?\n/)) {
+      if (inQuotes) {
+        currentLine += '\n' + rawLine;
+      } else {
+        currentLine = rawLine;
+      }
+      // Đếm quotes không-escaped để biết field còn mở không
+      const quoteCount = (currentLine.match(/"/g) || []).length;
+      inQuotes = quoteCount % 2 === 1;
+      if (!inQuotes) {
+        lines.push(currentLine);
+        currentLine = '';
+      }
+    }
+    if (currentLine) lines.push(currentLine);
+
+    const nonEmptyLines = lines.filter((l) => l.trim().length > 0);
+
+    if (nonEmptyLines.length <= 1) {
       return { validTasks: [], errors: ['File CSV trống hoặc chỉ chứa tiêu đề'] };
     }
 
     // Skip header line
-    const dataLines = lines.slice(1);
+    const dataLines = nonEmptyLines.slice(1);
 
     dataLines.forEach((line, idx) => {
       const cols = splitCSVLine(line);
