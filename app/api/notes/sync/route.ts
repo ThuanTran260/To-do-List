@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { withAuth } from '@/lib/api/withAuth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { noteUpdateSchema } from '@/lib/validations/note';
+import { sanitizeHtmlServer } from '@/lib/sanitize/serverSanitize';
 
 // S-05: UUID validation cho noteId + body size guard qua Zod schema
 const bodySchema = z.object({
@@ -31,6 +32,12 @@ export const POST = withAuth(async (request, user, supabase) => {
     }
 
     const { noteId, ...rawUpdate } = parsed.data;
+
+    // Defense-in-depth: sanitize HTML content server-side trước khi ghi DB
+    // (client-side sanitize trong useNotes có thể bị bypass bằng direct API call)
+    if (typeof rawUpdate.content === 'string') {
+      rawUpdate.content = sanitizeHtmlServer(rawUpdate.content);
+    }
 
     // parsed.data đã qua transform (sanitize title) từ noteUpdateSchema
     const { error: updateError } = await supabase

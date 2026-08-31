@@ -52,19 +52,33 @@ export async function compressTaskImage(file: File): Promise<Blob> {
 /**
  * Uploads a compressed image blob to Supabase Storage 'task-attachments' bucket
  * Path structure: {user_id}/{filename}
+ * S-07: validate MIME type + file size + crypto.randomUUID filename trước khi upload.
  */
+const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
+const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
 export async function uploadTaskImage(
   file: File,
   userId: string,
   onProgress?: (status: string) => void
 ): Promise<string> {
+  if (!ALLOWED_MIME.includes(file.type)) {
+    throw new Error('Định dạng ảnh không hỗ trợ (chỉ nhận JPEG, PNG, WebP, GIF)');
+  }
+  if (file.size > MAX_FILE_BYTES) {
+    throw new Error('Ảnh vượt quá 10MB');
+  }
+  if (!userId || userId.includes('/')) {
+    throw new Error('Invalid user id');
+  }
+
   const supabase = createClient();
 
   onProgress?.('Đang nén ảnh...');
   const compressedBlob = await compressTaskImage(file);
 
   onProgress?.('Đang tải lên Storage...');
-  const filename = `${userId}/task-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.webp`;
+  const filename = `${userId}/task-${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
 
   const { error: uploadError } = await supabase.storage
     .from('task-attachments')
