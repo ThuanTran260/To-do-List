@@ -33,13 +33,14 @@ export function useNotes(options: UseNotesOptions = {}) {
 }
 
 // Fetch trash (soft-deleted) notes
-export function useTrashNotes() {
+export function useTrashNotes(enabled: boolean = true) {
   return useQuery({
     queryKey: ['notes', 'trash'],
     queryFn: async () => {
       const supabase = createClient();
       return fetchTrashNotes(supabase);
     },
+    enabled,
   });
 }
 

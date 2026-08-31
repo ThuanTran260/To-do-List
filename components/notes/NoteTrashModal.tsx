@@ -15,7 +15,7 @@ interface NoteTrashModalProps {
 
 export function NoteTrashModal({ isOpen, onClose }: NoteTrashModalProps) {
   const [mounted, setMounted] = useState(false);
-  const { data: trashNotes = [], isLoading } = useTrashNotes();
+  const { data: trashNotes = [], isLoading } = useTrashNotes(isOpen);
 
   const restoreMutation = useRestoreNote();
   const permanentDeleteMutation = usePermanentDeleteNote();

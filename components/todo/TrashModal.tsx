@@ -15,7 +15,7 @@ interface TrashModalProps {
 }
 
 export function TrashModal({ isOpen, onClose }: TrashModalProps) {
-  const { data: trashList = [], isLoading } = useTrashTodos();
+  const { data: trashList = [], isLoading } = useTrashTodos(isOpen);
   const restoreMutation = useRestoreTodo();
   const permanentDeleteMutation = usePermanentDeleteTodo();
   const queryClient = useQueryClient();
