@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { noteCreateSchema, type NoteInput, type NoteUpdate } from '@/lib/validations/note';
 import { csrfFetch } from '@/lib/security/csrfClient';
+import { escapePostgrestLike } from '@/lib/search';
 import { assertOwnedRow } from '@/lib/services/dbGuard';
 import type { Note } from '@/types/note';
 
@@ -51,10 +52,13 @@ export async function fetchActiveNotes(
     query = query.eq('color', color);
   }
 
-  // Escape PostgREST syntax special chars
+  // E-M10: shared escape helper — strip ký tự phá vỡ .or() parse (,()%"'_ etc),
+  // cap 100 ký tự; escape rỗng → skip .or() (tránh ilike.%% match-all + fallback bỏ filter).
   if (searchQuery && searchQuery.trim().length > 0) {
-    const escaped = searchQuery.trim().replace(/[%,()"]/g, '');
-    query = query.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+    const escaped = escapePostgrestLike(searchQuery.trim());
+    if (escaped.length > 0) {
+      query = query.or(`title.ilike.%${escaped}%,content.ilike.%${escaped}%`);
+    }
   }
 
   const result = await query;
