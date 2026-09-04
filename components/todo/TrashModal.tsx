@@ -45,9 +45,11 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
 
       setBulkStatus('Đang xóa dữ liệu...');
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
       const ids = trashList.map((t) => t.id);
 
-      const { error } = await supabase.from('todos').delete().in('id', ids);
+      const { error } = await supabase.from('todos').delete().in('id', ids).eq('user_id', user.id);
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['todos'] });
@@ -71,13 +73,16 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
 
     try {
       const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
       const ids = trashList.map((t) => t.id);
 
       const { error } = await supabase
         .from('todos')
         .update({ deleted_at: null })
         .eq('deleted_at', null)
-        .in('id', ids);
+        .in('id', ids)
+        .eq('user_id', user.id);
 
       if (error) throw error;
 
