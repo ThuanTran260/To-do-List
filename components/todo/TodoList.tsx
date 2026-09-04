@@ -10,6 +10,7 @@ import { useSearchParams } from 'next/navigation';
 import { SortableTodoItem } from '@/components/todo/SortableTodoItem';
 import { CategoryFilterBar } from '@/components/todo/CategoryFilterBar';
 import { BulkActionBar } from '@/components/todo/BulkActionBar';
+import { getTaskMonthKey, getAvailableMonths, formatMonthLabel } from '@/lib/dateUtils';
 import { LoadingSkeleton } from '@/components/ui/state/LoadingSkeleton';
 import { EmptyState } from '@/components/ui/state/EmptyState';
 import { ErrorState } from '@/components/ui/state/ErrorState';
@@ -68,6 +69,51 @@ function TodoListContent() {
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / pageSize) || 1;
 
+  const availableMonths = useMemo(() => getAvailableMonths(todoList), [todoList]);
+
+  const monthParam = searchParams.get('month');
+  const activeMonth = useMemo(() => {
+    if (monthParam === 'all') return 'all';
+    if (monthParam && availableMonths.includes(monthParam)) return monthParam;
+    // Default to latest month if available, else all
+    return availableMonths[0] || 'all';
+  }, [monthParam, availableMonths]);
+
+  const monthCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    todoList.forEach((t) => {
+      const key = getTaskMonthKey(t);
+      if (key !== 'unknown') {
+        counts[key] = (counts[key] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [todoList]);
+
+  const [taskLimit, setTaskLimit] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('flowstate_task_display_limit');
+      if (saved) return saved;
+    }
+    return '20';
+  });
+
+  const handleSelectLimit = (limit: string) => {
+    setTaskLimit(limit);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('flowstate_task_display_limit', limit);
+    }
+  };
+
+  const handleSelectMonth = (m: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set('month', m);
+    params.delete('page');
+    const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname;
+    window.history.replaceState(null, '', newUrl);
+    window.dispatchEvent(new Event('popstate'));
+  };
+
   const activeCategoryFilter = useMemo(() => {
     if (categoryParam === 'uncategorized') return 'uncategorized';
     if (categoryParam && categories.some((c) => c.id === categoryParam)) return categoryParam;
@@ -106,9 +152,35 @@ function TodoListContent() {
         matchesTag = item.tags ? item.tags.some((t) => t.id === tagFilter) : false;
       }
 
-      return matchesSearch && matchesStatus && matchesPriority && matchesCategory && matchesTag;
+      let matchesMonth = true;
+      if (activeMonth && activeMonth !== 'all') {
+        matchesMonth = getTaskMonthKey(item) === activeMonth;
+      }
+
+      return (
+        matchesSearch &&
+        matchesStatus &&
+        matchesPriority &&
+        matchesCategory &&
+        matchesTag &&
+        matchesMonth
+      );
     });
-  }, [todoList, deferredSearch, statusFilter, priorityFilter, activeCategoryFilter, tagFilter]);
+  }, [
+    todoList,
+    deferredSearch,
+    statusFilter,
+    priorityFilter,
+    activeCategoryFilter,
+    tagFilter,
+    activeMonth,
+  ]);
+
+  const displayedTodos = useMemo(() => {
+    if (taskLimit === 'all') return filteredTodos;
+    const limitNum = parseInt(taskLimit, 10);
+    return isNaN(limitNum) ? filteredTodos : filteredTodos.slice(0, limitNum);
+  }, [filteredTodos, taskLimit]);
 
   const activeCount = useMemo(() => todoList.filter((t) => !t.is_completed).length, [todoList]);
   const completedCount = useMemo(() => todoList.filter((t) => t.is_completed).length, [todoList]);
@@ -122,9 +194,9 @@ function TodoListContent() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      const oldIndex = filteredTodos.findIndex((t) => t.id === active.id);
-      const newIndex = filteredTodos.findIndex((t) => t.id === over.id);
-      const newOrder = arrayMove(filteredTodos, oldIndex, newIndex);
+      const oldIndex = displayedTodos.findIndex((t) => t.id === active.id);
+      const newIndex = displayedTodos.findIndex((t) => t.id === over.id);
+      const newOrder = arrayMove(displayedTodos, oldIndex, newIndex);
       reorderMutation.mutate(newOrder.map((t) => t.id));
     }
   };
@@ -132,7 +204,15 @@ function TodoListContent() {
   return (
     <div className="space-y-4 min-h-[420px]">
       {/* Category Filter Pills Bar */}
-      <CategoryFilterBar />
+      <CategoryFilterBar
+        availableMonths={availableMonths}
+        activeMonth={activeMonth}
+        onSelectMonth={handleSelectMonth}
+        monthCounts={monthCounts}
+        taskLimit={taskLimit}
+        onSelectLimit={handleSelectLimit}
+        totalTasks={todoList.length}
+      />
 
       {/* Controls Bar: Search & Filters */}
       <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center justify-between">
@@ -262,9 +342,9 @@ function TodoListContent() {
           />
         ) : (
           <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <SortableContext items={filteredTodos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            <SortableContext items={displayedTodos.map((t) => t.id)} strategy={verticalListSortingStrategy}>
               <AnimatePresence mode="popLayout" initial={false}>
-                {filteredTodos.map((item, index) => (
+                {displayedTodos.map((item, index) => (
                   <motion.div
                     key={item.id}
                     layout
@@ -289,6 +369,22 @@ function TodoListContent() {
                 ))}
               </AnimatePresence>
             </SortableContext>
+
+            {filteredTodos.length > displayedTodos.length && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 p-3 rounded-xl bg-surface-1 border border-hairline text-xs text-ink-muted mt-2 shadow-2xs">
+                <span>
+                  Đang hiển thị <b>{displayedTodos.length}</b> / <b>{filteredTodos.length}</b> công việc
+                  {activeMonth && activeMonth !== 'all' ? ` (${formatMonthLabel(activeMonth)})` : ''}.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleSelectLimit('all')}
+                  className="text-primary font-medium hover:underline cursor-pointer"
+                >
+                  Xem tất cả ({filteredTodos.length} task)
+                </button>
+              </div>
+            )}
           </DndContext>
         )}
       </motion.div>
