@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useLayoutEffect, useRef, ReactNode } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion } from '@/lib/motion';
@@ -20,7 +20,7 @@ export function PortalPopover({
   onClose,
   triggerRef,
   children,
-  maxPopoverHeight = 240,
+  maxPopoverHeight = 280,
   align = 'auto',
   className = '',
 }: PortalPopoverProps) {
@@ -44,7 +44,7 @@ export function PortalPopover({
   }, []);
 
   // Update positioning & collision detection
-  const updatePosition = () => {
+  const updatePosition = useCallback(() => {
     if (!triggerRef.current) return;
     const rect = triggerRef.current.getBoundingClientRect();
     const windowHeight = window.innerHeight;
@@ -76,13 +76,13 @@ export function PortalPopover({
       width: rect.width,
       isFlippedAbove: shouldFlip,
     });
-  };
+  }, [align, maxPopoverHeight, triggerRef]);
 
   useLayoutEffect(() => {
     if (isOpen) {
       updatePosition();
     }
-  }, [isOpen]);
+  }, [isOpen, updatePosition]);
 
   // Event listeners for window scroll, resize, and click outside
   useEffect(() => {
@@ -113,7 +113,7 @@ export function PortalPopover({
       window.removeEventListener('resize', handleScrollOrResize);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, updatePosition, triggerRef]);
 
   if (!mounted) return null;
 

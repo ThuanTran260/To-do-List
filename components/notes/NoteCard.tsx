@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Pin, Trash2, MoreVertical, Copy, Tag, CheckSquare } from 'lucide-react';
+import { Pin, Trash2, Copy } from 'lucide-react';
 import { NoteColorPicker } from './NoteColorPicker';
 import { useTogglePinNote, useChangeNoteColor, useSoftDeleteNote, useCreateNote } from '@/hooks/useNotes';
 import { getNoteColorClasses } from '@/lib/noteColors';
 import { extractPlainText } from '@/lib/textHighlight';
-import { Note } from '@/types/note';
+import { Note, NoteColor } from '@/types/note';
 import { toast } from 'sonner';
 
 interface NoteCardProps {
@@ -17,7 +17,6 @@ interface NoteCardProps {
 
 export function NoteCard({ note, onSelect, viewMode = 'grid' }: NoteCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [showMenu, setShowMenu] = useState(false);
 
   const togglePinMutation = useTogglePinNote();
   const changeColorMutation = useChangeNoteColor();
@@ -32,7 +31,7 @@ export function NoteCard({ note, onSelect, viewMode = 'grid' }: NoteCardProps) {
     togglePinMutation.mutate({ id: note.id, is_pinned: !note.is_pinned });
   };
 
-  const handleChangeColor = (newColor: any) => {
+  const handleChangeColor = (newColor: NoteColor) => {
     changeColorMutation.mutate({ id: note.id, color: newColor });
   };
 

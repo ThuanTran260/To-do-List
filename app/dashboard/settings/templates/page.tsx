@@ -101,7 +101,7 @@ export default function TemplatesPage() {
             <label className="block text-xs font-medium text-ink-muted">Độ ưu tiên</label>
             <select
               value={priority}
-              onChange={e => setPriority(e.target.value as any)}
+              onChange={e => setPriority(e.target.value as 'low' | 'medium' | 'high')}
               className="w-full px-3 py-2 text-xs bg-surface-2 border border-hairline rounded-md text-ink focus:outline-none font-medium cursor-pointer"
             >
               <option value="low">Thấp</option>

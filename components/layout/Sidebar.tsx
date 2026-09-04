@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignedAvatarUrl } from '@/hooks/useSignedImageUrl';
@@ -33,12 +34,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
   const [avatarError, setAvatarError] = useState(false);
-  const { data: signedAvatarUrl } = useSignedAvatarUrl(user?.user_metadata?.avatar_url);
-  const displayAvatarUrl = signedAvatarUrl || user?.user_metadata?.avatar_url;
+  const { displayUrl: displayAvatarUrl } = useSignedAvatarUrl(user?.user_metadata?.avatar_url);
 
   useEffect(() => {
     setAvatarError(false);
-  }, [user?.user_metadata?.avatar_url]);
+  }, [user?.user_metadata?.avatar_url, displayAvatarUrl]);
 
   // Optimistic active path for 0ms visual feedback on click
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -132,9 +132,12 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           {user && (
             <div className="p-3 rounded-lg bg-surface-2 border border-hairline flex items-center gap-3">
               {displayAvatarUrl && !avatarError ? (
-                <img
+                <Image
                   src={displayAvatarUrl}
                   alt="Avatar"
+                  width={32}
+                  height={32}
+                  unoptimized
                   onError={() => setAvatarError(true)}
                   className="w-8 h-8 rounded-full object-cover border border-hairline"
                 />

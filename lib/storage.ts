@@ -6,7 +6,7 @@ export { extractPath } from '@/lib/storage/signedUrl';
 
 /**
  * Compresses an image file on the client side using HTML5 Canvas.
- * Output format: image/webp, max dimension: 1200px, quality: 0.82 (target < 300KB)
+ * Output format: image/webp, max dimension: 1600px, quality: 0.85 (target < 800KB)
  */
 export async function compressTaskImage(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
@@ -16,7 +16,7 @@ export async function compressTaskImage(file: File): Promise<Blob> {
       const img = new Image();
       img.src = event.target?.result as string;
       img.onload = () => {
-        const MAX_DIM = 1200;
+        const MAX_DIM = 1600;
         let width = img.width;
         let height = img.height;
 
@@ -43,7 +43,7 @@ export async function compressTaskImage(file: File): Promise<Blob> {
             else reject(new Error('Lỗi nén ảnh'));
           },
           'image/webp',
-          0.82
+          0.85
         );
       };
       img.onerror = () => reject(new Error('Không thể đọc file ảnh'));

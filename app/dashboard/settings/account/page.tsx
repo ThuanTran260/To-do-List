@@ -1,6 +1,8 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
 import { useSignedAvatarUrl } from '@/hooks/useSignedImageUrl';
 import { createClient } from '@/lib/supabase/client';
@@ -8,6 +10,7 @@ import { Shield, User, Mail, CheckCircle2, Loader2, Camera, UploadCloud, AlertCi
 
 export default function AccountSettingsPage() {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const [displayName, setDisplayName] = useState(
     user?.user_metadata?.display_name || user?.email?.split('@')[0] || ''
   );
@@ -15,8 +18,19 @@ export default function AccountSettingsPage() {
     user?.user_metadata?.avatar_url || ''
   );
   const [avatarLoadError, setAvatarLoadError] = useState(false);
-  const { data: signedAvatarUrl } = useSignedAvatarUrl(avatarUrl);
-  const displayAvatarUrl = signedAvatarUrl || avatarUrl;
+  const { displayUrl: displayAvatarUrl } = useSignedAvatarUrl(avatarUrl);
+
+  useEffect(() => {
+    setAvatarLoadError(false);
+  }, [avatarUrl, displayAvatarUrl]);
+
+  // Sync avatarUrl when user metadata updates (e.g. initial auth load)
+  useEffect(() => {
+    if (user?.user_metadata?.avatar_url && !avatarUrl) {
+      setAvatarUrl(user.user_metadata.avatar_url);
+    }
+  }, [user?.user_metadata?.avatar_url, avatarUrl]);
+
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -25,36 +39,37 @@ export default function AccountSettingsPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Client-side Canvas Image Compression (<50KB WebP)
+  // Client-side Canvas Image Compression (500x500 WebP, Quality 0.90, crisp on Retina/4K)
   const compressImage = (file: File): Promise<Blob> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.readAsDataURL(file);
       reader.onload = (event) => {
-        const img = new Image();
+        const img = new window.Image();
         img.src = event.target?.result as string;
         img.onload = () => {
           const canvas = document.createElement('canvas');
-          canvas.width = 400;
-          canvas.height = 400;
+          canvas.width = 500;
+          canvas.height = 500;
           const ctx = canvas.getContext('2d');
-          if (!ctx) return reject('Cannot get canvas context');
+          if (!ctx) return reject(new Error('Cannot get canvas context'));
 
-          // Draw crop centered 400x400
+          // Draw crop centered 500x500
           const minDim = Math.min(img.width, img.height);
           const sx = (img.width - minDim) / 2;
           const sy = (img.height - minDim) / 2;
-          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 400, 400);
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, 500, 500);
 
           canvas.toBlob(
             (blob) => {
               if (blob) resolve(blob);
-              else reject('Compression failed');
+              else reject(new Error('Compression failed'));
             },
             'image/webp',
-            0.85
+            0.9
           );
         };
+        img.onerror = () => reject(new Error('Cannot load image file'));
       };
       reader.onerror = (error) => reject(error);
     });
@@ -78,7 +93,7 @@ export default function AccountSettingsPage() {
     }
 
     setIsUploading(true);
-    setUploadStatus('Đang nén ảnh (400x400)...');
+    setUploadStatus('Đang nén ảnh sắc nét (500x500 WebP)...');
 
     try {
       // Step 1: Canvas Compression
@@ -116,9 +131,12 @@ export default function AccountSettingsPage() {
 
       setAvatarUrl(fileName);
       setAvatarLoadError(false);
+      // Invalidate signed avatar queries across all components (Sidebar, etc.)
+      await queryClient.invalidateQueries({ queryKey: ['signed-avatar-url'] });
       setSuccessMsg('Đã thay đổi ảnh đại diện thành công!');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Lỗi khi tải ảnh đại diện lên');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi khi tải ảnh đại diện lên';
+      setErrorMsg(msg);
     } finally {
       setIsUploading(false);
       setUploadStatus('');
@@ -138,8 +156,9 @@ export default function AccountSettingsPage() {
       });
       if (error) throw error;
       setSuccessMsg('Đã cập nhật thông tin tài khoản thành công!');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Lỗi khi cập nhật thông tin');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi khi cập nhật thông tin';
+      setErrorMsg(msg);
     } finally {
       setIsSaving(false);
     }
@@ -179,9 +198,12 @@ export default function AccountSettingsPage() {
         <div className="flex items-center gap-4 pb-4 border-b border-hairline">
           <div className="relative group">
             {displayAvatarUrl && !avatarLoadError ? (
-              <img
+              <Image
                 src={displayAvatarUrl}
                 alt="Avatar"
+                width={64}
+                height={64}
+                unoptimized
                 onError={() => setAvatarLoadError(true)}
                 className="w-16 h-16 rounded-full object-cover border border-primary-border shadow-xs"
               />
@@ -226,7 +248,7 @@ export default function AccountSettingsPage() {
                 ) : (
                   <UploadCloud className="w-3.5 h-3.5 text-primary" />
                 )}
-                <span>{isUploading ? uploadStatus : 'Tải ảnh mới (<50KB)'}</span>
+                <span>{isUploading ? uploadStatus : 'Tải ảnh mới (Tối đa 10MB)'}</span>
               </button>
             </div>
           </div>
@@ -243,32 +265,40 @@ export default function AccountSettingsPage() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             placeholder="Nhập tên hiển thị mới..."
-            className="w-full bg-surface-2 px-3 py-2 rounded-md border border-hairline text-xs text-ink font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border"
+            maxLength={100}
+            className="w-full px-3 py-2 text-xs bg-surface-2 border border-hairline rounded-lg focus:outline-none focus:border-primary text-ink transition-colors"
           />
         </div>
 
-        {/* Email Field (Readonly) */}
+        {/* Email Display (Read-Only) */}
         <div className="space-y-1">
           <label className="text-xs font-medium text-ink-muted flex items-center gap-1.5">
-            <Mail className="w-3.5 h-3.5 text-primary" />
+            <Mail className="w-3.5 h-3.5 text-ink-muted" />
             <span>Địa chỉ Email</span>
           </label>
           <input
             type="email"
             value={user?.email || ''}
             disabled
-            className="w-full bg-surface-2/50 px-3 py-2 rounded-md border border-hairline text-xs text-ink-subtle font-medium cursor-not-allowed"
+            className="w-full px-3 py-2 text-xs bg-surface-2/50 border border-hairline rounded-lg text-ink-muted cursor-not-allowed"
           />
         </div>
 
+        {/* Submit Actions */}
         <div className="pt-2 flex justify-end">
           <button
             type="submit"
-            disabled={isSaving || isUploading}
-            className="px-4 py-2 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs shadow-xs transition-colors flex items-center gap-1.5 active:scale-98 disabled:opacity-50 cursor-pointer"
+            disabled={isSaving}
+            className="px-4 py-2 bg-primary hover:bg-primary/90 text-on-primary rounded-lg text-xs font-medium shadow-xs transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50"
           >
-            {isSaving && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-            <span>Lưu thay đổi</span>
+            {isSaving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Đang lưu...</span>
+              </>
+            ) : (
+              <span>Lưu thay đổi</span>
+            )}
           </button>
         </div>
       </form>

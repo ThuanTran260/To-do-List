@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, RotateCcw, AlertTriangle, X } from 'lucide-react';
+import { Trash2, RotateCcw, X } from 'lucide-react';
 import { useTrashNotes, useRestoreNote, usePermanentDeleteNote } from '@/hooks/useNotes';
 import { extractPlainText } from '@/lib/textHighlight';
 import { toast } from 'sonner';

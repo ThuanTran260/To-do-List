@@ -36,8 +36,8 @@ describe('todoService pure helpers', () => {
 
   it('handles empty or null rows safely', () => {
     expect(mapTodoWithTags([])).toEqual([]);
-    expect(mapTodoWithTags(null as any)).toEqual([]);
-    expect(mapTodoWithTags(undefined as any)).toEqual([]);
+    expect(mapTodoWithTags(null as unknown as unknown[])).toEqual([]);
+    expect(mapTodoWithTags(undefined as unknown as unknown[])).toEqual([]);
   });
 });
 
@@ -61,6 +61,6 @@ describe('noteService pure helpers', () => {
 
   it('handles empty or null rows safely', () => {
     expect(mapNoteWithTags([])).toEqual([]);
-    expect(mapNoteWithTags(null as any)).toEqual([]);
+    expect(mapNoteWithTags(null as unknown as unknown[])).toEqual([]);
   });
 });

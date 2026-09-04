@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import { UploadCloud, X, Loader2, AlertCircle } from 'lucide-react';
 import { useSignedImageUrl } from '@/hooks/useSignedImageUrl';
 
@@ -24,8 +25,8 @@ export function ImageUpload({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const { data: signedValueUrl } = useSignedImageUrl(value);
-  const displayUrl = localPreviewUrl || signedValueUrl || value;
+  const { displayUrl: signedDisplayUrl } = useSignedImageUrl(value);
+  const displayUrl = localPreviewUrl || signedDisplayUrl;
 
   // Cleanup object URL on unmount
   useEffect(() => {
@@ -114,10 +115,12 @@ export function ImageUpload({
 
       {displayUrl ? (
         <div className="relative rounded-lg overflow-hidden border border-hairline bg-surface-2 group aspect-video sm:aspect-[2/1] max-h-56 flex items-center justify-center">
-          {/* eslint-disable-next-html-link */}
-          <img
+          <Image
             src={displayUrl}
             alt="Task attachment preview"
+            width={600}
+            height={300}
+            unoptimized
             className="w-full h-full object-cover rounded-lg"
           />
 

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { Flame, CheckCircle2, ArrowRight } from 'lucide-react';
-import type { TodoItemData } from '@/types/todo';
+import type { TodoItemData, ChecklistItem } from '@/types/todo';
 import { useToggleTodo, useUpdateTodo } from '@/hooks/useTodos';
 import { ChecklistEditor } from '@/components/todo/ChecklistEditor';
 
@@ -17,7 +17,7 @@ export function FocusTask({ task, currentIndex, totalTasks, onNext }: FocusTaskP
   const toggleMutation = useToggleTodo();
   const updateMutation = useUpdateTodo();
 
-  const handleChecklistChange = (newChecklist: any[]) => {
+  const handleChecklistChange = (newChecklist: ChecklistItem[]) => {
     updateMutation.mutate({
       id: task.id,
       update: { checklist: newChecklist },

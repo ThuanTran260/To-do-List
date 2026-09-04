@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTodos } from '@/hooks/useTodos';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -30,9 +30,9 @@ export function CommandPalette({ isOpen, onClose, onOpenNewTask }: CommandPalett
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const { data } = useTodos(1, 100);
-  const todos = data?.todos || [];
+  const todos = useMemo(() => data?.todos || [], [data?.todos]);
 
-  const actions = [
+  const actions = useMemo(() => [
     {
       id: 'create-task',
       title: 'Tạo công việc mới',
@@ -103,19 +103,23 @@ export function CommandPalette({ isOpen, onClose, onOpenNewTask }: CommandPalett
         router.push('/dashboard/settings/account');
       },
     },
-  ];
+  ], [onClose, onOpenNewTask, router]);
 
-  const filteredTasks = query
-    ? todos.filter(
-        (t) =>
-          t.title.toLowerCase().includes(query.toLowerCase()) ||
-          (t.description && t.description.toLowerCase().includes(query.toLowerCase()))
-      )
-    : [];
+  const filteredTasks = useMemo(() => {
+    if (!query) return [];
+    const q = query.toLowerCase();
+    return todos.filter(
+      (t) =>
+        t.title.toLowerCase().includes(q) ||
+        (t.description && t.description.toLowerCase().includes(q))
+    );
+  }, [query, todos]);
 
-  const filteredActions = query
-    ? actions.filter((a) => a.title.toLowerCase().includes(query.toLowerCase()))
-    : actions;
+  const filteredActions = useMemo(() => {
+    if (!query) return actions;
+    const q = query.toLowerCase();
+    return actions.filter((a) => a.title.toLowerCase().includes(q));
+  }, [query, actions]);
 
   const totalItems = filteredActions.length + filteredTasks.length;
 

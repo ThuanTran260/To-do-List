@@ -51,8 +51,9 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['todos'] });
-    } catch (err: any) {
-      alert(`Lỗi khi dọn thùng rác: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      alert(`Lỗi khi dọn thùng rác: ${message}`);
     } finally {
       setIsBulkProcessing(false);
       setBulkStatus('');
@@ -81,8 +82,9 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
       if (error) throw error;
 
       queryClient.invalidateQueries({ queryKey: ['todos'] });
-    } catch (err: any) {
-      alert(`Lỗi khi khôi phục: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
+      alert(`Lỗi khi khôi phục: ${message}`);
     } finally {
       setIsBulkProcessing(false);
       setBulkStatus('');

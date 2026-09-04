@@ -64,7 +64,7 @@ function TodoListContent() {
 
   const { selectedIds, toggleSelect, isSelected, clearSelection } = useBulkSelect();
 
-  const todoList = data?.todos || [];
+  const todoList = useMemo(() => data?.todos || [], [data?.todos]);
   const total = data?.total || 0;
   const totalPages = Math.ceil(total / pageSize) || 1;
 

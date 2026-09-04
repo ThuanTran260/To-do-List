@@ -7,7 +7,7 @@ const EMERGENCY_PREFIX = 'note_emergency_draft_';
  * Safely writes to localStorage, handling QuotaExceededError by pruning
  * the oldest draft entries if space is exhausted.
  */
-export function safeSetDraft(key: string, data: any): boolean {
+export function safeSetDraft(key: string, data: unknown): boolean {
   if (typeof window === 'undefined') return false;
 
   const value = typeof data === 'string' ? data : JSON.stringify(data);
@@ -15,12 +15,13 @@ export function safeSetDraft(key: string, data: any): boolean {
   try {
     localStorage.setItem(key, value);
     return true;
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorObj = err as { name?: string; code?: number };
     if (
-      err.name === 'QuotaExceededError' ||
-      err.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
-      err.code === 22 ||
-      err.code === 1014
+      errorObj.name === 'QuotaExceededError' ||
+      errorObj.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      errorObj.code === 22 ||
+      errorObj.code === 1014
     ) {
       // Prune oldest note_draft keys
       try {

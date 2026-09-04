@@ -7,7 +7,7 @@
 export interface PendingMutation {
   id: string;
   type: 'CREATE' | 'UPDATE' | 'DELETE';
-  payload: any;
+  payload: unknown;
   timestamp: number;
 }
 
@@ -24,7 +24,7 @@ export function getOfflineQueue(): PendingMutation[] {
   }
 }
 
-export function addToOfflineQueue(type: PendingMutation['type'], payload: any): void {
+export function addToOfflineQueue(type: PendingMutation['type'], payload: unknown): void {
   if (typeof window === 'undefined') return;
   try {
     const queue = getOfflineQueue();

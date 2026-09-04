@@ -8,7 +8,7 @@ import { Flame, CheckCircle2, Zap, Target, CalendarDays } from 'lucide-react';
 
 export function RealtimeStreakBadge() {
   const { data } = useTodos(1, 100);
-  const todos = data?.todos || [];
+  const todos = useMemo(() => data?.todos || [], [data?.todos]);
 
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
