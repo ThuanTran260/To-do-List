@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { NoteInput, NoteUpdate } from '@/lib/validations/note';
 import { clearLocalDraft } from '@/lib/notesDraftSync';
+import { useAuth } from '@/hooks/useAuth';
 import {
   fetchActiveNotes,
   fetchTrashNotes,
@@ -171,6 +172,7 @@ export function useChangeNoteColor() {
 // Soft-delete Note mutation
 export function useSoftDeleteNote() {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -199,7 +201,7 @@ export function useSoftDeleteNote() {
       );
     },
     onSuccess: (deletedNote) => {
-      clearLocalDraft(deletedNote.id);
+      clearLocalDraft(authUser?.id ?? deletedNote.user_id ?? null, deletedNote.id);
       queryClient.invalidateQueries({ queryKey: ['notes', 'trash'] });
     },
   });
@@ -225,6 +227,7 @@ export function useRestoreNote() {
 // Permanent Delete Note mutation
 export function usePermanentDeleteNote() {
   const queryClient = useQueryClient();
+  const { user: authUser } = useAuth();
 
   return useMutation({
     mutationFn: async (id: string) => {
@@ -234,7 +237,7 @@ export function usePermanentDeleteNote() {
       return permanentDeleteNote(supabase, user.id, id);
     },
     onSuccess: (id) => {
-      clearLocalDraft(id);
+      clearLocalDraft(authUser?.id ?? null, id);
       queryClient.invalidateQueries({ queryKey: ['notes', 'trash'] });
     },
   });
