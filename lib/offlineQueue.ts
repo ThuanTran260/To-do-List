@@ -12,22 +12,33 @@ export interface PendingMutation {
 }
 
 const QUEUE_KEY = 'flow_state_offline_queue';
+const QUEUE_PREFIX = 'flow_state_offline_queue';
 const MAX_QUEUE_SIZE = 100;
 
-export function getOfflineQueue(): PendingMutation[] {
+/**
+ * E-M7: queue key theo user — queue user A không replay dưới session user B.
+ * userId null → legacy key (backward-compat; offline queue hiện chưa có caller prod).
+ */
+export function queueKey(userId: string | null): string {
+  if (!userId) return QUEUE_KEY;
+  if (userId.includes(':')) throw new Error('Invalid user id for queue key');
+  return `${QUEUE_PREFIX}_${userId}`;
+}
+
+export function getOfflineQueue(userId: string | null = null): PendingMutation[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = localStorage.getItem(QUEUE_KEY);
+    const raw = localStorage.getItem(queueKey(userId));
     return raw ? JSON.parse(raw) : [];
   } catch {
     return [];
   }
 }
 
-export function addToOfflineQueue(type: PendingMutation['type'], payload: unknown): void {
+export function addToOfflineQueue(type: PendingMutation['type'], payload: unknown, userId: string | null = null): void {
   if (typeof window === 'undefined') return;
   try {
-    const queue = getOfflineQueue();
+    const queue = getOfflineQueue(userId);
     // Bounded queue: prevent unbounded growth
     if (queue.length >= MAX_QUEUE_SIZE) {
       queue.shift(); // evict oldest
@@ -38,23 +49,30 @@ export function addToOfflineQueue(type: PendingMutation['type'], payload: unknow
       payload,
       timestamp: Date.now(),
     });
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    localStorage.setItem(queueKey(userId), JSON.stringify(queue));
   } catch {
     // LocalStorage quota or access error
   }
 }
 
-export function removeFromOfflineQueue(id: string): void {
+export function removeFromOfflineQueue(id: string, userId: string | null = null): void {
   if (typeof window === 'undefined') return;
   try {
-    const queue = getOfflineQueue().filter((item) => item.id !== id);
-    localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+    const queue = getOfflineQueue(userId).filter((item) => item.id !== id);
+    localStorage.setItem(queueKey(userId), JSON.stringify(queue));
   } catch {}
 }
 
-export function clearOfflineQueue(): void {
+export function clearOfflineQueue(userId?: string | null): void {
   if (typeof window === 'undefined') return;
   try {
-    localStorage.removeItem(QUEUE_KEY);
+    if (userId === undefined) {
+      // Logout: xoá legacy + mọi namespaced queue
+      Object.keys(localStorage)
+        .filter((k) => k === QUEUE_KEY || k.startsWith(`${QUEUE_PREFIX}_`))
+        .forEach((k) => localStorage.removeItem(k));
+    } else {
+      localStorage.removeItem(queueKey(userId));
+    }
   } catch {}
 }

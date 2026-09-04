@@ -3,11 +3,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useCreateNote, useUpdateNote } from '@/hooks/useNotes';
 import {
-  safeSetDraft,
+  saveEmergencyDraft,
   clearLocalDraft,
   broadcastDraftUpdate,
   createNotesSyncChannel,
 } from '@/lib/notesDraftSync';
+import { useAuth } from '@/hooks/useAuth';
 import { Note, NoteColor, AutosaveStatus } from '@/types/note';
 
 interface UseAutosaveNoteProps {
@@ -59,6 +60,12 @@ export function useAutosaveNote({
   const isDirtyRef = useRef(false);
   const saveSeqRef = useRef(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // E-M7: userId cho namespaced draft keys — mirror qua ref để callbacks
+  // (executeSave dùng useCallback) luôn đọc giá trị mới nhất mà không churn deps.
+  const { user } = useAuth();
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
 
   const createMutation = useCreateNote();
   const updateMutation = useUpdateNote();
@@ -127,7 +134,7 @@ export function useAutosaveNote({
           lastKnownUpdatedAtRef.current = created.updated_at;
           isDirtyRef.current = false;
           setStatus('saved');
-          clearLocalDraft(created.id);
+          clearLocalDraft(userIdRef.current, created.id);
           onNoteCreatedRef.current?.(created);
         }
       } else {
@@ -145,7 +152,7 @@ export function useAutosaveNote({
           isDirtyRef.current = false;
           setStatus('saved');
           setHasConflict(false);
-          clearLocalDraft(noteId);
+          clearLocalDraft(userIdRef.current, noteId);
         }
       }
     } catch (err: unknown) {
@@ -156,9 +163,9 @@ export function useAutosaveNote({
         if (process.env.NODE_ENV === 'development') console.error('[autosave] save failed', err);
         setStatus('error');
 
-        // Save emergency draft locally
+        // Save emergency draft locally (namespaced per user; anonymous → legacy key)
         const targetId = activeNoteIdRef.current || 'draft-new';
-        safeSetDraft(`note_emergency_draft_${targetId}`, {
+        saveEmergencyDraft(userIdRef.current, targetId, {
           noteId: targetId,
           title: currentTitle,
           content: currentContent,
@@ -176,7 +183,7 @@ export function useAutosaveNote({
     setStatus('dirty');
 
     if (activeNoteIdRef.current) {
-      broadcastDraftUpdate({
+      broadcastDraftUpdate(userIdRef.current, {
         noteId: activeNoteIdRef.current,
         ...dataRef.current,
         timestamp: Date.now(),
@@ -212,7 +219,7 @@ export function useAutosaveNote({
         // Execute synchronous emergency flush
         const { title: t, content: c, color: col, is_pinned: p } = dataRef.current;
         const nId = activeNoteIdRef.current || 'draft-new';
-        safeSetDraft(`note_emergency_draft_${nId}`, {
+        saveEmergencyDraft(userIdRef.current, nId, {
           noteId: nId,
           title: t,
           content: c,
@@ -232,8 +239,8 @@ export function useAutosaveNote({
         if (noteId) {
           const { title: t, content: c, color: col, is_pinned: p } = dataRef.current;
 
-          // 1. Synchronously store in localStorage
-          safeSetDraft(`note_emergency_draft_${noteId}`, {
+          // 1. Synchronously store in localStorage (namespaced per user)
+          saveEmergencyDraft(userIdRef.current, noteId, {
             noteId,
             title: t,
             content: c,

@@ -61,15 +61,8 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   }, [isOpen]);
 
   const handleSignOut = async () => {
-    // Selectively purge client storage keys
-    try {
-      Object.keys(localStorage)
-        .filter((key) => key.startsWith('sb-') || key.startsWith('note_draft_') || key.startsWith('note_emergency_draft_'))
-        .forEach((key) => localStorage.removeItem(key));
-    } catch {}
-    try { sessionStorage.clear(); } catch {}
-
-    // Navigate via POST /auth/logout (CSRF-protected) then hard redirect to /login
+    // E-M7: purge tập trung trong performLogout (sb-* + drafts + queue + session) —
+    // không purge riêng ở đây để tránh phân mảnh/sót key.
     await performLogout();
   };
 
