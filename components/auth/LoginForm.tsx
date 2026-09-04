@@ -61,11 +61,10 @@ export function LoginForm() {
     });
 
     if (error) {
-      setErrorMsg(
-        error.message === 'Invalid login credentials'
-          ? 'Email hoặc mật khẩu không chính xác'
-          : error.message
-      );
+      // E-H3: 1 message chung cho MỌI lỗi login (kể cả Email not confirmed,
+      // Too many requests...) — không để lộ trạng thái tài khoản (enumeration).
+      console.error('[login] failed', { code: (error as { code?: string })?.code });
+      setErrorMsg('Email hoặc mật khẩu không chính xác');
       const fails = recordFailure();
       if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + 30_000);
       setLoading(false);
