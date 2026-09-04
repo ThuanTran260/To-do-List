@@ -1,5 +1,9 @@
 import { z } from 'zod';
 
+export const MAX_IMPORT_ROWS = 1000;
+const MAX_TITLE_LEN = 500;
+const MAX_DESC_LEN = 5000;
+
 export interface ImportedTask {
   title: string;
   description?: string;
@@ -33,10 +37,18 @@ export function parseJSONImport(jsonContent: string): { validTasks: ImportedTask
       return { validTasks: [], errors: ['File JSON không đúng cấu trúc (thiếu danh sách todos)'] };
     }
 
-    rawList.forEach((item, idx) => {
+    if (rawList.length > MAX_IMPORT_ROWS) {
+      errors.push(`File có ${rawList.length} dòng, chỉ nhập ${MAX_IMPORT_ROWS} dòng đầu.`);
+    }
+
+    rawList.slice(0, MAX_IMPORT_ROWS).forEach((item, idx) => {
       const res = importedTaskSchema.safeParse(item);
       if (res.success) {
-        validTasks.push(res.data);
+        validTasks.push({
+          ...res.data,
+          title: res.data.title.slice(0, MAX_TITLE_LEN),
+          description: res.data.description?.slice(0, MAX_DESC_LEN),
+        });
       } else {
         errors.push(`Dòng ${idx + 1}: ${res.error.issues[0].message}`);
       }
@@ -125,8 +137,11 @@ export function parseCSVImport(csvContent: string): { validTasks: ImportedTask[]
       return { validTasks: [], errors: ['File CSV trống hoặc chỉ chứa tiêu đề'] };
     }
 
-    // Skip header line
-    const dataLines = nonEmptyLines.slice(1);
+    // Skip header line + cap rows (E-M9: chống DoS tab/flood DB)
+    const dataLines = nonEmptyLines.slice(1, 1 + MAX_IMPORT_ROWS);
+    if (nonEmptyLines.length - 1 > MAX_IMPORT_ROWS) {
+      errors.push(`File có ${nonEmptyLines.length - 1} dòng, chỉ nhập ${MAX_IMPORT_ROWS} dòng đầu.`);
+    }
 
     dataLines.forEach((line, idx) => {
       const cols = splitCSVLine(line);
@@ -158,8 +173,8 @@ export function parseCSVImport(csvContent: string): { validTasks: ImportedTask[]
       }
 
       validTasks.push({
-        title: title.trim(),
-        description: description.trim(),
+        title: title.trim().slice(0, MAX_TITLE_LEN),
+        description: description.trim().slice(0, MAX_DESC_LEN),
         priority,
         is_completed,
       });
