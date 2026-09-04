@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { performLogout } from '@/lib/auth/logoutClient';
+import { getLockoutMs, recordFailure, clearFailures } from '@/lib/auth/loginThrottle';
 import Link from 'next/link';
 import { signupSchema } from '@/lib/validations/auth';
 import { Mail, Lock, User, Loader2, ArrowRight, CheckCircle2, LogOut, LayoutDashboard } from 'lucide-react';
@@ -19,11 +20,18 @@ export function SignupForm() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState(0);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+
+    // E-H2: client backoff — khoá 30s sau 5 lần thất bại
+    if (Date.now() < lockedUntil) {
+      setErrorMsg('Bạn thử quá nhiều lần. Vui lòng đợi 30 giây.');
+      return;
+    }
 
     const result = signupSchema.safeParse({
       email,
@@ -60,8 +68,11 @@ export function SignupForm() {
 
     if (error) {
       setErrorMsg(error.message);
+      const fails = recordFailure();
+      if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + 30_000);
       setLoading(false);
     } else {
+      clearFailures();
       if (data.session) {
         window.location.href = '/dashboard';
       } else {
@@ -211,7 +222,7 @@ export function SignupForm() {
         <motion.div variants={staggerItemVariants} className="pt-1">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || Date.now() < lockedUntil}
             className="w-full py-2.5 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {loading ? (

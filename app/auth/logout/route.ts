@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { validateCsrfToken } from '@/lib/security/csrf';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 /**
  * Server-Side Logout Route Handler (POST-only, CSRF-protected)
@@ -17,6 +18,13 @@ import { validateCsrfToken } from '@/lib/security/csrf';
  * 4. Redirect back to /login.
  */
 export async function POST(request: Request) {
+  // E-H2: rate-limit logout by IP (TRƯỚC CSRF check để tránh oracle)
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(`auth:logout:${ip}`, 30, 60000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
   const cookieStore = await cookies();
 
   const headerToken = request.headers.get('x-csrf-token');
