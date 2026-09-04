@@ -2,7 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 export interface CategoryItemData {
   id: string;
@@ -16,17 +16,33 @@ export interface CategoryItemData {
  * Supabase Realtime Subscription hook for categories.
  * Call this once in top-level list components.
  */
-export function useRealtimeCategories() {
+export function useRealtimeCategories(userId?: string) {
   const queryClient = useQueryClient();
+  const [authUserId, setAuthUserId] = useState<string | undefined>();
+
+  // Self-resolve userId (mẫu useRealtimeTodos): caller không truyền vẫn có filter,
+  // tránh subscription lặng lẽ không chạy hoặc nhận event cross-user.
+  useEffect(() => {
+    if (userId) return;
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.id) {
+        setAuthUserId(user.id);
+      }
+    });
+  }, [userId]);
+
+  const targetUserId = userId || authUserId;
 
   useEffect(() => {
+    if (!targetUserId) return;
+
     const supabase = createClient();
-    const channelId = `categories_realtime_${Math.random().toString(36).substring(2, 7)}`;
     const channel = supabase
-      .channel(channelId)
+      .channel(`categories-realtime-${targetUserId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'categories' },
+        { event: '*', schema: 'public', table: 'categories', filter: `user_id=eq.${targetUserId}` },
         () => {
           queryClient.invalidateQueries({ queryKey: ['categories'] });
         }
@@ -36,7 +52,7 @@ export function useRealtimeCategories() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [queryClient]);
+  }, [targetUserId, queryClient]);
 }
 
 /**
