@@ -1,6 +1,17 @@
 import { TodoItemData } from '@/hooks/useTodos';
 
 /**
+ * E-M8: neutralize CSV formula injection — cell bắt đầu bằng = + - @ Tab CR
+ * (sau trim left) được prefix single-quote BÊN TRONG quotes, Excel coi là text.
+ */
+export function escapeCSVCell(str: string | null | undefined): string {
+  if (!str) return '""';
+  const escaped = str.replace(/"/g, '""');
+  const needsNeutralize = /^[\s]*[=+\-@\t\r]/.test(str);
+  return needsNeutralize ? `"'${escaped}"` : `"${escaped}"`;
+}
+
+/**
  * Exports an array of todos to a downloadable CSV file.
  */
 export function exportToCSV(todos: TodoItemData[], filename = 'flowstate-tasks.csv') {
@@ -17,21 +28,15 @@ export function exportToCSV(todos: TodoItemData[], filename = 'flowstate-tasks.c
     'created_at',
   ];
 
-  const escapeCSV = (str: string | null | undefined) => {
-    if (!str) return '""';
-    const escaped = str.replace(/"/g, '""');
-    return `"${escaped}"`;
-  };
-
   const rows = todos.map((t) => [
-    escapeCSV(t.id),
-    escapeCSV(t.title),
-    escapeCSV(t.description),
-    escapeCSV(t.priority),
-    escapeCSV(String(t.is_completed)),
-    escapeCSV(String(t.is_vital || false)),
-    escapeCSV(t.due_date),
-    escapeCSV(t.created_at),
+    escapeCSVCell(t.id),
+    escapeCSVCell(t.title),
+    escapeCSVCell(t.description),
+    escapeCSVCell(t.priority),
+    escapeCSVCell(String(t.is_completed)),
+    escapeCSVCell(String(t.is_vital || false)),
+    escapeCSVCell(t.due_date),
+    escapeCSVCell(t.created_at),
   ]);
 
   const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
