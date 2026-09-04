@@ -4,6 +4,8 @@ import { cookies } from 'next/headers';
 
 type SupabaseClient = ReturnType<typeof createServerClient>;
 
+export type WithAuthSupabaseClient = SupabaseClient;
+
 /**
  * Shared auth wrapper cho mọi future API route (FIX MD-12).
  * Dedup boilerplate createServerClient + getUser — fail-closed 401 nếu chưa đăng nhập.
@@ -12,10 +14,13 @@ export function withAuth(
   handler: (
     req: Request,
     user: { id: string; email?: string },
-    supabase: SupabaseClient
+    supabase: WithAuthSupabaseClient,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ctx?: any
   ) => Promise<Response>
 ) {
-  return async (req: Request): Promise<Response> => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return async (req: Request, ctx?: any): Promise<Response> => {
     const cookieStore = await cookies();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -50,7 +55,7 @@ export function withAuth(
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
-      return handler(req, user, supabase);
+      return handler(req, user, supabase, ctx);
     } catch (err) {
       console.error('[withAuth] getUser failed', err);
       return NextResponse.json({ error: 'Service temporarily unavailable' }, { status: 503 });

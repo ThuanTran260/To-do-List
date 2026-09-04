@@ -5,7 +5,7 @@ import { categorySchema } from '@/lib/validations/category';
 // L-05 fix: checklist từ z.array(z.any()) → strict contract khớp types/todo.ts ChecklistItem
 const checklistItemSchema = z.object({
   id: z.string().min(1),
-  title: z.string().min(1).max(500),
+  title: z.string().min(1).max(500).transform((val) => sanitizeInput(val.trim())),
   is_done: z.boolean(),
 });
 
