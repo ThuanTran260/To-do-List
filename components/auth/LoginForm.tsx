@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { performLogout } from '@/lib/auth/logoutClient';
+import { getLockoutMs, recordFailure, clearFailures } from '@/lib/auth/loginThrottle';
 import Link from 'next/link';
 import { loginSchema } from '@/lib/validations/auth';
 import { Mail, Lock, Loader2, ArrowRight, CheckCircle2, User, LogOut, LayoutDashboard } from 'lucide-react';
@@ -17,10 +18,17 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
+  const [lockedUntil, setLockedUntil] = useState(0);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+
+    // E-H2: client backoff — khoá 30s sau 5 lần thất bại
+    if (Date.now() < lockedUntil) {
+      setErrorMsg('Bạn thử quá nhiều lần. Vui lòng đợi 30 giây.');
+      return;
+    }
 
     // Zod validation
     const result = loginSchema.safeParse({ email, password });
@@ -58,8 +66,11 @@ export function LoginForm() {
           ? 'Email hoặc mật khẩu không chính xác'
           : error.message
       );
+      const fails = recordFailure();
+      if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + 30_000);
       setLoading(false);
     } else {
+      clearFailures();
       // Full session refresh redirect
       window.location.href = '/dashboard';
     }
@@ -192,7 +203,7 @@ export function LoginForm() {
         <motion.div variants={staggerItemVariants} className="pt-1">
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || Date.now() < lockedUntil}
             className="w-full py-2.5 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {loading ? (

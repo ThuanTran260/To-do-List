@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/security/rateLimit';
 
 /**
  * Auth Callback Route — PKCE Code Exchange
@@ -23,6 +24,13 @@ export async function GET(request: Request) {
   const code = searchParams.get('code');
   // Optional redirect target after successful auth (must be a relative path)
   const next = searchParams.get('next') ?? '/dashboard';
+
+  // E-H2: rate-limit code-exchange probing by IP
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  if (!checkRateLimit(`auth:callback:${ip}`, 30, 60000)) {
+    return NextResponse.redirect(`${origin}/login?error=rate_limited`);
+  }
 
   if (code) {
     const supabase = await createClient();
