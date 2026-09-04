@@ -10,17 +10,20 @@ export type WithAuthSupabaseClient = SupabaseClient;
  * Shared auth wrapper cho mọi future API route (FIX MD-12).
  * Dedup boilerplate createServerClient + getUser — fail-closed 401 nếu chưa đăng nhập.
  */
+export interface WithAuthContext {
+  params?: Promise<Record<string, string>>;
+}
+
+// Review fix (#12): type tường minh thay `any` — khớp Next route ctx shape.
 export function withAuth(
   handler: (
     req: Request,
     user: { id: string; email?: string },
     supabase: WithAuthSupabaseClient,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ctx?: any
+    ctx?: WithAuthContext
   ) => Promise<Response>
 ) {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return async (req: Request, ctx?: any): Promise<Response> => {
+  return async (req: Request, ctx?: WithAuthContext): Promise<Response> => {
     const cookieStore = await cookies();
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

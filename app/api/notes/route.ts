@@ -50,6 +50,17 @@ export const POST = withAuth(async (req, user, supabase) => {
     }
 
     if (tag_ids && tag_ids.length > 0) {
+      // Review fix (#6): verify tag_ids thuộc về user trước khi link — RLS note_tags
+      // chỉ check phía note, attacker đoán được UUID tag nạn nhân có thể gắn ké.
+      const { data: ownedTags } = await supabase
+        .from('tags')
+        .select('id')
+        .in('id', tag_ids)
+        .eq('user_id', user.id);
+      const ownedIds = new Set((ownedTags || []).map((t: { id: string }) => t.id));
+      if (ownedIds.size !== tag_ids.length) {
+        return NextResponse.json({ error: 'Invalid tags' }, { status: 400 });
+      }
       const { error: tagError } = await supabase
         .from('note_tags')
         .insert(tag_ids.map((tag_id) => ({ note_id: data.id, tag_id })));

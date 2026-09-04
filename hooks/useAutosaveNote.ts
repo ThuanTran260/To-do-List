@@ -150,10 +150,10 @@ export function useAutosaveNote({
       }
     } catch (err: unknown) {
       if (currentSeq === saveSeqRef.current) {
-        const errorMsg = err instanceof Error ? err.message : '';
-        if (errorMsg === 'VERSION_CONFLICT') {
-          setHasConflict(true);
-        }
+        // Review fix (#4): nhánh VERSION_CONFLICT chết từ Aug (optimistic lock
+        // bị gỡ ở bbc8841 vì lỗi 406) — không còn ai throw string này. Dọn dead code,
+        // giữ setStatus + emergency draft. setHasConflict giữ lại cho tương lai.
+        if (process.env.NODE_ENV === 'development') console.error('[autosave] save failed', err);
         setStatus('error');
 
         // Save emergency draft locally
@@ -252,9 +252,16 @@ export function useAutosaveNote({
           });
 
           try {
+            // Review fix: sync route giờ bắt CSRF — keepalive phải kèm token
+            // (đọc trực tiếp document.cookie vì đây là fire-and-forget).
+            const csrfToken =
+              document.cookie
+                .split('; ')
+                .find((c) => c.startsWith('csrf-token='))
+                ?.split('=')[1] ?? '';
             fetch('/api/notes/sync', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
               body: payload,
               keepalive: true,
             });

@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { todoCreateSchema, type TodoInput, type TodoUpdate } from '@/lib/validations/todo';
+import { todoCreateSchema, todoUpdateSchema, type TodoInput, type TodoUpdate } from '@/lib/validations/todo';
 import { createNextRecurringTodo } from '@/lib/services/recurrenceService';
 import { assertOwnedRow, assertBulkAffected } from '@/lib/services/dbGuard';
 import type { TodoItemData } from '@/types/todo';
@@ -123,9 +123,13 @@ export async function updateTodo(
   update: TodoUpdate,
   tag_ids?: string[]
 ): Promise<void> {
+  // Review fix (#5): updateTodo trước đây đưa `update` thẳng vào DB không qua Zod —
+  // checklist title HTML bypass sanitize (create có parse, update không).
+  const validated = todoUpdateSchema.parse(update);
+
   const { data, error } = await supabase
     .from('todos')
-    .update(update)
+    .update(validated)
     .eq('id', id)
     .eq('user_id', userId)
     .select('id');

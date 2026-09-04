@@ -133,8 +133,16 @@ export async function createNote(
   });
   if (res.status === 401) throw new Error('Bạn cần đăng nhập để tạo ghi chú.');
   if (res.status === 429) throw new Error('Thao tác quá nhanh, vui lòng thử lại sau.');
+  // Review fix (#10): 403 CSRF → hướng dẫn refresh; body non-JSON → generic (không throw raw TypeError ra UI).
+  if (res.status === 403) throw new Error('Phiên đã hết hạn, vui lòng tải lại trang rồi thử lại.');
   if (!res.ok) throw new Error('Không thể tạo ghi chú.');
-  const { note } = (await res.json()) as { note: Note };
+  let note: Note;
+  try {
+    ({ note } = (await res.json()) as { note: Note });
+  } catch {
+    throw new Error('Không thể tạo ghi chú.');
+  }
+  if (!note?.id) throw new Error('Không thể tạo ghi chú.');
   return note;
 }
 
@@ -152,8 +160,15 @@ export async function updateNote(
   });
   if (res.status === 401) throw new Error('Bạn cần đăng nhập để cập nhật ghi chú.');
   if (res.status === 429) throw new Error('Thao tác quá nhanh, vui lòng thử lại sau.');
+  if (res.status === 403) throw new Error('Phiên đã hết hạn, vui lòng tải lại trang rồi thử lại.');
   if (!res.ok) throw new Error('Không thể lưu ghi chú.');
-  const { note } = (await res.json()) as { note: Note };
+  let note: Note;
+  try {
+    ({ note } = (await res.json()) as { note: Note });
+  } catch {
+    throw new Error('Không thể lưu ghi chú.');
+  }
+  if (!note?.id) throw new Error('Không thể lưu ghi chú.');
   return note;
 }
 

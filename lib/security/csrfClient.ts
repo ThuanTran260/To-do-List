@@ -4,12 +4,18 @@
  */
 export function getCsrfToken(): string {
   if (typeof document === 'undefined') return '';
-  return (
-    document.cookie
-      .split('; ')
-      .find((c) => c.startsWith('csrf-token='))
-      ?.split('=')[1] ?? ''
-  );
+  // Review fix (#17): parse robust — cookie có thể không có space sau ';',
+  // value có thể chứa '=' (dù CSRF hiện tại là hex, phòng tương lai).
+  const found = document.cookie
+    .split(';')
+    .map((c) => c.trim())
+    .find((c) => c.startsWith('csrf-token='));
+  if (!found) return '';
+  try {
+    return decodeURIComponent(found.slice('csrf-token='.length));
+  } catch {
+    return found.slice('csrf-token='.length);
+  }
 }
 
 export async function csrfFetch(
