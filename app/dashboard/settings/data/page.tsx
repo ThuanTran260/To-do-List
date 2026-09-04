@@ -30,6 +30,12 @@ export default function DataSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // E-M9: từ chối file quá lớn trước khi FileReader đọc vào RAM
+    if (file.size > 2 * 1024 * 1024) {
+      setImportErrors(['File vượt quá 2MB. Hãy chia nhỏ file import.']);
+      return;
+    }
+
     setFileName(file.name);
     setPreviewTasks([]);
     setImportErrors([]);
