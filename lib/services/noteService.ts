@@ -3,15 +3,23 @@ import { noteCreateSchema, type NoteInput, type NoteUpdate } from '@/lib/validat
 import { sanitizeHtml } from '@/lib/clientSanitize';
 import type { Note } from '@/types/note';
 
+interface RawNoteRow {
+  [key: string]: unknown;
+  note_tags?: Array<{ tags?: unknown }>;
+}
+
 /**
  * Maps raw Supabase note rows with joined note_tags into clean Note objects.
  */
-export function mapNoteWithTags(rows: any[]): Note[] {
+export function mapNoteWithTags(rows: unknown[]): Note[] {
   if (!Array.isArray(rows)) return [];
-  return rows.map((item: any) => ({
-    ...item,
-    tags: item.note_tags ? item.note_tags.map((nt: any) => nt.tags).filter(Boolean) : [],
-  })) as Note[];
+  return rows.map((item) => {
+    const raw = item as RawNoteRow;
+    return {
+      ...(raw as unknown as Note),
+      tags: raw.note_tags ? raw.note_tags.map((nt) => nt.tags).filter(Boolean) : [],
+    };
+  }) as Note[];
 }
 
 export interface FetchActiveNotesOptions {
@@ -150,12 +158,12 @@ export async function updateNote(
   rawUpdate: NoteUpdate,
   tag_ids?: string[]
 ): Promise<Note> {
-  const updateData: any = {
+  const updateData: Record<string, unknown> = {
     ...rawUpdate,
     updated_at: new Date().toISOString(),
   };
 
-  if (updateData.content) {
+  if (typeof updateData.content === 'string') {
     updateData.content = sanitizeHtml(updateData.content);
   }
 

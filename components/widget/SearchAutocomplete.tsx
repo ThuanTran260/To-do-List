@@ -107,6 +107,7 @@ export function SearchAutocomplete() {
           className="w-full bg-surface-2 pl-8 pr-3 py-1.5 rounded-md text-xs text-ink placeholder:text-ink-subtle border border-hairline focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border font-medium"
           aria-expanded={isOpen}
           aria-autocomplete="list"
+          aria-controls="search-suggestions-listbox"
           role="combobox"
         />
 
@@ -126,7 +127,7 @@ export function SearchAutocomplete() {
               description={`Không có công việc nào khớp với từ khóa "${debouncedQuery}"`}
             />
           ) : (
-            <div className="space-y-0.5" role="listbox">
+            <div id="search-suggestions-listbox" className="space-y-0.5" role="listbox">
               <div className="flex items-center justify-between px-2 pb-1 text-[10px] font-semibold text-ink-subtle uppercase tracking-wider border-b border-hairline">
                 <span>Gợi ý ({filteredTodos.length})</span>
                 <span>Dùng 🠗🠕 & Enter để chọn</span>

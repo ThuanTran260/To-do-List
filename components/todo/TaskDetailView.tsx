@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTodos, useDeleteTodo, useToggleTodo, useUpdateTodo } from '@/hooks/useTodos';
 import { useSignedImageUrl } from '@/hooks/useSignedImageUrl';
@@ -187,11 +188,13 @@ function TaskDetailContent() {
                   {/* Hero Layout */}
                   <div className="flex flex-col md:flex-row items-stretch gap-5">
                     {displayImageUrl ? (
-                      <div className="w-full md:w-1/2 aspect-video md:aspect-square rounded-xl overflow-hidden border border-hairline bg-surface-2 flex-shrink-0">
-                        {/* eslint-disable-next-html-link */}
-                        <img
+                      <div className="w-full md:w-1/2 aspect-video md:aspect-square rounded-xl overflow-hidden border border-hairline bg-surface-2 flex-shrink-0 relative">
+                        <Image
                           src={displayImageUrl}
                           alt={currentTask.title}
+                          width={500}
+                          height={500}
+                          unoptimized
                           className="w-full h-full object-cover rounded-xl"
                         />
                       </div>
@@ -308,12 +311,12 @@ function TaskDetailContent() {
                   {/* Checklist & Subtasks Section */}
                   <div className="pt-4 border-t border-hairline">
                     <ChecklistEditor
-                      items={(currentTask as any).checklist || []}
+                      items={currentTask.checklist || []}
                       onChange={(newItems) => {
                         updateMutation.mutate({
                           id: currentTask.id,
                           update: {
-                            checklist: newItems as any,
+                            checklist: newItems,
                           },
                         });
                       }}

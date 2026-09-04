@@ -36,8 +36,9 @@ export default function ChangePasswordPage() {
       setSuccessMsg('Đã đổi mật khẩu thành công!');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Lỗi khi thay đổi mật khẩu');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Lỗi khi thay đổi mật khẩu';
+      setErrorMsg(msg);
     } finally {
       setIsSaving(false);
     }

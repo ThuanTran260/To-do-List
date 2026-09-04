@@ -94,7 +94,7 @@ export function useAutosaveNote({
       setHasConflict(false);
       isDirtyRef.current = false;
     }
-  }, [note?.id, note?.updated_at]);
+  }, [note?.id, note?.updated_at, note?.title, note?.content, note?.color, note?.is_pinned]);
 
   // Stable executeSave: Reads freshest data directly from dataRef.current
   const executeSave = useCallback(async () => {
@@ -148,9 +148,10 @@ export function useAutosaveNote({
           clearLocalDraft(noteId);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       if (currentSeq === saveSeqRef.current) {
-        if (err.message === 'VERSION_CONFLICT') {
+        const errorMsg = err instanceof Error ? err.message : '';
+        if (errorMsg === 'VERSION_CONFLICT') {
           setHasConflict(true);
         }
         setStatus('error');

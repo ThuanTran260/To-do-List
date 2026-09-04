@@ -21,6 +21,13 @@ import type { TodoItemData, ChecklistItem } from '@/types/todo';
 
 export type { TodoItemData, ChecklistItem };
 
+export interface ActiveTodosData {
+  todos: TodoItemData[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 // Fetch active (non-deleted) todos
 export function useTodos(page = 1, pageSize = 50) {
   return useQuery({
@@ -73,15 +80,18 @@ export function useCreateTodo() {
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
         deleted_at: null,
-        checklist: (newTodo.checklist as any) || [],
+        checklist: (newTodo.checklist as ChecklistItem[]) || [],
         recurrence_rule: newTodo.recurrence_rule || null,
       };
 
-      queryClient.setQueryData(['todos', 'active', 1], (old: any) => ({
-        ...old,
-        total: (old?.total || 0) + 1,
-        todos: [tempItem, ...(old?.todos || [])],
-      }));
+      queryClient.setQueryData<ActiveTodosData>(['todos', 'active', 1], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          total: (old.total || 0) + 1,
+          todos: [tempItem, ...(old.todos || [])],
+        };
+      });
       return { previous };
     },
     onError: (err, _vars, context) => {
@@ -108,12 +118,15 @@ export function useToggleTodo() {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
       const previous = queryClient.getQueryData(['todos', 'active', 1]);
 
-      queryClient.setQueryData(['todos', 'active', 1], (old: any) => ({
-        ...old,
-        todos: old?.todos?.map((t: TodoItemData) =>
-          t.id === id ? { ...t, is_completed } : t
-        ),
-      }));
+      queryClient.setQueryData<ActiveTodosData>(['todos', 'active', 1], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          todos: old.todos?.map((t: TodoItemData) =>
+            t.id === id ? { ...t, is_completed } : t
+          ),
+        };
+      });
       return { previous };
     },
     onError: (_err, _vars, context) => {
@@ -153,12 +166,12 @@ export function useReorderTodos() {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
       const previous = queryClient.getQueryData(['todos', 'active', 1]);
 
-      queryClient.setQueryData(['todos', 'active', 1], (old: any) => {
+      queryClient.setQueryData<ActiveTodosData>(['todos', 'active', 1], (old) => {
         if (!old?.todos) return old;
         const itemMap = new Map(old.todos.map((t: TodoItemData) => [t.id, t]));
         const newTodos: TodoItemData[] = [];
         orderedIds.forEach((id, idx) => {
-          const item = itemMap.get(id) as TodoItemData | undefined;
+          const item = itemMap.get(id);
           if (item) newTodos.push({ ...item, sort_order: idx });
         });
         // add remaining items not in orderedIds
@@ -236,11 +249,14 @@ export function useDeleteTodo() {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
       const previous = queryClient.getQueryData(['todos', 'active', 1]);
 
-      queryClient.setQueryData(['todos', 'active', 1], (old: any) => ({
-        ...old,
-        total: Math.max(0, (old?.total || 1) - 1),
-        todos: old?.todos?.filter((t: TodoItemData) => t.id !== id),
-      }));
+      queryClient.setQueryData<ActiveTodosData>(['todos', 'active', 1], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          total: Math.max(0, (old.total || 1) - 1),
+          todos: old.todos?.filter((t: TodoItemData) => t.id !== id),
+        };
+      });
       return { previous };
     },
     onError: (_err, _vars, context) => {

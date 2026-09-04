@@ -3,15 +3,23 @@ import { todoCreateSchema, type TodoInput, type TodoUpdate } from '@/lib/validat
 import { createNextRecurringTodo } from '@/lib/services/recurrenceService';
 import type { TodoItemData } from '@/types/todo';
 
+interface RawTodoRow {
+  [key: string]: unknown;
+  todo_tags?: Array<{ tags?: unknown }>;
+}
+
 /**
  * Maps raw Supabase todo rows with joined todo_tags into clean TodoItemData objects.
  */
-export function mapTodoWithTags(rows: any[]): TodoItemData[] {
+export function mapTodoWithTags(rows: unknown[]): TodoItemData[] {
   if (!Array.isArray(rows)) return [];
-  return rows.map((item: any) => ({
-    ...item,
-    tags: item.todo_tags ? item.todo_tags.map((tt: any) => tt.tags).filter(Boolean) : [],
-  })) as TodoItemData[];
+  return rows.map((item) => {
+    const raw = item as RawTodoRow;
+    return {
+      ...(raw as unknown as TodoItemData),
+      tags: raw.todo_tags ? raw.todo_tags.map((tt) => tt.tags).filter(Boolean) : [],
+    };
+  }) as TodoItemData[];
 }
 
 /**
@@ -27,7 +35,7 @@ export async function fetchActiveTodos(
   const from = (safePage - 1) * pageSize;
   const to = from + pageSize - 1;
 
-  let data: any = null;
+  let data: unknown[] | null = null;
   let count: number | null = null;
 
   // Try query with JOIN to todo_tags
@@ -166,7 +174,7 @@ export async function reorderTodos(
 
   const results = await Promise.allSettled(updates);
   const failed = results.filter(
-    (r) => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as any)?.error)
+    (r) => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as { error?: unknown })?.error)
   );
 
   if (failed.length > 0) {

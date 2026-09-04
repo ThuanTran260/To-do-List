@@ -55,7 +55,6 @@ export function NoteEditor({
 
   const {
     title,
-    content,
     color,
     isPinned,
     status,

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, Suspense } from 'react';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useToggleTodo, useDeleteTodo, type TodoItemData } from '@/hooks/useTodos';
 import { useCategories, getReadableTextColor } from '@/hooks/useCategories';
@@ -29,8 +30,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
   const { data: categories = [] } = useCategories();
-  const { data: signedImageUrl } = useSignedImageUrl(item.image_path || item.image_url);
-  const displayImageUrl = signedImageUrl || item.image_url;
+  const { displayUrl: displayImageUrl } = useSignedImageUrl(item.image_path || item.image_url);
 
   const itemCategory = item.category_id
     ? categories.find((c) => c.id === item.category_id)
@@ -230,11 +230,12 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
               onClick={handleOpenDetail}
               className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-hairline bg-surface-2 flex-shrink-0 cursor-pointer hover:border-hairline-strong transition-colors relative"
             >
-              {/* eslint-disable-next-html-link */}
-              <img
+              <Image
                 src={displayImageUrl}
                 alt={item.title}
-                loading="lazy"
+                width={80}
+                height={80}
+                unoptimized
                 className="w-full h-full object-cover rounded-lg"
               />
             </div>

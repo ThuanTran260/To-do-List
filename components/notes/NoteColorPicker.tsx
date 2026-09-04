@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { Palette, Check } from 'lucide-react';
 import { NOTE_COLORS, NoteColorConfig } from '@/lib/noteColors';
 import { NoteColor } from '@/types/note';

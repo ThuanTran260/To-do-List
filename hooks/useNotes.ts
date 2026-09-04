@@ -78,7 +78,7 @@ export function useUpdateNote() {
       payload: { id: string; lastKnownUpdatedAt?: string } & NoteUpdate & { tag_ids?: string[] }
     ) => {
       const supabase = createClient();
-      const { id, lastKnownUpdatedAt, tag_ids, ...rawUpdate } = payload;
+      const { id, lastKnownUpdatedAt: _lastKnownUpdatedAt, tag_ids, ...rawUpdate } = payload;
 
       const {
         data: { user },
@@ -95,21 +95,24 @@ export function useUpdateNote() {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
 
       // Optimistically update existing note in all active queries
-      queryClient.setQueriesData({ queryKey: ['notes', 'active'] }, (old: any) => {
-        if (!old?.notes) return old;
-        const updatedNotes = old.notes.map((n: Note) =>
-          n.id === newNote.id ? { ...n, ...newNote, updated_at: new Date().toISOString() } : n
-        );
-        return {
-          ...old,
-          notes: updatedNotes,
-          pinnedNotes: updatedNotes.filter((n: Note) => n.is_pinned),
-          otherNotes: updatedNotes.filter((n: Note) => !n.is_pinned),
-        };
-      });
+      queryClient.setQueriesData<{ notes?: Note[]; pinnedNotes?: Note[]; otherNotes?: Note[] }>(
+        { queryKey: ['notes', 'active'] },
+        (old) => {
+          if (!old?.notes) return old;
+          const updatedNotes = old.notes.map((n: Note) =>
+            n.id === newNote.id ? { ...n, ...newNote, updated_at: new Date().toISOString() } : n
+          );
+          return {
+            ...old,
+            notes: updatedNotes,
+            pinnedNotes: updatedNotes.filter((n: Note) => n.is_pinned),
+            otherNotes: updatedNotes.filter((n: Note) => !n.is_pinned),
+          };
+        }
+      );
     },
-    onSuccess: (savedNote) => {
-      clearLocalDraft(savedNote.id);
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes', 'active'] });
     },
   });
 }
@@ -126,18 +129,21 @@ export function useTogglePinNote() {
     onMutate: async ({ id, is_pinned }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
 
-      queryClient.setQueriesData({ queryKey: ['notes', 'active'] }, (old: any) => {
-        if (!old?.notes) return old;
-        const updatedNotes = old.notes.map((n: Note) =>
-          n.id === id ? { ...n, is_pinned, updated_at: new Date().toISOString() } : n
-        );
-        return {
-          ...old,
-          notes: updatedNotes,
-          pinnedNotes: updatedNotes.filter((n: Note) => n.is_pinned),
-          otherNotes: updatedNotes.filter((n: Note) => !n.is_pinned),
-        };
-      });
+      queryClient.setQueriesData<{ notes?: Note[]; pinnedNotes?: Note[]; otherNotes?: Note[] }>(
+        { queryKey: ['notes', 'active'] },
+        (old) => {
+          if (!old?.notes) return old;
+          const updatedNotes = old.notes.map((n: Note) =>
+            n.id === id ? { ...n, is_pinned, updated_at: new Date().toISOString() } : n
+          );
+          return {
+            ...old,
+            notes: updatedNotes,
+            pinnedNotes: updatedNotes.filter((n: Note) => n.is_pinned),
+            otherNotes: updatedNotes.filter((n: Note) => !n.is_pinned),
+          };
+        }
+      );
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', 'active'] });
@@ -157,18 +163,21 @@ export function useChangeNoteColor() {
     onMutate: async ({ id, color }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
 
-      queryClient.setQueriesData({ queryKey: ['notes', 'active'] }, (old: any) => {
-        if (!old?.notes) return old;
-        const updatedNotes = old.notes.map((n: Note) =>
-          n.id === id ? { ...n, color: color as any, updated_at: new Date().toISOString() } : n
-        );
-        return {
-          ...old,
-          notes: updatedNotes,
-          pinnedNotes: updatedNotes.filter((n: Note) => n.is_pinned),
-          otherNotes: updatedNotes.filter((n: Note) => !n.is_pinned),
-        };
-      });
+      queryClient.setQueriesData<{ notes?: Note[]; pinnedNotes?: Note[]; otherNotes?: Note[] }>(
+        { queryKey: ['notes', 'active'] },
+        (old) => {
+          if (!old?.notes) return old;
+          const updatedNotes = old.notes.map((n: Note) =>
+            n.id === id ? { ...n, color: color as Note['color'], updated_at: new Date().toISOString() } : n
+          );
+          return {
+            ...old,
+            notes: updatedNotes,
+            pinnedNotes: updatedNotes.filter((n: Note) => n.is_pinned),
+            otherNotes: updatedNotes.filter((n: Note) => !n.is_pinned),
+          };
+        }
+      );
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['notes', 'active'] });
@@ -189,17 +198,20 @@ export function useSoftDeleteNote() {
       await queryClient.cancelQueries({ queryKey: ['notes'] });
 
       // Optimistic eviction from active cache
-      queryClient.setQueriesData({ queryKey: ['notes', 'active'] }, (old: any) => {
-        if (!old?.notes) return old;
-        const remaining = old.notes.filter((n: Note) => n.id !== id);
-        return {
-          ...old,
-          notes: remaining,
-          pinnedNotes: remaining.filter((n: Note) => n.is_pinned),
-          otherNotes: remaining.filter((n: Note) => !n.is_pinned),
-          total: Math.max(0, old.total - 1),
-        };
-      });
+      queryClient.setQueriesData<{ notes?: Note[]; pinnedNotes?: Note[]; otherNotes?: Note[]; total?: number }>(
+        { queryKey: ['notes', 'active'] },
+        (old) => {
+          if (!old?.notes) return old;
+          const remaining = old.notes.filter((n: Note) => n.id !== id);
+          return {
+            ...old,
+            notes: remaining,
+            pinnedNotes: remaining.filter((n: Note) => n.is_pinned),
+            otherNotes: remaining.filter((n: Note) => !n.is_pinned),
+            total: Math.max(0, (old.total ?? 1) - 1),
+          };
+        }
+      );
     },
     onSuccess: (deletedNote) => {
       clearLocalDraft(deletedNote.id);
