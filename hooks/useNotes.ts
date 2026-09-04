@@ -51,17 +51,7 @@ export function useCreateNote() {
 
   return useMutation({
     mutationFn: async (input: NoteInput & { tag_ids?: string[] }) => {
-      const supabase = createClient();
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        throw new Error('Bạn cần đăng nhập để tạo ghi chú.');
-      }
-
-      return createNote(supabase, user.id, input);
+      return createNote(input);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -77,19 +67,8 @@ export function useUpdateNote() {
     mutationFn: async (
       payload: { id: string; lastKnownUpdatedAt?: string } & NoteUpdate & { tag_ids?: string[] }
     ) => {
-      const supabase = createClient();
       const { id, lastKnownUpdatedAt: _lastKnownUpdatedAt, tag_ids, ...rawUpdate } = payload;
-
-      const {
-        data: { user },
-        error: authError,
-      } = await supabase.auth.getUser();
-
-      if (authError || !user) {
-        throw new Error('Bạn cần đăng nhập để cập nhật ghi chú.');
-      }
-
-      return updateNote(supabase, user.id, id, rawUpdate, tag_ids);
+      return updateNote(id, rawUpdate, tag_ids);
     },
     onMutate: async (newNote) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { noteCreateSchema, type NoteInput, type NoteUpdate } from '@/lib/validations/note';
 import { sanitizeHtml } from '@/lib/clientSanitize';
+import { csrfFetch } from '@/lib/security/csrfClient';
 import { assertOwnedRow } from '@/lib/services/dbGuard';
 import type { Note } from '@/types/note';
 
@@ -115,82 +116,45 @@ export async function fetchTrashNotes(supabase: SupabaseClient): Promise<Note[]>
 }
 
 /**
- * Creates a new note with sanitized content and links tags.
+ * Creates a new note via server API (E-H1).
+ * Server validates (Zod) + sanitizes HTML + enforces user_id — client-side
+ * sanitize alone is bypassable by direct API calls, so writes go through
+ * POST /api/notes. Client pre-validates for friendly errors.
  */
 export async function createNote(
-  supabase: SupabaseClient,
-  userId: string,
   input: NoteInput & { tag_ids?: string[] }
 ): Promise<Note> {
   const { tag_ids, ...rawInput } = input;
-  const validated = noteCreateSchema.parse(rawInput);
+  noteCreateSchema.parse(rawInput);
 
-  const { data, error } = await supabase
-    .from('notes')
-    .insert({
-      ...validated,
-      content: sanitizeHtml(validated.content),
-      user_id: userId,
-    })
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Link tags if provided
-  if (tag_ids && tag_ids.length > 0) {
-    const rows = tag_ids.map((tagId) => ({
-      note_id: data.id,
-      tag_id: tagId,
-    }));
-    await supabase.from('note_tags').insert(rows);
-  }
-
-  return data as Note;
+  const res = await csrfFetch('/api/notes', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+  if (res.status === 401) throw new Error('Bạn cần đăng nhập để tạo ghi chú.');
+  if (res.status === 429) throw new Error('Thao tác quá nhanh, vui lòng thử lại sau.');
+  if (!res.ok) throw new Error('Không thể tạo ghi chú.');
+  const { note } = (await res.json()) as { note: Note };
+  return note;
 }
 
 /**
- * Updates an existing note.
+ * Updates an existing note via server API (E-H1).
  */
 export async function updateNote(
-  supabase: SupabaseClient,
-  userId: string,
   id: string,
   rawUpdate: NoteUpdate,
   tag_ids?: string[]
 ): Promise<Note> {
-  const updateData: Record<string, unknown> = {
-    ...rawUpdate,
-    updated_at: new Date().toISOString(),
-  };
-
-  if (typeof updateData.content === 'string') {
-    updateData.content = sanitizeHtml(updateData.content);
-  }
-
-  const { data, error } = await supabase
-    .from('notes')
-    .update(updateData)
-    .eq('id', id)
-    .eq('user_id', userId)
-    .select()
-    .single();
-
-  if (error) throw error;
-
-  // Update tags if tag_ids passed
-  if (tag_ids !== undefined) {
-    await supabase.from('note_tags').delete().eq('note_id', id);
-    if (tag_ids.length > 0) {
-      const rows = tag_ids.map((tagId) => ({
-        note_id: id,
-        tag_id: tagId,
-      }));
-      await supabase.from('note_tags').insert(rows);
-    }
-  }
-
-  return data as Note;
+  const res = await csrfFetch(`/api/notes/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ ...rawUpdate, ...(tag_ids !== undefined ? { tag_ids } : {}) }),
+  });
+  if (res.status === 401) throw new Error('Bạn cần đăng nhập để cập nhật ghi chú.');
+  if (res.status === 429) throw new Error('Thao tác quá nhanh, vui lòng thử lại sau.');
+  if (!res.ok) throw new Error('Không thể lưu ghi chú.');
+  const { note } = (await res.json()) as { note: Note };
+  return note;
 }
 
 /**

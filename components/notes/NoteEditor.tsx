@@ -26,6 +26,7 @@ import {
 import { FloatingHighlightToolbar } from './FloatingHighlightToolbar';
 import { NoteColorPicker } from './NoteColorPicker';
 import { useAutosaveNote } from '@/hooks/useAutosaveNote';
+import { sanitizeHtml } from '@/lib/clientSanitize';
 import { getNoteColorClasses, HIGHLIGHT_COLORS } from '@/lib/noteColors';
 import { Note, NoteColor } from '@/types/note';
 
@@ -97,7 +98,9 @@ export function NoteEditor({
     ],
     immediatelyRender: false,
     shouldRerenderOnTransaction: false,
-    content: initialContent || note?.content || '',
+    // E-H1 read-time sanitize: DB content đi qua TipTap mà không qua DOMPurify
+    // sẽ render event-handler nguy hiểm — sanitize trước khi setContent.
+    content: sanitizeHtml(initialContent || note?.content || ''),
     editorProps: {
       attributes: {
         class:
@@ -113,7 +116,7 @@ export function NoteEditor({
   useEffect(() => {
     if (editor && note?.id && note.id !== currentNoteIdRef.current) {
       currentNoteIdRef.current = note.id;
-      editor.commands.setContent(note.content || '', { emitUpdate: false });
+      editor.commands.setContent(sanitizeHtml(note.content || ''), { emitUpdate: false });
     }
   }, [editor, note?.id, note?.content]);
 
