@@ -53,3 +53,20 @@ describe('categorySchema (C-05 split)', () => {
     expect(() => categorySchema.parse({ name: '' })).toThrow();
   });
 });
+
+import { loginSchema, signupSchema, passwordSchema } from '@/lib/validations/auth';
+
+describe('auth password policy min 8 (E-M11)', () => {
+  it('signup rejects 7-char password', () => {
+    expect(() => signupSchema.parse({ email: 'a@b.co', password: '1234567', confirmPassword: '1234567' })).toThrow();
+  });
+
+  it('login accepts any non-empty password (legacy 6-7 char users not locked out)', () => {
+    expect(loginSchema.safeParse({ email: 'a@b.co', password: '123456' }).success).toBe(true);
+  });
+
+  it('passwordSchema enforces min 8', () => {
+    expect(passwordSchema.safeParse('1234567').success).toBe(false);
+    expect(passwordSchema.safeParse('12345678').success).toBe(true);
+  });
+});

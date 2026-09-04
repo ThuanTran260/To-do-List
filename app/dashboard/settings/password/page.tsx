@@ -16,8 +16,8 @@ export default function ChangePasswordPage() {
     setErrorMsg('');
     setSuccessMsg('');
 
-    if (newPassword.length < 6) {
-      setErrorMsg('Mật khẩu mới phải có tối thiểu 6 ký tự.');
+    if (newPassword.length < 8) {
+      setErrorMsg('Mật khẩu mới phải có tối thiểu 8 ký tự.');
       return;
     }
 
@@ -83,7 +83,7 @@ export default function ChangePasswordPage() {
             type="password"
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)..."
+            placeholder="Nhập mật khẩu mới (tối thiểu 8 ký tự)..."
             className="w-full bg-surface-2 px-3 py-2 rounded-md border border-hairline text-xs text-ink focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary-border font-medium"
           />
         </div>
