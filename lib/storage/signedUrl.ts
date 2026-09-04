@@ -27,9 +27,11 @@ export function extractPath(urlOrPath: string | null | undefined): string | null
     }
   }
 
-  // If it's already a relative path like "user_id/task-123.webp"
-  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://') && trimmed.includes('/')) {
-    return trimmed.split('?')[0];
+  // If it's already a relative path like "user_id/task-123.webp", "user_id/avatar-123.webp", or legacy "avatar-user_id-123.webp"
+  if (!trimmed.startsWith('http://') && !trimmed.startsWith('https://')) {
+    if (trimmed.includes('/') || trimmed.startsWith('avatar-') || trimmed.startsWith('task-')) {
+      return trimmed.split('?')[0];
+    }
   }
 
   return null;

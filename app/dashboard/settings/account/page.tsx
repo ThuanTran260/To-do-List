@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { useSignedAvatarUrl } from '@/hooks/useSignedImageUrl';
 import { createClient } from '@/lib/supabase/client';
 import { Shield, User, Mail, CheckCircle2, Loader2, Camera, UploadCloud, AlertCircle } from 'lucide-react';
 
@@ -13,6 +14,9 @@ export default function AccountSettingsPage() {
   const [avatarUrl, setAvatarUrl] = useState<string>(
     user?.user_metadata?.avatar_url || ''
   );
+  const [avatarLoadError, setAvatarLoadError] = useState(false);
+  const { data: signedAvatarUrl } = useSignedAvatarUrl(avatarUrl);
+  const displayAvatarUrl = signedAvatarUrl || avatarUrl;
   const [isSaving, setIsSaving] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadStatus, setUploadStatus] = useState('');
@@ -81,33 +85,37 @@ export default function AccountSettingsPage() {
       const compressedBlob = await compressImage(file);
       setUploadStatus('Đang tải lên Supabase Storage...');
 
-      // Step 2: Upload to Supabase Storage
-      const supabase = createClient();
-      const fileName = `avatar-${user?.id}-${Date.now()}.webp`;
+      if (!user?.id) {
+        throw new Error('Vui lòng đăng nhập để tải ảnh đại diện.');
+      }
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // Step 2: Upload to Supabase Storage in user's isolated folder
+      const supabase = createClient();
+      const fileName = `${user.id}/avatar-${Date.now()}.webp`;
+
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
         .upload(fileName, compressedBlob, {
           contentType: 'image/webp',
-          upsert: true,
+          upsert: false,
         });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('avatars')
-        .getPublicUrl(fileName);
-
-      const newAvatarUrl = publicUrlData.publicUrl;
-
-      // Step 3: Update Auth user metadata
+      // Step 3: Update Auth user metadata with relative storage path
       const { error: updateError } = await supabase.auth.updateUser({
-        data: { avatar_url: newAvatarUrl },
+        data: { avatar_url: fileName },
       });
       if (updateError) throw updateError;
 
-      setAvatarUrl(newAvatarUrl);
+      // Also update profiles table for consistency
+      await supabase
+        .from('profiles')
+        .update({ avatar_url: fileName, avatar_path: fileName })
+        .eq('id', user.id);
+
+      setAvatarUrl(fileName);
+      setAvatarLoadError(false);
       setSuccessMsg('Đã thay đổi ảnh đại diện thành công!');
     } catch (err: any) {
       setErrorMsg(err.message || 'Lỗi khi tải ảnh đại diện lên');
@@ -170,10 +178,11 @@ export default function AccountSettingsPage() {
         {/* User Avatar Upload Header */}
         <div className="flex items-center gap-4 pb-4 border-b border-hairline">
           <div className="relative group">
-            {avatarUrl ? (
+            {displayAvatarUrl && !avatarLoadError ? (
               <img
-                src={avatarUrl}
+                src={displayAvatarUrl}
                 alt="Avatar"
+                onError={() => setAvatarLoadError(true)}
                 className="w-16 h-16 rounded-full object-cover border border-primary-border shadow-xs"
               />
             ) : (
