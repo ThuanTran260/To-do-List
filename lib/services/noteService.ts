@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { noteCreateSchema, type NoteInput, type NoteUpdate } from '@/lib/validations/note';
 import { sanitizeHtml } from '@/lib/clientSanitize';
+import { assertOwnedRow } from '@/lib/services/dbGuard';
 import type { Note } from '@/types/note';
 
 interface RawNoteRow {
@@ -197,6 +198,7 @@ export async function updateNote(
  */
 export async function togglePinNote(
   supabase: SupabaseClient,
+  userId: string,
   id: string,
   is_pinned: boolean
 ): Promise<Note> {
@@ -204,6 +206,7 @@ export async function togglePinNote(
     .from('notes')
     .update({ is_pinned, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
 
@@ -216,6 +219,7 @@ export async function togglePinNote(
  */
 export async function changeNoteColor(
   supabase: SupabaseClient,
+  userId: string,
   id: string,
   color: string
 ): Promise<Note> {
@@ -223,6 +227,7 @@ export async function changeNoteColor(
     .from('notes')
     .update({ color, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
 
@@ -235,12 +240,14 @@ export async function changeNoteColor(
  */
 export async function softDeleteNote(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<Note> {
   const { data, error } = await supabase
     .from('notes')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
 
@@ -253,12 +260,14 @@ export async function softDeleteNote(
  */
 export async function restoreNote(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<Note> {
   const { data, error } = await supabase
     .from('notes')
     .update({ deleted_at: null, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('user_id', userId)
     .select()
     .single();
 
@@ -271,9 +280,16 @@ export async function restoreNote(
  */
 export async function permanentDeleteNote(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<string> {
-  const { error } = await supabase.from('notes').delete().eq('id', id);
+  const { data, error } = await supabase
+    .from('notes')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
   if (error) throw error;
+  assertOwnedRow(data, 'permanentDeleteNote');
   return id;
 }

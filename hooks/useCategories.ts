@@ -101,8 +101,11 @@ export function useDeleteCategory() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      const { error } = await supabase.from('categories').delete().eq('id', id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập');
+      const { data, error } = await supabase.from('categories').delete().eq('id', id).eq('user_id', user.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Xoá thất bại: không tìm thấy hoặc không có quyền.');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });

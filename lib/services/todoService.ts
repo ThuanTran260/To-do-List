@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { todoCreateSchema, type TodoInput, type TodoUpdate } from '@/lib/validations/todo';
 import { createNextRecurringTodo } from '@/lib/services/recurrenceService';
+import { assertOwnedRow, assertBulkAffected } from '@/lib/services/dbGuard';
 import type { TodoItemData } from '@/types/todo';
 
 interface RawTodoRow {
@@ -117,22 +118,28 @@ export async function createTodo(
  */
 export async function updateTodo(
   supabase: SupabaseClient,
+  userId: string,
   id: string,
   update: TodoUpdate,
   tag_ids?: string[]
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update(update)
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertOwnedRow(data, 'updateTodo');
 
   if (tag_ids !== undefined) {
-    await supabase.from('todo_tags').delete().eq('todo_id', id);
+    const { error: delError } = await supabase.from('todo_tags').delete().eq('todo_id', id);
+    if (delError) throw delError;
     if (tag_ids.length > 0) {
       const tagRows = tag_ids.map((tag_id) => ({ todo_id: id, tag_id }));
-      await supabase.from('todo_tags').insert(tagRows);
+      const { error: tagError } = await supabase.from('todo_tags').insert(tagRows);
+      if (tagError) throw tagError;
     }
   }
 }
@@ -142,17 +149,20 @@ export async function updateTodo(
  */
 export async function toggleTodoCompletion(
   supabase: SupabaseClient,
+  userId: string,
   id: string,
   is_completed: boolean,
-  currentTodo?: TodoItemData,
-  userId?: string
+  currentTodo?: TodoItemData
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update({ is_completed, updated_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertOwnedRow(data, 'toggleTodoCompletion');
 
   // Handle recurrence if completing a task with recurrence_rule
   if (is_completed && currentTodo?.recurrence_rule && userId) {
@@ -165,16 +175,21 @@ export async function toggleTodoCompletion(
  */
 export async function reorderTodos(
   supabase: SupabaseClient,
+  userId: string,
   orderedIds: string[]
 ): Promise<void> {
   const boundedIds = orderedIds.slice(0, 1000);
   const updates = boundedIds.map((id, index) =>
-    supabase.from('todos').update({ sort_order: index }).eq('id', id)
+    supabase.from('todos').update({ sort_order: index }).eq('id', id).eq('user_id', userId).select('id')
   );
 
   const results = await Promise.allSettled(updates);
   const failed = results.filter(
-    (r) => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as { error?: unknown })?.error)
+    (r) =>
+      r.status === 'rejected' ||
+      (r.status === 'fulfilled' &&
+        ((r.value as { error?: unknown })?.error ||
+          ((r.value as { data?: unknown[] })?.data?.length ?? 1) === 0))
   );
 
   if (failed.length > 0) {
@@ -187,21 +202,26 @@ export async function reorderTodos(
  */
 export async function incrementPomodoro(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<void> {
   const { data } = await supabase
     .from('todos')
     .select('pomodoro_count')
     .eq('id', id)
+    .eq('user_id', userId)
     .single();
 
   const currentCount = data?.pomodoro_count || 0;
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from('todos')
     .update({ pomodoro_count: currentCount + 1 })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertOwnedRow(updated, 'incrementPomodoro');
 }
 
 /**
@@ -209,23 +229,27 @@ export async function incrementPomodoro(
  */
 export async function bulkCompleteTodos(
   supabase: SupabaseClient,
-  ids: string[],
-  userId?: string
+  userId: string,
+  ids: string[]
 ): Promise<void> {
   // 1. Fetch any recurring tasks in ids to generate their next cycles
   const { data: recurringTasks } = await supabase
     .from('todos')
     .select('*')
     .in('id', ids)
+    .eq('user_id', userId)
     .not('recurrence_rule', 'is', null);
 
   // 2. Mark selected tasks as completed
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update({ is_completed: true, updated_at: new Date().toISOString() })
-    .in('id', ids);
+    .in('id', ids)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertBulkAffected(data, ids, 'bulkCompleteTodos');
 
   // 3. Generate next occurrence for each recurring task
   if (recurringTasks && recurringTasks.length > 0 && userId) {
@@ -240,14 +264,18 @@ export async function bulkCompleteTodos(
  */
 export async function bulkDeleteTodos(
   supabase: SupabaseClient,
+  userId: string,
   ids: string[]
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update({ deleted_at: new Date().toISOString() })
-    .in('id', ids);
+    .in('id', ids)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertBulkAffected(data, ids, 'bulkDeleteTodos');
 }
 
 /**
@@ -255,15 +283,19 @@ export async function bulkDeleteTodos(
  */
 export async function bulkUpdatePriority(
   supabase: SupabaseClient,
+  userId: string,
   ids: string[],
   priority: 'low' | 'medium' | 'high'
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update({ priority, updated_at: new Date().toISOString() })
-    .in('id', ids);
+    .in('id', ids)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertBulkAffected(data, ids, 'bulkUpdatePriority');
 }
 
 /**
@@ -271,14 +303,18 @@ export async function bulkUpdatePriority(
  */
 export async function softDeleteTodo(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertOwnedRow(data, 'softDeleteTodo');
 }
 
 /**
@@ -286,14 +322,18 @@ export async function softDeleteTodo(
  */
 export async function restoreTodo(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .update({ deleted_at: null })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertOwnedRow(data, 'restoreTodo');
 }
 
 /**
@@ -301,12 +341,16 @@ export async function restoreTodo(
  */
 export async function permanentDeleteTodo(
   supabase: SupabaseClient,
+  userId: string,
   id: string
 ): Promise<void> {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from('todos')
     .delete()
-    .eq('id', id);
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select('id');
 
   if (error) throw error;
+  assertOwnedRow(data, 'permanentDeleteTodo');
 }

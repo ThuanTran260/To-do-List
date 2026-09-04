@@ -112,7 +112,8 @@ export function useToggleTodo() {
     mutationFn: async ({ id, is_completed, currentTodo }: { id: string; is_completed: boolean; currentTodo?: TodoItemData }) => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      await toggleTodoCompletion(supabase, id, is_completed, currentTodo, user?.id);
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await toggleTodoCompletion(supabase, user.id, id, is_completed, currentTodo);
     },
     onMutate: async ({ id, is_completed }) => {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
@@ -145,7 +146,9 @@ export function useUpdateTodo() {
   return useMutation({
     mutationFn: async ({ id, update, tag_ids }: { id: string; update: TodoUpdate; tag_ids?: string[] }) => {
       const supabase = createClient();
-      await updateTodo(supabase, id, update, tag_ids);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await updateTodo(supabase, user.id, id, update, tag_ids);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
@@ -160,7 +163,9 @@ export function useReorderTodos() {
   return useMutation({
     mutationFn: async (orderedIds: string[]) => {
       const supabase = createClient();
-      await reorderTodos(supabase, orderedIds);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await reorderTodos(supabase, user.id, orderedIds);
     },
     onMutate: async (orderedIds) => {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
@@ -196,7 +201,9 @@ export function useIncrementPomodoro() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      await incrementPomodoro(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await incrementPomodoro(supabase, user.id, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
@@ -212,7 +219,8 @@ export function useBulkActions() {
     mutationFn: async (ids: string[]) => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
-      await bulkCompleteTodos(supabase, ids, user?.id);
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await bulkCompleteTodos(supabase, user.id, ids);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
   });
@@ -220,7 +228,9 @@ export function useBulkActions() {
   const bulkDelete = useMutation({
     mutationFn: async (ids: string[]) => {
       const supabase = createClient();
-      await bulkDeleteTodos(supabase, ids);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await bulkDeleteTodos(supabase, user.id, ids);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
   });
@@ -228,7 +238,9 @@ export function useBulkActions() {
   const bulkPriority = useMutation({
     mutationFn: async ({ ids, priority }: { ids: string[]; priority: 'low' | 'medium' | 'high' }) => {
       const supabase = createClient();
-      await bulkUpdatePriority(supabase, ids, priority);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await bulkUpdatePriority(supabase, user.id, ids, priority);
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['todos'] }),
   });
@@ -243,7 +255,9 @@ export function useDeleteTodo() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      await softDeleteTodo(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await softDeleteTodo(supabase, user.id, id);
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['todos'] });
@@ -275,7 +289,9 @@ export function useRestoreTodo() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      await restoreTodo(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await restoreTodo(supabase, user.id, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });
@@ -290,7 +306,9 @@ export function usePermanentDeleteTodo() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      await permanentDeleteTodo(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      await permanentDeleteTodo(supabase, user.id, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['todos'] });

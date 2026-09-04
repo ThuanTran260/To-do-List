@@ -55,8 +55,11 @@ export function useDeleteTaskTemplate() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase.from('task_templates').delete().eq('id', id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Vui lòng đăng nhập');
+      const { data, error } = await supabase.from('task_templates').delete().eq('id', id).eq('user_id', user.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Xoá thất bại: không tìm thấy hoặc không có quyền.');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['task_templates'] });

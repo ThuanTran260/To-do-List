@@ -124,7 +124,9 @@ export function useTogglePinNote() {
   return useMutation({
     mutationFn: async ({ id, is_pinned }: { id: string; is_pinned: boolean }) => {
       const supabase = createClient();
-      return togglePinNote(supabase, id, is_pinned);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      return togglePinNote(supabase, user.id, id, is_pinned);
     },
     onMutate: async ({ id, is_pinned }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
@@ -158,7 +160,9 @@ export function useChangeNoteColor() {
   return useMutation({
     mutationFn: async ({ id, color }: { id: string; color: string }) => {
       const supabase = createClient();
-      return changeNoteColor(supabase, id, color);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      return changeNoteColor(supabase, user.id, id, color);
     },
     onMutate: async ({ id, color }) => {
       await queryClient.cancelQueries({ queryKey: ['notes', 'active'] });
@@ -192,7 +196,9 @@ export function useSoftDeleteNote() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      return softDeleteNote(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      return softDeleteNote(supabase, user.id, id);
     },
     onMutate: async (id) => {
       await queryClient.cancelQueries({ queryKey: ['notes'] });
@@ -227,7 +233,9 @@ export function useRestoreNote() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      return restoreNote(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      return restoreNote(supabase, user.id, id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notes'] });
@@ -242,7 +250,9 @@ export function usePermanentDeleteNote() {
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
-      return permanentDeleteNote(supabase, id);
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Bạn cần đăng nhập.');
+      return permanentDeleteNote(supabase, user.id, id);
     },
     onSuccess: (id) => {
       clearLocalDraft(id);
