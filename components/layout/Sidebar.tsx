@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useSignedAvatarUrl } from '@/hooks/useSignedImageUrl';
 import { performLogout } from '@/lib/auth/logoutClient';
 import { LayoutGroup, motion, AnimatePresence } from 'framer-motion';
 import { springPillMotion, overlayMotion } from '@/lib/motion';
@@ -31,6 +32,13 @@ interface SidebarProps {
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const [avatarError, setAvatarError] = useState(false);
+  const { data: signedAvatarUrl } = useSignedAvatarUrl(user?.user_metadata?.avatar_url);
+  const displayAvatarUrl = signedAvatarUrl || user?.user_metadata?.avatar_url;
+
+  useEffect(() => {
+    setAvatarError(false);
+  }, [user?.user_metadata?.avatar_url]);
 
   // Optimistic active path for 0ms visual feedback on click
   const [pendingPath, setPendingPath] = useState<string | null>(null);
@@ -123,10 +131,11 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           {/* User Profile Snippet */}
           {user && (
             <div className="p-3 rounded-lg bg-surface-2 border border-hairline flex items-center gap-3">
-              {user.user_metadata?.avatar_url ? (
+              {displayAvatarUrl && !avatarError ? (
                 <img
-                  src={user.user_metadata.avatar_url}
+                  src={displayAvatarUrl}
                   alt="Avatar"
+                  onError={() => setAvatarError(true)}
                   className="w-8 h-8 rounded-full object-cover border border-hairline"
                 />
               ) : (
