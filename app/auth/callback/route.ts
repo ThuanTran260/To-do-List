@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/security/rateLimit';
+import { resolveNextTarget } from '@/lib/auth/redirect';
 
 /**
  * Auth Callback Route — PKCE Code Exchange
@@ -32,16 +33,18 @@ export async function GET(request: Request) {
     return NextResponse.redirect(`${origin}/login?error=rate_limited`);
   }
 
-  if (code) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
+  try {
+    if (code) {
+      const supabase = await createClient();
+      const { error } = await supabase.auth.exchangeCodeForSession(code);
 
-    if (!error) {
-      // Open Redirect protection: only allow relative URLs
-      const isRelative = next.startsWith('/') && !next.startsWith('//');
-      const targetUrl = isRelative ? `${origin}${next}` : `${origin}/dashboard`;
-      return NextResponse.redirect(targetUrl);
+      if (!error) {
+        return NextResponse.redirect(resolveNextTarget(next, origin));
+      }
+      console.error('[auth/callback] exchange failed');
     }
+  } catch (err) {
+    console.error('[auth/callback] unexpected', err);
   }
 
   // On error, redirect to login with error indicator
