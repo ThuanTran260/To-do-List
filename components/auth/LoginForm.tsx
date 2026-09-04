@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { performLogout } from '@/lib/auth/logoutClient';
-import { getLockoutMs, recordFailure, clearFailures } from '@/lib/auth/loginThrottle';
+import { getLockoutMs, recordFailure, clearFailures, getFailureCount, LOCKOUT_MS } from '@/lib/auth/loginThrottle';
 import Link from 'next/link';
 import { loginSchema } from '@/lib/validations/auth';
 import { Mail, Lock, Loader2, ArrowRight, CheckCircle2, User, LogOut, LayoutDashboard } from 'lucide-react';
@@ -18,7 +18,11 @@ export function LoginForm() {
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lockedUntil, setLockedUntil] = useState(0);
+  // Review fix (#8): init từ sessionStorage (reload không bypass) + scope riêng 'login'.
+  // Nút tự mở lại khi user gõ (controlled input re-render đánh giá lại Date.now()).
+  const [lockedUntil, setLockedUntil] = useState(() =>
+    getLockoutMs(getFailureCount('login')) > 0 ? Date.now() + LOCKOUT_MS : 0
+  );
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,13 +67,14 @@ export function LoginForm() {
     if (error) {
       // E-H3: 1 message chung cho MỌI lỗi login (kể cả Email not confirmed,
       // Too many requests...) — không để lộ trạng thái tài khoản (enumeration).
-      console.error('[login] failed', { code: (error as { code?: string })?.code });
+      // Review fix (#11): không log distinguishing code ở browser console (DevTools oracle).
+      if (process.env.NODE_ENV === 'development') console.error('[login] failed');
       setErrorMsg('Email hoặc mật khẩu không chính xác');
-      const fails = recordFailure();
-      if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + 30_000);
+      const fails = recordFailure('login');
+      if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + LOCKOUT_MS);
       setLoading(false);
     } else {
-      clearFailures();
+      clearFailures('login');
       // Full session refresh redirect
       window.location.href = '/dashboard';
     }

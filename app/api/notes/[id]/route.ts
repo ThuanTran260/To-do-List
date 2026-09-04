@@ -1,25 +1,30 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { cookies } from 'next/headers';
-import { withAuth, type WithAuthSupabaseClient } from '@/lib/api/withAuth';
+import { withAuth, type WithAuthSupabaseClient, type WithAuthContext } from '@/lib/api/withAuth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { validateCsrfToken } from '@/lib/security/csrf';
 import { noteUpdateSchema } from '@/lib/validations/note';
 import { sanitizeHtmlServer } from '@/lib/sanitize/serverSanitize';
 
-const patchBodySchema = noteUpdateSchema.extend({
-  tag_ids: z.array(z.string().uuid()).optional(),
-});
+const patchBodySchema = noteUpdateSchema
+  // Review fix (#13): PATCH không nhận deleted_at — soft-delete/restore vòng qua
+  // API là low-risk (vẫn scoped owned) nhưng nên tách route riêng, không lẫn vào update.
+  .omit({ deleted_at: true })
+  .extend({
+    tag_ids: z.array(z.string().uuid()).optional(),
+  });
 
 export const PATCH = withAuth(
   async (
     req: Request,
     user: { id: string },
     supabase: WithAuthSupabaseClient,
-    ctx: { params: Promise<{ id: string }> }
+    ctx?: WithAuthContext
   ) => {
-    const { id } = await ctx.params;
-    if (!z.string().uuid().safeParse(id).success) {
+    const params = ctx?.params ? await ctx.params : undefined;
+    const id = params?.id;
+    if (!id || !z.string().uuid().safeParse(id).success) {
       return NextResponse.json({ error: 'Invalid note id' }, { status: 400 });
     }
 
@@ -62,6 +67,18 @@ export const PATCH = withAuth(
       }
 
       if (tag_ids !== undefined) {
+        if (tag_ids.length > 0) {
+          // Review fix (#6): verify ownership như POST route.
+          const { data: ownedTags } = await supabase
+            .from('tags')
+            .select('id')
+            .in('id', tag_ids)
+            .eq('user_id', user.id);
+          const ownedIds = new Set((ownedTags || []).map((t: { id: string }) => t.id));
+          if (ownedIds.size !== tag_ids.length) {
+            return NextResponse.json({ error: 'Invalid tags' }, { status: 400 });
+          }
+        }
         await supabase.from('note_tags').delete().eq('note_id', id);
         if (tag_ids.length > 0) {
           const { error: tagError } = await supabase

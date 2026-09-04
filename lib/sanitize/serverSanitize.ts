@@ -9,15 +9,18 @@ const { window } = new JSDOM('');
 type DOMPurifyWindow = Parameters<typeof DOMPurify>[0];
 const purify = DOMPurify(window as unknown as DOMPurifyWindow);
 
-// Whitelist khớp với TipTap output (paragraph, heading, marks, task list, highlight)
+// Whitelist khớp với TipTap output (paragraph, heading, marks, task list, highlight).
+// Review fix (#7): TaskItem render <li><label><input type=checkbox><div> — thiếu
+// label/div/input là sanitize on-read strip mất checkbox khi reload.
 const ALLOWED_TAGS = [
   'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'strong', 'b', 'em', 'i', 's', 'u', 'code', 'pre',
   'mark', 'blockquote',
   'ul', 'ol', 'li',
   'hr', 'br', 'span',
+  'label', 'div', 'input',
 ];
-const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked'];
+const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked', 'type', 'checked'];
 
 export function sanitizeHtmlServer(html: string): string {
   if (!html) return '';

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { cookies } from 'next/headers';
 import { withAuth } from '@/lib/api/withAuth';
 import { checkRateLimit } from '@/lib/security/rateLimit';
+import { validateCsrfToken } from '@/lib/security/csrf';
 import { noteUpdateSchema } from '@/lib/validations/note';
 import { sanitizeHtmlServer } from '@/lib/sanitize/serverSanitize';
 
@@ -13,6 +15,14 @@ const bodySchema = z.object({
 
 export const POST = withAuth(async (request, user, supabase) => {
   try {
+    // Review fix (Critical #1): sync route cũng là note-write → bắt CSRF như
+    // POST/PATCH /api/notes, nếu không attacker forge được bằng form đơn giản.
+    const cookieStore = await cookies();
+    const headerToken = request.headers.get('x-csrf-token');
+    if (!headerToken || !validateCsrfToken(headerToken, cookieStore.get('csrf-token')?.value || '')) {
+      return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+    }
+
     // MD-05: auth đã chạy trong withAuth — rateLimit SAU auth để tránh drain bucket chung.
     // 60/phút: autosave debounce 600ms (~100 save/phút khi gõ liên tục) — 20/phút gây 429 khi soạn thảo (I-3).
     if (!checkRateLimit(`notes:sync:${user.id}`, 60, 60000)) {

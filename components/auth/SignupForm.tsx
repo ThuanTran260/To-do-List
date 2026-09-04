@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { performLogout } from '@/lib/auth/logoutClient';
-import { getLockoutMs, recordFailure, clearFailures } from '@/lib/auth/loginThrottle';
+import { getLockoutMs, recordFailure, clearFailures, getFailureCount, LOCKOUT_MS } from '@/lib/auth/loginThrottle';
 import Link from 'next/link';
 import { signupSchema } from '@/lib/validations/auth';
 import { Mail, Lock, User, Loader2, ArrowRight, CheckCircle2, LogOut, LayoutDashboard } from 'lucide-react';
@@ -20,7 +20,9 @@ export function SignupForm() {
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
-  const [lockedUntil, setLockedUntil] = useState(0);
+  const [lockedUntil, setLockedUntil] = useState(() =>
+    getLockoutMs(getFailureCount('signup')) > 0 ? Date.now() + LOCKOUT_MS : 0
+  );
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,13 +70,14 @@ export function SignupForm() {
 
     if (error) {
       // E-H3: message chung — không render raw error.message (lộ "User already registered").
-      console.error('[signup] failed', { code: (error as { code?: string })?.code });
+      // Review fix (#11): không log distinguishing code ở browser console.
+      if (process.env.NODE_ENV === 'development') console.error('[signup] failed');
       setErrorMsg('Không thể tạo tài khoản. Nếu email đã tồn tại, hãy thử đăng nhập.');
-      const fails = recordFailure();
-      if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + 30_000);
+      const fails = recordFailure('signup');
+      if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + LOCKOUT_MS);
       setLoading(false);
     } else {
-      clearFailures();
+      clearFailures('signup');
       if (data.session) {
         window.location.href = '/dashboard';
       } else {

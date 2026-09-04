@@ -124,10 +124,12 @@ export default function AccountSettingsPage() {
       if (updateError) throw updateError;
 
       // Also update profiles table for consistency
-      await supabase
+      // Review fix (#18): check error như 2 chỗ A5 (trước đây silent fail).
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({ avatar_url: fileName, avatar_path: fileName })
         .eq('id', user.id);
+      if (profileError) throw profileError;
 
       setAvatarUrl(fileName);
       setAvatarLoadError(false);

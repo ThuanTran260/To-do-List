@@ -49,13 +49,15 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
       if (!user) throw new Error('Bạn cần đăng nhập.');
       const ids = trashList.map((t) => t.id);
 
-      const { error } = await supabase.from('todos').delete().in('id', ids).eq('user_id', user.id);
+      const { data, error } = await supabase.from('todos').delete().in('id', ids).eq('user_id', user.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Không xoá được mục nào (không tìm thấy hoặc không có quyền).');
 
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert(`Lỗi khi dọn thùng rác: ${message}`);
+      // Review fix (#19): không render raw DB error ra alert (info disclosure).
+      console.error('[trash] clear-all failed', err);
+      alert('Không thể dọn thùng rác, vui lòng thử lại.');
     } finally {
       setIsBulkProcessing(false);
       setBulkStatus('');
@@ -77,19 +79,24 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
       if (!user) throw new Error('Bạn cần đăng nhập.');
       const ids = trashList.map((t) => t.id);
 
-      const { error } = await supabase
+      // Review fix (#2): `.eq('deleted_at', null)` KHÔNG BAO GIỜ match NULL trong
+      // PostgREST (NULL semantics) → restore-all cũ là no-op thầm lặng. Dùng .not()
+      // để chọn đúng các row trong trash + assert số dòng.
+      const { data, error } = await supabase
         .from('todos')
         .update({ deleted_at: null })
-        .eq('deleted_at', null)
+        .not('deleted_at', 'is', null)
         .in('id', ids)
-        .eq('user_id', user.id);
+        .eq('user_id', user.id)
+        .select('id');
 
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error('Không khôi phục được mục nào (không tìm thấy hoặc không có quyền).');
 
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Đã xảy ra lỗi';
-      alert(`Lỗi khi khôi phục: ${message}`);
+      console.error('[trash] restore-all failed', err);
+      alert('Không thể khôi phục, vui lòng thử lại.');
     } finally {
       setIsBulkProcessing(false);
       setBulkStatus('');

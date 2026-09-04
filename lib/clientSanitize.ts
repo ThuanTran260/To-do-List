@@ -5,10 +5,12 @@ const ALLOWED_TAGS = [
   'strong', 'b', 'em', 'i', 's', 'u', 'code', 'pre',
   'mark', 'blockquote',
   'ul', 'ol', 'li',
-  'hr', 'br', 'span'
+  'hr', 'br', 'span',
+  // Review fix (#7): khớp TaskItem DOM (<label><input type=checkbox><div>), đồng bộ serverSanitize
+  'label', 'div', 'input'
 ];
 
-const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked'];
+const ALLOWED_ATTR = ['class', 'data-color', 'data-type', 'data-checked', 'type', 'checked'];
 
 /**
  * Sanitizes HTML strings using DOMPurify with an explicit whitelist.
