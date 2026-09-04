@@ -135,8 +135,11 @@ export default function AccountSettingsPage() {
       await queryClient.invalidateQueries({ queryKey: ['signed-avatar-url'] });
       setSuccessMsg('Đã thay đổi ảnh đại diện thành công!');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Lỗi khi tải ảnh đại diện lên';
-      setErrorMsg(msg);
+      // E-H3: message chung, không render raw message.
+      console.error('[account] avatar upload failed', {
+        code: (err as { code?: string })?.code,
+      });
+      setErrorMsg('Không thể tải ảnh đại diện lên, vui lòng thử lại.');
     } finally {
       setIsUploading(false);
       setUploadStatus('');
@@ -157,8 +160,11 @@ export default function AccountSettingsPage() {
       if (error) throw error;
       setSuccessMsg('Đã cập nhật thông tin tài khoản thành công!');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Lỗi khi cập nhật thông tin';
-      setErrorMsg(msg);
+      // E-H3: message chung, không render raw message.
+      console.error('[account] update failed', {
+        code: (err as { code?: string })?.code,
+      });
+      setErrorMsg('Không thể cập nhật tài khoản, vui lòng thử lại.');
     } finally {
       setIsSaving(false);
     }

@@ -67,7 +67,9 @@ export function SignupForm() {
     });
 
     if (error) {
-      setErrorMsg(error.message);
+      // E-H3: message chung — không render raw error.message (lộ "User already registered").
+      console.error('[signup] failed', { code: (error as { code?: string })?.code });
+      setErrorMsg('Không thể tạo tài khoản. Nếu email đã tồn tại, hãy thử đăng nhập.');
       const fails = recordFailure();
       if (getLockoutMs(fails) > 0) setLockedUntil(Date.now() + 30_000);
       setLoading(false);
