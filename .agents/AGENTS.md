@@ -316,3 +316,51 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, và Tailwi
 │  - Tạo `walkthrough.md` tổng kết trước khi báo hoàn thành               │
 └────────────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## 8. UI/UX, Layout Stability & Media Invariants (Quy Chuẩn Giao Diện & Chống Vỡ Layout)
+
+### 8.1. Quy tắc cấm Nested Scroll Container trên Card/Form nội trang (In-Page Form Isolation)
+- **Tuyệt đối không đặt `max-h-[..dvh] overflow-y-auto` bên trong các Form/Card nằm trực tiếp trên trang workspace.**
+- Toàn bộ trang Dashboard đã có cơ chế cuộn mượt mà của phần tử cha (`<main>`). Việc nhúng thêm vùng cuộn con bên trong một card form tạo ra hiện tượng **Nested Scroll (Cuộn lồng cuộn)**, gây kẹt chuột và kích hoạt thanh cuộn bất thường.
+- Card form phải luôn co giãn tự nhiên theo chiều cao thực tế của nội dung.
+
+### 8.2. Quy tắc Accordion & Expandable Panel Overflow Containment
+- Mọi khối panel mở rộng/thu gọn (`motion.div`) animate chiều cao (`height: 0 -> auto`):
+  1. **BẮT BUỘC mang `className="overflow-hidden"`**: Tuyệt đối không dùng `overflow-visible` vì sẽ khiến nội dung con chưa được cắt tỉa tràn ra ngoài, làm container cha nhận diện sai `scrollHeight` và kích hoạt thanh cuộn.
+  2. **BẮT BUỘC dùng đường cong không Overshoot**: Sử dụng Cubic-Bezier chuẩn Linear / Apple HIG:
+     ```tsx
+     transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+     ```
+     Tuyệt đối không dùng `spring` có hệ số giảm chấn $\zeta < 1.0$ (underdamped spring như `stiffness: 350, damping: 30`) cho animation chiều cao vì độ nảy (bounce/overshoot) sẽ đẩy chiều cao vượt ngưỡng cho phép, sinh ra thanh cuộn chớp nháy làm vỡ layout.
+
+### 8.3. Quy tắc bắt buộc chuẩn hóa `@utility no-scrollbar` trong Tailwind CSS v4
+- Trong Tailwind CSS v4, utility `.no-scrollbar` không có sẵn mặc định. Mọi project dùng Tailwind v4 bắt buộc phải khai báo tường minh trong `app/globals.css`:
+  ```css
+  @utility no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+      display: none;
+    }
+  }
+  ```
+  để đảm bảo thanh cuộn được ẩn triệt để trên Chrome, Edge, Safari và Firefox.
+
+### 8.4. Quy tắc Safe Signed Image & Avatar Resolution (Chống 404 Race Condition)
+- Khi lưu ảnh vào Supabase Storage, database/metadata chỉ lưu đường dẫn tương đối (ví dụ: `userId/avatar-xxx.webp`), không lưu Signed URL vì Signed URL sẽ hết hạn sau thời gian timeout (thường là 1 giờ).
+- Khi trang tải lại (F5 / Refresh): Hook `useSignedAvatarUrl` mất 100-200ms để sinh Signed URL từ server.
+- **Quy tắc bất biến:**
+  1. `displayUrl` trong hook **TUYỆT ĐỐI CHỈ TRẢ VỀ** URL hợp lệ (`http://`, `https://`, `blob:`). Nếu là đường dẫn storage tương đối mà chưa ký xong, hook **bắt buộc phải trả về `null`** (hoặc skeleton/fallback), tuyệt đối không fallback trực tiếp đường dẫn tương đối vào `src` của thẻ `<img>` / `<Image />`.
+  2. Trình duyệt nếu nhận đường dẫn tương đối sẽ gửi HTTP GET về `http://localhost:3000/dashboard/...` gây lỗi `404 Not Found`, kích hoạt sự kiện `onError` và vĩnh viễn khóa avatar thành chữ cái viết tắt "T".
+  3. Mọi component hiển thị avatar phải tự động reset state lỗi (`setAvatarError(false)`) mỗi khi `displayUrl` thay đổi.
+
+### 8.5. Quy tắc ổn định CI/CD Pipeline với `.npmrc`
+- Trong môi trường build tự động (Vercel, GitHub Actions), `npm` mặc định gửi request kiểm tra audit bảo mật tới `https://registry.npmjs.org/-/npm/v1/security/advisories/bulk`. Endpoint này thường xuyên bị nghẽn và rate-limit (`error 23`).
+- Bắt buộc duy trì file `.npmrc` tại thư mục gốc với `audit=false` và timeout 30s để đảm bảo pipeline cài đặt dependencies luôn ổn định 100%.
+
+### 8.6. Quy tắc Phân Nhóm Thời Gian & Tùy Biến Pomodoro (Temporal Grouping & Focus Sessions)
+- **Lọc theo tháng (Temporal Grouping)**: Với danh sách công việc lớn, tự động gom nhóm các tháng có dữ liệu (`getAvailableMonths`), mặc định mở tháng gần nhất (`latest`) và cho phép người dùng chọn xem các tháng cũ hoặc tất cả các tháng.
+- **Giới hạn hiển thị (Display Limit)**: Luôn cung cấp tùy chọn giới hạn (10, 20, 50, Tất cả), lưu vào `localStorage` và hiển thị banner xem thêm khi số lượng task vượt quá giới hạn.
+- **Tùy chỉnh thời lượng phiên tập trung**: Không bao giờ khóa cứng 25 phút. Cho phép bấm trực tiếp để nhập số phút tùy ý (1-720 phút), kết hợp các mốc nhanh (`15p`, `25p`, `45p`, `60p`, `90p`) và lưu lựa chọn của người dùng vào `localStorage`.
