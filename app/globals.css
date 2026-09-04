@@ -210,6 +210,14 @@ body {
   background: var(--ink-subtle);
 }
 
+@utility no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 /* TipTap Editor ProseMirror Styles */
 .ProseMirror {
   outline: none;

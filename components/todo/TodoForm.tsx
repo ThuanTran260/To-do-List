@@ -14,7 +14,6 @@ import { RecurrencePicker } from '@/components/todo/RecurrencePicker';
 import { TemplatePicker } from '@/components/todo/TemplatePicker';
 import { parseNaturalLanguageDate } from '@/lib/nlpDate';
 import { motion, AnimatePresence } from 'framer-motion';
-import { springPillMotion } from '@/lib/motion';
 import {
   Plus,
   Calendar,
@@ -157,7 +156,7 @@ export function TodoForm() {
         onSubmit={handleSubmit}
         className="relative rounded-xl surface-panel bg-surface-1 border border-hairline overflow-hidden"
       >
-        <div className="p-4 sm:p-5 space-y-4 max-h-[70dvh] overflow-y-auto overscroll-contain no-scrollbar">
+        <div className="p-4 sm:p-5 space-y-4">
           {/* Header Bar with TemplatePicker */}
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
@@ -271,8 +270,8 @@ export function TodoForm() {
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: 'auto', opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={springPillMotion}
-                  className="overflow-visible"
+                  transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+                  className="overflow-hidden"
                 >
                   <div className="space-y-3 pt-3 border-t border-hairline">
                     <div>

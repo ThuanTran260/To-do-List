@@ -1,13 +1,38 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { toast } from 'sonner';
 
+const STORAGE_KEY = 'flowstate_pomodoro_focus_minutes';
+
 export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
+  const [focusMinutes, setFocusMinutesState] = useState<number>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed > 0 && parsed <= 720) return parsed;
+      }
+    }
+    return initialFocusMinutes;
+  });
+
+  const [breakMinutes] = useState<number>(initialBreakMinutes);
   const [mode, setMode] = useState<'focus' | 'break'>('focus');
-  const [secondsLeft, setSecondsLeft] = useState(initialFocusMinutes * 60);
+  const [secondsLeft, setSecondsLeft] = useState<number>(focusMinutes * 60);
   const [isActive, setIsActive] = useState(false);
   const [activeTaskTitle, setActiveTaskTitle] = useState<string | null>(null);
+
+  const setFocusMinutes = useCallback((newMinutes: number) => {
+    const validMins = Math.max(1, Math.min(720, Math.round(newMinutes)));
+    setFocusMinutesState(validMins);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEY, String(validMins));
+    }
+    setMode('focus');
+    setIsActive(false);
+    setSecondsLeft(validMins * 60);
+  }, []);
 
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -20,26 +45,26 @@ export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
       setIsActive(false);
 
       if (mode === 'focus') {
-        toast.success('🎉 Đã hoàn thành 1 phiên Pomodoro (25 phút)! Giờ là lúc nghỉ ngơi 5 phút.');
+        toast.success(`🎉 Đã hoàn thành 1 phiên tập trung (${focusMinutes} phút)! Giờ là lúc nghỉ ngơi ${breakMinutes} phút.`);
         setMode('break');
-        setSecondsLeft(initialBreakMinutes * 60);
+        setSecondsLeft(breakMinutes * 60);
       } else {
         toast.success('🔔 Hết giờ nghỉ! Sẵn sàng cho phiên tập trung tiếp theo.');
         setMode('focus');
-        setSecondsLeft(initialFocusMinutes * 60);
+        setSecondsLeft(focusMinutes * 60);
       }
     }
 
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isActive, secondsLeft, mode, initialFocusMinutes, initialBreakMinutes]);
+  }, [isActive, secondsLeft, mode, focusMinutes, breakMinutes]);
 
   const toggleTimer = () => setIsActive(!isActive);
 
   const resetTimer = () => {
     setIsActive(false);
-    setSecondsLeft(mode === 'focus' ? initialFocusMinutes * 60 : initialBreakMinutes * 60);
+    setSecondsLeft(mode === 'focus' ? focusMinutes * 60 : breakMinutes * 60);
   };
 
   const minutes = Math.floor(secondsLeft / 60);
@@ -48,6 +73,8 @@ export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
 
   return {
     mode,
+    focusMinutes,
+    setFocusMinutes,
     secondsLeft,
     formattedTime,
     isActive,
