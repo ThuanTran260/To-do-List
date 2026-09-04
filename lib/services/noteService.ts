@@ -1,6 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { noteCreateSchema, type NoteInput, type NoteUpdate } from '@/lib/validations/note';
-import { sanitizeHtml } from '@/lib/clientSanitize';
 import { csrfFetch } from '@/lib/security/csrfClient';
 import { assertOwnedRow } from '@/lib/services/dbGuard';
 import type { Note } from '@/types/note';
@@ -124,7 +123,7 @@ export async function fetchTrashNotes(supabase: SupabaseClient): Promise<Note[]>
 export async function createNote(
   input: NoteInput & { tag_ids?: string[] }
 ): Promise<Note> {
-  const { tag_ids, ...rawInput } = input;
+  const { tag_ids: _tag_ids, ...rawInput } = input;
   noteCreateSchema.parse(rawInput);
 
   const res = await csrfFetch('/api/notes', {

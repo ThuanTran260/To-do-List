@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { performLogout } from '@/lib/auth/logoutClient';
@@ -23,6 +23,24 @@ export function SignupForm() {
   const [lockedUntil, setLockedUntil] = useState(() =>
     getLockoutMs(getFailureCount('signup')) > 0 ? Date.now() + LOCKOUT_MS : 0
   );
+  const [isLocked, setIsLocked] = useState(() => getLockoutMs(getFailureCount('signup')) > 0);
+
+  useEffect(() => {
+    if (lockedUntil <= 0) {
+      setIsLocked(false);
+      return;
+    }
+    const remaining = lockedUntil - Date.now();
+    if (remaining <= 0) {
+      setIsLocked(false);
+      return;
+    }
+    setIsLocked(true);
+    const timer = setTimeout(() => {
+      setIsLocked(false);
+    }, remaining);
+    return () => clearTimeout(timer);
+  }, [lockedUntil]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +48,7 @@ export function SignupForm() {
     setSuccessMsg('');
 
     // E-H2: client backoff — khoá 30s sau 5 lần thất bại
-    if (Date.now() < lockedUntil) {
+    if (isLocked || Date.now() < lockedUntil) {
       setErrorMsg('Bạn thử quá nhiều lần. Vui lòng đợi 30 giây.');
       return;
     }
@@ -227,7 +245,7 @@ export function SignupForm() {
         <motion.div variants={staggerItemVariants} className="pt-1">
           <button
             type="submit"
-            disabled={loading || Date.now() < lockedUntil}
+            disabled={loading || isLocked}
             className="w-full py-2.5 rounded-md bg-primary hover:bg-primary-hover text-on-primary font-medium text-xs sm:text-sm shadow-xs transition-colors flex items-center justify-center gap-2 active:scale-98 disabled:opacity-50 cursor-pointer"
           >
             {loading ? (
