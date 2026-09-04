@@ -251,6 +251,13 @@ export function LoginForm() {
         >
           Đăng ký ngay
         </Link>
+        {' · '}
+        <Link
+          href="/auth/forgot-password"
+          className="font-medium text-ink-muted hover:text-ink underline underline-offset-4"
+        >
+          Quên mật khẩu?
+        </Link>
       </motion.div>
     </motion.div>
   );
