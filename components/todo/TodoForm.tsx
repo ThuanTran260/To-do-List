@@ -9,7 +9,7 @@ import { DatePickerModal } from '@/components/ui/DatePickerModal';
 import { CustomPrioritySelect, type PriorityType } from '@/components/ui/CustomPrioritySelect';
 import { CustomCategorySelect } from '@/components/ui/CustomCategorySelect';
 import { ImageUpload } from '@/components/ui/ImageUpload';
-import { TagPicker } from '@/components/ui/TagPicker';
+import { TagBar } from '@/components/ui/TagBar';
 import { RecurrencePicker } from '@/components/todo/RecurrencePicker';
 import { TemplatePicker } from '@/components/todo/TemplatePicker';
 import { parseNaturalLanguageDate } from '@/lib/nlpDate';
@@ -226,6 +226,11 @@ export function TodoForm() {
               )}
             </div>
 
+            {/* Quick Tag Selection Bar */}
+            <div className="pt-0.5 pb-1">
+              <TagBar selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} />
+            </div>
+
             {/* Date & Priority Row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
@@ -256,9 +261,8 @@ export function TodoForm() {
               </div>
             </div>
 
-            {/* Tags & Recurrence controls row */}
+            {/* Recurrence control row */}
             <div className="flex items-center gap-3 pt-1">
-              <TagPicker selectedTagIds={selectedTagIds} onChange={setSelectedTagIds} />
               <RecurrencePicker value={recurrenceRule} onChange={setRecurrenceRule} />
             </div>
 
