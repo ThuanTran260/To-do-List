@@ -224,45 +224,52 @@ todo-app/
 
 ---
 
-## 6. TipTap / ProseMirror & Rich Text Editor Invariants (Quy Tắc Bắt Buộc Khi Soạn Thảo)
+### 6. TipTap / ProseMirror & Rich Text Editor Invariants (Bộ 8 Quy Chuẩn Phòng Vệ Chủ Động)
 
-Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, và Tailwind CSS Typography (`.prose`):
+Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, Tailwind CSS Typography (`.prose`), DOMPurify và Supabase Autosave:
 
-1. **QUY TẮC CÔ LẬP `not-prose` (Not-Prose Isolation Invariant):**
-   - Không bao giờ để `.prose` tự do can thiệp vào các thành phần có cấu trúc con đặc biệt như `TaskList`, `TaskItem`, `CodeBlock`.
-   - Bắt buộc phải cấu hình `HTMLAttributes` trực tiếp trong Extension:
-     ```tsx
-     TaskList.configure({
-       HTMLAttributes: {
-         class: 'not-prose task-list space-y-1 my-2 p-0 list-none',
-       },
-     }),
-     TaskItem.configure({
-       nested: true,
-       HTMLAttributes: {
-         class: 'flex flex-row items-start gap-2.5 my-1 list-none',
-       },
-     }),
-     ```
+1. **INVARIANT 1: SANITIZATION WHITELIST MIRRORING & SCHEMA PARITY (SWMI):**
+   - Mọi extension mới của TipTap (Table, Mention, CodeBlock, Link, Image...) **bắt buộc** phải đăng ký đồng thời cấu trúc thẻ DOM và danh sách attributes vào CẢ HAI file:
+     - Client: `lib/clientSanitize.ts` (`ALLOWED_TAGS`, `ALLOWED_ATTR`)
+     - Server: `lib/sanitize/serverSanitize.ts` (JSDOM + DOMPurify instance)
+   - Mọi extension mới phải có unit test: xuất HTML từ ProseMirror Node, truyền qua `sanitizeHtmlServer()` và `sanitizeHtml()`, xác nhận đầu ra bảo toàn 100% tags và data-attributes đặc thù.
 
-2. **QUY TẮC HÌNH HỌC ĐƯỜNG CƠ SỞ (Geometric Line-Height Equality):**
-   - Để tránh checkbox và con trỏ văn bản bị tách thành 2 dòng:
-     - Khóa cứng `height: 1.5rem !important; line-height: 1.5rem !important;` trên `<label>` bọc checkbox.
-     - Khóa cứng `line-height: 1.5rem !important; min-height: 1.5rem !important; margin: 0 !important;` trên thẻ `<p>` bên trong `<div>`.
-     - Đặt `align-items: flex-start !important;` trên `li[data-type="taskItem"]` để ô checkbox luôn bám cố định vào dòng đầu tiên.
-
-3. **QUY TẮC CHỐNG CƯỚP FOCUS (Toolbar Focus Stealing Prevention):**
-   - Mọi `<button>` trên thanh công cụ soạn thảo **bắt buộc phải có `onMouseDown={(e) => e.preventDefault()}`** để ngăn trình duyệt cướp focus khỏi vùng văn bản.
-
-4. **QUY TẮC LUỒNG DỮ LIỆU 1 CHIỀU CHO AUTOSAVE (Unidirectional Buffer Engine):**
+2. **INVARIANT 2: UNIDIRECTIONAL AST AUTHORITY & REACT 19 RENDER PURITY (UAST-P):**
    - TipTap ProseMirror AST là **Single Source of Truth** duy nhất khi đang soạn thảo.
    - Tuyệt đối không dùng 2-way sync `useEffect` gọi `editor.commands.setContent()` khi `content` state thay đổi trong cùng 1 ghi chú (nguyên nhân gây ra `Maximum update depth exceeded`).
-   - Chỉ gọi `setContent` khi chuyển hẳn sang một `note.id` khác.
+   - Chỉ gọi `setContent` khi chuyển hẳn sang một `note.id` khác, và bắt buộc kèm `{ emitUpdate: false }`.
    - Lưu trữ dữ liệu đang gõ vào `refs` (`dataRef.current`) để hàm debounce autosave đọc trực tiếp, triệt tiêu 100% Stale Closures.
+   - Tuân thủ React 19 Ref Purity: Toàn bộ thao tác đồng bộ `ref` phải nằm trong `useEffect` hoặc event handler (`onUpdate`), không bao giờ gán trực tiếp trong render body.
 
-5. **QUY TẮC CẬP NHẬT SUPABASE POSTGREST (Optimistic Lock Invariant):**
+3. **INVARIANT 3: DUAL-LAYER EMERGENCY UNLOAD & 64KB KEEPALIVE QUOTA (DLEU-K):**
+   - Luôn gọi `saveEmergencyDraft()` vào `localStorage` TRƯỚC TIÊN. Thao tác này chạy đồng bộ (synchronous) nên 100% không thể bị ngắt bởi việc đóng tab hay mất mạng.
+   - Request nền gửi qua `csrfFetch('/api/notes/sync')` kèm `{ keepalive: true }` bắt buộc phải cắt chuỗi nội dung dưới 50,000 ký tự (`content.slice(0, 50000)`) để luôn nằm trong vùng an toàn của hạn mức 64KB của trình duyệt Chromium/WebKit.
+
+4. **INVARIANT 4: MONOTONIC INTEGER VERSIONING VS TIMESTAMP PRECISION (MIV):**
    - Không so sánh chuỗi `updated_at` trong mệnh đề `.eq('updated_at', ...)` của REST URL query trên Supabase vì sự sai lệch độ chính xác microsecond (6 chữ số trong PostgreSQL vs 3 chữ số trong JS `toISOString()`) gây ra lỗi `406 Not Acceptable (PGRST116)`.
-   - Update trực tiếp bằng `.eq('id', id).eq('user_id', user.id)` và để PostgreSQL trigger tự sinh `updated_at` mới nhất.
+   - Khi cần Optimistic Lock, bổ sung cột `version integer not null default 1` tăng tịnh tiến để phát hiện xung đột chuẩn xác.
+   - Client duy trì `saveSeqRef.current++`: Response mạng trả về chậm hơn nhịp lưu mới hơn sẽ bị hủy ngay lập tức, triệt tiêu lỗi ghi đè kết quả cũ.
+
+5. **INVARIANT 5: UNIVERSAL POINTER EVENT NEUTRALIZATION (UPEN):**
+   - Mọi `<button>` trên thanh công cụ soạn thảo **bắt buộc phải chặn cả hai sự kiện pointer**:
+     ```tsx
+     onMouseDown={(e) => e.preventDefault()}
+     onTouchStart={(e) => e.preventDefault()}
+     ```
+     để ngăn trình duyệt cướp focus và loại bỏ triệt để hiện tượng giật bàn phím ảo trên iOS Safari và Android.
+
+6. **INVARIANT 6: STRICT LAYOUT & BASELINE GEOMETRY ISOLATION (SLGI):**
+   - Không bao giờ để `.prose` can thiệp vào các thành phần có cấu trúc con đặc biệt như `TaskList`, `TaskItem`, `CodeBlock`.
+   - Bắt buộc phải cấu hình `HTMLAttributes: { class: 'not-prose ...' }` trực tiếp trong Extension Config.
+   - Khóa cứng `height: 1.5rem !important; line-height: 1.5rem !important;` trên `<label>` bọc checkbox và `line-height: 1.5rem !important; min-height: 1.5rem !important; margin: 0 !important;` trên thẻ `<p>` bên trong `<div>` để ô checkbox luôn bám cố định vào dòng đầu tiên.
+
+7. **INVARIANT 7: MULTI-TAB CONCURRENCY & USER ISOLATION BOUNDARY (MTBC):**
+   - Mỗi tab sinh `tabSessionId` ngẫu nhiên khi khởi tạo. Payload gửi qua BroadcastChannel kèm mã này; tab nhận nếu thấy trùng `tabSessionId` của chính mình thì bỏ qua ngay lập tức để ngắt vòng lặp phản hồi đa tab.
+   - Khóa nháp định dạng `note_draft_${userId}:${noteId}`. BroadcastChannel chỉ áp dụng payload nếu `payload.userId === currentUserId`. Khi đăng xuất, hàm `clearAllNoteDrafts()` dọn sạch toàn bộ bộ nhớ nháp trên máy.
+
+8. **INVARIANT 8: DOCUMENT SCALABILITY & INP PERFORMANCE ISOLATION (DS-INP):**
+   - Áp dụng cổng kiểm tra `transaction.docChanged === true` để bỏ qua các giao dịch chỉ thay đổi vị trí con trỏ (Selection Transactions).
+   - Trì hoãn gọi `editor.getHTML()` (Lazy Serialization) cho đến khi hết nhịp debounce 600ms, bảo vệ chỉ số Core Web Vitals **INP** khi văn bản dài hàng nghìn từ.
 
 ---
 
@@ -284,7 +291,7 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, và Tailwi
 | 12 | **`finishing-a-development-branch`** | Đóng nhánh phát triển, nghiệm thu, merge và dọn dẹp | Khi tính năng đã hoàn thành 100% và qua kiểm định | Rebase/merge sạch, chạy verification cuối cùng. |
 | 13 | **`using-superpowers`** | Harness điều phối trung tâm định hướng gọi các skills | Khi bắt đầu bất kỳ tác vụ nào để xác định skill phù hợp | Luôn tuân thủ luồng: Brainstorm ➔ Plan ➔ Execute ➔ Verify. |
 | 14 | **`writing-skills`** | Cấu trúc, tác giả và kiểm thử các Superpowers Skills mới | Khi cần mở rộng bộ kỹ năng AI cho dự án | Tuân thủ định dạng YAML frontmatter + markdown chuẩn. |
-| 15 | **`tiptap-prosemirror-best-practices`** | Cẩm nang quy chuẩn TipTap, Tailwind Typography, Autosave & PostgREST | Soạn thảo rich text, checklist, format, autosave | Tuân thủ 5 TipTap Invariants tại Mục 6. |
+| 15 | **`tiptap-prosemirror-best-practices`** | Cẩm nang quy chuẩn TipTap, Tailwind Typography, Autosave & PostgREST | Soạn thảo rich text, checklist, format, autosave | Tuân thủ 8 TipTap Invariants tại Mục 6. |
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
