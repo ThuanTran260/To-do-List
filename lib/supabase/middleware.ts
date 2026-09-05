@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { generateCsrfToken } from '@/lib/security/csrf';
 import { generateNonce, buildCspHeader } from '@/lib/security/csp';
+import { applyRememberMePolicy } from '@/lib/security/rememberMe';
 
 /**
  * Helper duy nhất gán Security Headers lên response cuối cùng trước khi return.
@@ -112,12 +113,21 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
         return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
+        // E-M2: enforce remember-me ở cả refresh SSR — đọc flag từ request cookies,
+        // override maxAge của library (default 400 ngày) cho mọi sb-* cookie.
+        const remembered = request.cookies.get('sb-remember-me')?.value === 'true';
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
         // Chuẩn 100% của @supabase/ssr: Giữ nguyên options để trình duyệt HTTPS Vercel chấp nhận Secure/SameSite
-        cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
-        );
+        cookiesToSet.forEach(({ name, value, options }) => {
+          const maxAge = name.startsWith('sb-')
+            ? applyRememberMePolicy(options?.maxAge ?? null, remembered)
+            : options?.maxAge ?? undefined;
+          supabaseResponse.cookies.set(name, value, {
+            ...options,
+            ...(maxAge === undefined ? { maxAge: undefined } : { maxAge }),
+          });
+        });
       },
     },
   });

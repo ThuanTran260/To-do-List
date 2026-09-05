@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { applyRememberMePolicy } from '@/lib/security/rememberMe';
 
 /**
  * L-01 fix: khôi phục logic fix.md:32-101 — trước đây client bị regressed về
@@ -39,7 +40,8 @@ export function buildCookieString(
   isRemembered: boolean,
   env: string = process.env.NODE_ENV || 'development'
 ): string {
-  const maxAge = options?.maxAge === 0 ? 0 : isRemembered ? 2592000 : undefined;
+  // B11a: single source of truth từ rememberMe.ts (thay logic inline trùng lặp)
+  const maxAge = applyRememberMePolicy(options?.maxAge ?? null, isRemembered);
   let cookieStr = `${name}=${encodeURIComponent(value)}; path=${options?.path || '/'}; SameSite=${options?.sameSite || 'Lax'}`;
 
   if (options?.domain) {
