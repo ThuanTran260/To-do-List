@@ -273,7 +273,7 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, Tailwind C
 
 ---
 
-## 7. 🚀 Bảng Tra Cứu 15 Skills (Superpowers & TipTap) & Kế Hoạch Vận Hành 4 Pha
+## 7. 🚀 Bảng Tra Cứu 16 Skills (Superpowers & TipTap) & Kế Hoạch Vận Hành 4 Pha
 
 | # | Skill Name | Mục đích & Mô tả cốt lõi | Bối cảnh kích hoạt | Quy tắc bắt buộc (Iron Rules) |
 |---|---|---|---|---|
@@ -292,6 +292,7 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, Tailwind C
 | 13 | **`using-superpowers`** | Harness điều phối trung tâm định hướng gọi các skills | Khi bắt đầu bất kỳ tác vụ nào để xác định skill phù hợp | Luôn tuân thủ luồng: Brainstorm ➔ Plan ➔ Execute ➔ Verify. |
 | 14 | **`writing-skills`** | Cấu trúc, tác giả và kiểm thử các Superpowers Skills mới | Khi cần mở rộng bộ kỹ năng AI cho dự án | Tuân thủ định dạng YAML frontmatter + markdown chuẩn. |
 | 15 | **`tiptap-prosemirror-best-practices`** | Cẩm nang quy chuẩn TipTap, Tailwind Typography, Autosave & PostgREST | Soạn thảo rich text, checklist, format, autosave | Tuân thủ 8 TipTap Invariants tại Mục 6. |
+| 16 | **`session-handoff`** (`.agents/skills/session-handoff/`) | Nén context cạn thành file handoff để session sau tiếp tục không mất tiến độ | Context sắp hết mà việc còn dở (uncommitted, gate đỏ, giữa plan) | Contract 5 sections + facts phải verify bằng lệnh, cấm bịa design, 1 next action duy nhất. |
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
