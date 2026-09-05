@@ -37,11 +37,13 @@ export default function ChangePasswordPage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: unknown) {
-      // E-H3: message chung, chỉ log code server-side (console, không render raw message).
+      // B14: settings đã-auth (không enumeration risk) → trả message chi tiết
+      // để user tự sửa (sai pass cũ / trùng pass / mạng). Giữ console.error code.
       console.error('[password] update failed', {
         code: (err as { code?: string })?.code,
       });
-      setErrorMsg('Không thể đổi mật khẩu, vui lòng thử lại.');
+      const msg = err instanceof Error ? err.message : 'Lỗi khi thay đổi mật khẩu';
+      setErrorMsg(msg);
     } finally {
       setIsSaving(false);
     }
