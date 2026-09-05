@@ -10,6 +10,16 @@ export function generateCsrfToken(): string {
 }
 
 // Constant-time comparison chống timing attack
+/**
+ * E-M1: validate double-submit cho Request (dùng trong withAuth).
+ * Trả true khi header x-csrf-token khớp cookie csrf-token (constant-time).
+ */
+export function validateCsrfRequest(req: Request, cookieToken?: string): boolean {
+  const headerToken = req.headers.get('x-csrf-token');
+  if (!headerToken) return false;
+  return validateCsrfToken(headerToken, cookieToken || '');
+}
+
 export function validateCsrfToken(token: string, cookieToken: string): boolean {
   if (!token || !cookieToken) return false;
   if (token.length !== cookieToken.length) return false;
