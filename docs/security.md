@@ -1,7 +1,7 @@
 # 🛡️ Bảo Mật — Flow State
 
 > Tài liệu tổng hợp kiến trúc bảo mật, chính sách phân quyền dữ liệu (RLS), quy trình xác thực JWT và bộ checklist triển khai của dự án **Flow State** — Next.js 16 + Supabase + Vercel.
-> Gộp từ `security.md` và `check_list.md` cũ. Cập nhật lần cuối: 2026-08-30.
+> Gộp từ `security.md` và `check_list.md` cũ. Viết lại §3 + §8 theo E-M16 (audit enterprise 2026-09-04, verify chéo migrations). Cập nhật lần cuối: 2026-09-05.
 
 ---
 
@@ -38,36 +38,48 @@
 
 ## 3. 🗄️ Row Level Security (RLS) & Storage Access Control
 
-Tất cả bảng trong Postgres DB đều **deny-by-default** và chỉ cho phép truy cập theo chính sách:
+Tất cả bảng trong Postgres DB đều **deny-by-default**. Bảng dưới đây phản ánh đúng migrations trên `main` (verify chéo từng file, E-M16):
 
-### 3.1 Bảng Dữ Liệu (`todos`, `profiles`, `categories`, `tags`, `todo_tags`, `task_templates`)
-- RLS **BẬT** trên toàn bộ bảng.
-- Policy đầy đủ 4 thao tác: `select_own_*`, `insert_own_*`, `update_own_*`, `delete_own_*` với `auth.uid() = user_id`.
-- Policy UPDATE có **cả** `USING` **và** `WITH CHECK` — chống leo quyền sửa dữ liệu người khác.
+### 3.1 Bảng Dữ Liệu (8 bảng)
+
+| Bảng | SELECT | INSERT | UPDATE | DELETE | Ghi chú |
+|---|---|---|---|---|---|
+| `todos` | ✅ `auth.uid()=user_id` | ✅ | ✅ USING + WITH CHECK | ✅ | `20260801000000_init_schema.sql` |
+| `profiles` | ✅ `auth.uid()=id` | ❌ (chỉ trigger `handle_new_user()`) | ✅ `auth.uid()=id` | ❌ | Không tự INSERT/DELETE trực tiếp |
+| `categories` | ✅ | ✅ | ✅ USING + WITH CHECK | ✅ | `20260801000001_v6_categories_and_attachments.sql` |
+| `tags` | ✅ | ✅ | ✅ USING + WITH CHECK (fix ở `20260824000000_notes_schema.sql`) | ✅ | Bản sprint2 thiếu CHECK đã được ghi đè |
+| `todo_tags` | ✅ 2 chiều (todos+tags) | ✅ 2 chiều | ❌ (deny — junction, không UPDATE) | ✅ 1 chiều (todos) | Two-sided từ `20260905000000_todo_tags_both_sides.sql` |
+| `task_templates` | ✅ | ✅ | ✅ USING + WITH CHECK (fix E-H4 ở `20260905000000_fix_templates_update_policy.sql`) | ✅ | |
+| `notes` | ✅ | ✅ | ✅ USING + WITH CHECK | ✅ | `20260824000000_notes_schema.sql` |
+| `note_tags` | ✅ 2 chiều (mẫu chuẩn) | ✅ 2 chiều | ❌ (deny) | ✅ | Mẫu cho todo_tags noi theo |
+
 - B-tree Index trên `user_id` ở tất cả các bảng (`supabase/migrations/20260808000000_add_user_id_indexes.sql`).
 
 ### 3.2 Security Definer Functions
 - Các hàm `handle_new_user()` và `purge_old_deleted_todos()` được gán `set search_path = public` (chống search_path injection).
 - Đã thu hồi quyền thực thi công khai: `revoke execute on function ... from public, anon, authenticated;`.
 
-### 3.3 Storage Objects (`task-attachments`, `avatars`)
-- **SELECT:** Public cho phép đọc ảnh đại diện và đính kèm.
-- **INSERT:** Yêu cầu `auth.role() = 'authenticated'`.
-- **DELETE (Hardened):** Yêu cầu chính chủ `(auth.uid() = owner OR auth.uid()::text = owner_id)`. Bật bảo vệ chống xóa chéo tập tin.
+### 3.3 Storage Objects (`task-attachments`, `avatars`) — PRIVATE
+
+- **Buckets:** `public = false` cả 2 buckets (`20260831000000_storage_private.sql`).
+- **SELECT/INSERT/UPDATE/DELETE** trên `storage.objects`: chỉ owner (`auth.uid()::text = foldername(name)[1]`), role `authenticated`.
+- Legacy public policies (`Public Access Attachments`, `Task Attachments Public Read`, `Authenticated Upload Attachments`, ...) đã DROP toàn bộ.
+- Đọc ảnh qua **signed URL** (hết hạn 60 phút, cache client 45 phút).
 
 ---
 
 ## 4. 🔑 Logout & In-App Browser Storage Isolation
 
 - **Global Revocation:** `supabase.auth.signOut({ scope: 'global' })` hủy vĩnh viễn refresh token trên Supabase Auth DB.
-- **Selective LocalStorage Purge:** Khi đăng xuất hoặc tạo tài khoản mới, ứng dụng chỉ xóa các key JWT chứa `sb-*`, **giữ nguyên cài đặt người dùng** như `flowstate-theme`.
+- **Centralized Purge (`performLogout`, E-M7):** Khi đăng xuất, xoá `sb-*` + mọi draft prefix (`note_draft_*`, `note_emergency_draft_*`) + mọi offline queue key + `sessionStorage`, **giữ nguyên cài đặt người dùng** như `flowstate-theme`. Không purge phân mảnh ở từng component.
 - **Discord WebView Isolation:** Purge `sessionStorage` và ép chuyển hướng cứng (`window.location.href = '/login'`) để tránh bị cache lại token cũ trên trình duyệt nhúng di động.
+- **Chính sách message lỗi 2 tầng (B14):** generic ở login/signup (chống user enumeration) vs chi tiết ở settings đã-auth (UX, không enumeration risk vì đã qua auth guard).
 
 ---
 
 ## 5. 🧼 Input Validation & Sanitization
 
-- **Zod Schema:** Validate dữ liệu đầu vào (email, password >= 8 ký tự, UUIDs).
+- **Zod Schema:** Validate dữ liệu đầu vào (email, password min 8 ở signup/update/reset — login giữ min 1 để không khoá user cũ, UUIDs).
 - **Sanitization:** `lib/sanitize.ts` tự động loại bỏ thẻ HTML `<script>`, `<style>` và mã độc trước khi lưu vào DB.
 - **Logger Masking:** `lib/logger.ts` tự động che giấu (`***REDACTED***`) các trường nhạy cảm như `password`, `token`, `secret`.
 
@@ -113,6 +125,23 @@ Tất cả bảng trong Postgres DB đều **deny-by-default** và chỉ cho ph�
 | 10 | Refresh Auth Cookies tự động per-request | ✅ | Đồng bộ cookie `@supabase/ssr` trong middleware |
 | 11 | Dynamic Nonce-based CSP | ✅ | Loại bỏ `'unsafe-inline'` ở production |
 | 12 | `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Strict-Transport-Security` | ✅ | `next.config.ts` & `vercel.json` |
+
+---
+
+## 8. 🧪 Runtime Verification Checklist (E-M16)
+
+> Các mục `[MANUAL]` — kiểm tra trực tiếp trên Supabase Dashboard + browser, đánh dấu khi xong:
+
+- [ ] RLS bật trên cả 8 bảng + đúng policies §3 (`pg_policies`)
+- [ ] Không còn policy `Public*`/`Authenticated Upload*` trên `storage.objects`; buckets `public=false`
+- [ ] Realtime publication chứa đúng bảng cần thiết; Realtime RLS bật
+- [ ] Auth settings: email confirmation + leaked password protection + rate limits + password min length 8
+- [ ] `Set-Cookie` thực tế có `HttpOnly; Secure; SameSite=Lax` ở prod Vercel
+- [ ] CSP ngoài browser thật: không violation, hydration chạy, avatar Google hiển thị
+- [ ] `pnpm audit --audit-level=moderate` + `pnpm outdated` sạch (CI chỉ check `high`)
+- [ ] Test 2 tài khoản (IDOR): A không đọc/ghi/signed-URL được dữ liệu B; public URL cũ → 403
+- [ ] Supabase email template recovery trỏ về `/auth/callback?next=/auth/update-password` (+ custom SMTP cho prod)
+- [ ] Migrations A1/B1 đã push (`task_templates` WITH CHECK, `todo_tags` two-sided)
 
 ---
 
