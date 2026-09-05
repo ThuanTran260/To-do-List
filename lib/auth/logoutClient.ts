@@ -2,6 +2,7 @@
 
 import { clearAllNoteDrafts } from '@/lib/notesDraftSync';
 import { clearOfflineQueue } from '@/lib/offlineQueue';
+import { toast } from 'sonner';
 
 /**
  * Client-side logout helper (FIX MD-13).
@@ -58,7 +59,12 @@ export async function performLogout(): Promise<void> {
       const { createClient } = await import('@/lib/supabase/client');
       await createClient().auth.signOut({ scope: 'local' });
     } catch {}
-    alert('Đăng xuất server thất bại (mất mạng?). Phiên cục bộ đã được xoá — hãy đăng xuất lại khi có mạng.');
+    // Review fix: toast thay alert blocking (AppToaster/sonner đã mount ở layout).
+    // Redirect cứng bên dưới vẫn chạy — user thấy toast trên trang /login.
+    try {
+      toast.error('Đăng xuất server thất bại. Phiên cục bộ đã xoá — hãy đăng xuất lại khi có mạng.');
+      await new Promise((r) => setTimeout(r, 1200));
+    } catch {}
   }
 
   // Ép chuyển hướng cứng (hard navigation) để xóa sạch state + cache

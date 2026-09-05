@@ -115,7 +115,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
       setAll(cookiesToSet) {
         // E-M2: enforce remember-me ở cả refresh SSR — đọc flag từ request cookies,
         // override maxAge của library (default 400 ngày) cho mọi sb-* cookie.
-        const remembered = request.cookies.get('sb-remember-me')?.value === 'true';
+        // Review fix: missing flag → coi như remembered (user prod cũ persistent 400 ngày
+        // nhưng chưa từng login lại sau B11a sẽ bị rút xuống session ở refresh đầu tiên).
+        // Chỉ explicit 'false' (user bỏ check) mới thành session.
+        const remembered = request.cookies.get('sb-remember-me')?.value !== 'false';
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
         // Chuẩn 100% của @supabase/ssr: Giữ nguyên options để trình duyệt HTTPS Vercel chấp nhận Secure/SameSite

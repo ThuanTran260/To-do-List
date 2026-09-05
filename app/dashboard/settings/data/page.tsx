@@ -30,9 +30,14 @@ export default function DataSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // E-M9: từ chối file quá lớn trước khi FileReader đọc vào RAM
+    // E-M9: từ chối file quá lớn trước khi FileReader đọc vào RAM.
+    // Review fix: clear luôn preview/fileName cũ — nếu không UI hiện đồng thời
+    // lỗi oversize + preview file trước, user bấm nhập sẽ import nhầm file cũ.
     if (file.size > 2 * 1024 * 1024) {
       setImportErrors(['File vượt quá 2MB. Hãy chia nhỏ file import.']);
+      setPreviewTasks([]);
+      setFileName('');
+      e.target.value = '';
       return;
     }
 

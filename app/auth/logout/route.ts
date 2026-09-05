@@ -58,7 +58,10 @@ export async function POST(request: Request) {
     await supabase.auth.signOut({ scope: 'global' });
   }
 
-  // Forcefully expire all Supabase auth cookies (sb-*) on the HTTP Response
+  // Forcefully expire all Supabase auth cookies (sb-*) on the HTTP Response.
+  // Review fix: mirror đủ attrs của cookie gốc Supabase (Secure/SameSite/HttpOnly) —
+  // Set-Cookie xoá thiếu attrs trên HTTPS có thể bị browser bỏ qua.
+  const isProd = process.env.NODE_ENV === 'production';
   const allCookies = cookieStore.getAll();
   allCookies.forEach((cookie) => {
     if (cookie.name.startsWith('sb-')) {
@@ -66,6 +69,9 @@ export async function POST(request: Request) {
         maxAge: 0,
         expires: new Date(0),
         path: '/',
+        sameSite: 'lax',
+        httpOnly: true,
+        ...(isProd ? { secure: true } : {}),
       });
     }
   });

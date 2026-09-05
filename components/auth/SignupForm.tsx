@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { performLogout } from '@/lib/auth/logoutClient';
 import { getLockoutMs, recordFailure, clearFailures, getFailureCount, LOCKOUT_MS } from '@/lib/auth/loginThrottle';
+import { clearAllNoteDrafts } from '@/lib/notesDraftSync';
+import { clearOfflineQueue } from '@/lib/offlineQueue';
 import Link from 'next/link';
 import { signupSchema } from '@/lib/validations/auth';
 import { Mail, Lock, User, Loader2, ArrowRight, CheckCircle2, LogOut, LayoutDashboard } from 'lucide-react';
@@ -69,11 +71,17 @@ export function SignupForm() {
     const supabase = createClient();
 
     // Purge any stale session from a previous login before creating a new account.
+    // Review fix: dọn cả drafts + queue của session trước (isolated theo userId nên
+    // không leak, nhưng tránh bloat localStorage cho tài khoản mới).
     await supabase.auth.signOut({ scope: 'local' });
     try {
       Object.keys(localStorage)
         .filter((key) => key.startsWith('sb-'))
         .forEach((key) => localStorage.removeItem(key));
+    } catch {}
+    try {
+      clearAllNoteDrafts();
+      clearOfflineQueue();
     } catch {}
 
     const { data, error } = await supabase.auth.signUp({

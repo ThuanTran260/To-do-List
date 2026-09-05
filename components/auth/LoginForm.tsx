@@ -66,7 +66,10 @@ export function LoginForm() {
 
     // Purge old session unconditionally (E-M14): `user` từ useAuth async có thể
     // null lúc fresh load trong khi session nạn nhân còn sống (session fixation).
-    await supabase.auth.signOut({ scope: 'local' });
+    // Review fix: bọc try/catch — purge throw (storage/quota edge) không được kẹt loading.
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+    } catch {}
 
     // Set remember-me cookie preference (Session Cookie vs 30-day Persistent Cookie)
     const isProd = process.env.NODE_ENV === 'production';

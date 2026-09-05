@@ -81,11 +81,11 @@ export function createClient() {
       setAll(cookiesToSet) {
         if (typeof document === 'undefined') return;
 
-        // S-08 partial: đọc remember-me CỤC BỘ bằng parseDocumentCookies (đã decode đối xứng)
+        // S-08 partial: đọc remember-me CỤC BỘ bằng parseDocumentCookies (đã decode đối xứng).
+        // Missing flag → remembered (giữ persistent cho user prod cũ; chỉ explicit 'false' mới session).
         const currentCookies = parseDocumentCookies();
-        const isRemembered = currentCookies.some(
-          (c) => c.name === 'sb-remember-me' && c.value === 'true'
-        );
+        const flag = currentCookies.find((c) => c.name === 'sb-remember-me')?.value;
+        const isRemembered = flag !== 'false';
 
         cookiesToSet.forEach(({ name, value, options }) => {
           document.cookie = buildCookieString(name, value, options as never, isRemembered);
