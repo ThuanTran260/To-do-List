@@ -15,7 +15,9 @@ export function LoginForm() {
   const { user } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
+  // B11a: default checked — giữ hành vi persistent hiện tại của prod;
+  // user vẫn bỏ check được để dùng Session Cookie.
+  const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState('');
   const [loading, setLoading] = useState(false);
   // Review fix (#8): init từ sessionStorage (reload không bypass) + scope riêng 'login'.

@@ -39,7 +39,18 @@ export async function GET(request: Request) {
       const { error } = await supabase.auth.exchangeCodeForSession(code);
 
       if (!error) {
-        return NextResponse.redirect(resolveNextTarget(next, origin));
+        // B11a: OAuth/recovery links không đi qua form nào — mint remember-me=true
+        // trên redirect (kẻo enforce biến mọi OAuth login thành Session Cookie).
+        const target = NextResponse.redirect(resolveNextTarget(next, origin));
+        const isProd = process.env.NODE_ENV === 'production';
+        target.cookies.set('sb-remember-me', 'true', {
+          path: '/',
+          maxAge: 2592000,
+          sameSite: 'lax',
+          httpOnly: false, // client document.cookie + middleware request.cookies PHẢI đọc được
+          ...(isProd ? { secure: true } : {}),
+        });
+        return target;
       }
       console.error('[auth/callback] exchange failed');
     }

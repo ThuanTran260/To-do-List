@@ -96,6 +96,10 @@ export function SignupForm() {
       setLoading(false);
     } else {
       clearFailures('signup');
+      // B11a: form signup không có checkbox — mint remember-me=true để giữ hành vi
+      // persistent hiện tại (kẻo B11a enforce biến mọi signup mới thành Session Cookie).
+      const isProd = process.env.NODE_ENV === 'production';
+      document.cookie = `sb-remember-me=true; path=/; max-age=2592000; SameSite=Lax${isProd ? '; Secure' : ''}`;
       if (data.session) {
         window.location.href = '/dashboard';
       } else {
