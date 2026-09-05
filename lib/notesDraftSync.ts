@@ -129,7 +129,9 @@ export function saveEmergencyDraft(
 const TAB_SESSION_ID = typeof window !== 'undefined' ? Math.random().toString(36).slice(2) : '';
 
 /**
- * Creates a BroadcastChannel or fallback handler for multi-tab draft sync
+ * Creates a BroadcastChannel or fallback handler for multi-tab draft sync.
+ * Review note: channel KHÔNG namespace theo user có chủ ý — cùng browser thì
+ * localStorage vốn đã share; namespacing nằm ở draft keys, đủ chống lộ cross-user.
  */
 export function createNotesSyncChannel(
   onDraftReceived?: (payload: NoteSyncPayload) => void,
