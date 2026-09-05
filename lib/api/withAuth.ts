@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { validateCsrfRequest } from '@/lib/security/csrf';
 
 type SupabaseClient = ReturnType<typeof createServerClient>;
 
@@ -15,13 +16,15 @@ export interface WithAuthContext {
 }
 
 // Review fix (#12): type tường minh thay `any` — khớp Next route ctx shape.
+// B10: B10 CHỈ thêm `options`, KHÔNG đụng signature/ctx passthrough (SEC CR-1).
 export function withAuth(
   handler: (
     req: Request,
     user: { id: string; email?: string },
     supabase: WithAuthSupabaseClient,
     ctx?: WithAuthContext
-  ) => Promise<Response>
+  ) => Promise<Response>,
+  options: { requireCsrf?: boolean } = {}
 ) {
   return async (req: Request, ctx?: WithAuthContext): Promise<Response> => {
     const cookieStore = await cookies();
@@ -56,6 +59,14 @@ export function withAuth(
 
       if (!user) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      }
+
+      // E-M1: CSRF double-submit cho first-party POST (opt-in từng route)
+      if (options.requireCsrf) {
+        const cookieToken = cookieStore.get('csrf-token')?.value;
+        if (!validateCsrfRequest(req, cookieToken)) {
+          return NextResponse.json({ error: 'Invalid CSRF token' }, { status: 403 });
+        }
       }
 
       return handler(req, user, supabase, ctx);
