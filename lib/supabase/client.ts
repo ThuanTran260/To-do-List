@@ -63,6 +63,12 @@ export function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
 
+  // E-M15: fail-closed ở prod khi thiếu env — misconfig lộ rõ thay vì chạy câm
+  // với backend giả (server-side đã fail-closed; đây là phía browser).
+  if (process.env.NODE_ENV === 'production' && url.includes('placeholder')) {
+    throw new Error('[Supabase Client] Missing NEXT_PUBLIC_SUPABASE_URL in production');
+  }
+
   if (process.env.NODE_ENV !== 'production' && url.includes('placeholder')) {
     console.warn('[Supabase Client] NEXT_PUBLIC_SUPABASE_URL chưa được cấu hình. Đang dùng SSG fallback mode.');
   }

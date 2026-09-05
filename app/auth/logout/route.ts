@@ -70,6 +70,18 @@ export async function POST(request: Request) {
     }
   });
 
+  // B11b csrf rotate: xoá csrf-token (khớp đủ attributes với cookie gốc —
+  // sameSite strict + secure ở prod — nếu không browser có thể bỏ qua lệnh xoá).
+  // Middleware cấp lại token mới ở request sau.
+  response.cookies.set('csrf-token', '', {
+    maxAge: 0,
+    expires: new Date(0),
+    path: '/',
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: false,
+  });
+
   return response;
 }
 
