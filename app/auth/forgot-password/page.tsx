@@ -23,7 +23,7 @@ export default function ForgotPasswordPage() {
       redirectTo: `${window.location.origin}/auth/callback?next=/auth/update-password`,
     });
     // E-H3: message chung dù email tồn tại hay không
-    console.error('[forgot-password]', { code: (error as { code?: string })?.code });
+    if (error) console.error('[forgot-password]', { code: (error as { code?: string })?.code });
     setMsg('Nếu email tồn tại, liên kết đặt lại đã được gửi. Vui lòng kiểm tra hộp thư.');
     setLoading(false);
   };

@@ -48,7 +48,7 @@ Tất cả bảng trong Postgres DB đều **deny-by-default**. Bảng dưới �
 | `profiles` | ✅ `auth.uid()=id` | ❌ (chỉ trigger `handle_new_user()`) | ✅ `auth.uid()=id` | ❌ | Không tự INSERT/DELETE trực tiếp |
 | `categories` | ✅ | ✅ | ✅ USING + WITH CHECK | ✅ | `20260801000001_v6_categories_and_attachments.sql` |
 | `tags` | ✅ | ✅ | ✅ USING + WITH CHECK (fix ở `20260824000000_notes_schema.sql`) | ✅ | Bản sprint2 thiếu CHECK đã được ghi đè |
-| `todo_tags` | ✅ 2 chiều (todos+tags) | ✅ 2 chiều | ❌ (deny — junction, không UPDATE) | ✅ 1 chiều (todos) | Two-sided từ `20260905000000_todo_tags_both_sides.sql` |
+| `todo_tags` | ✅ 2 chiều (todos+tags) | ✅ 2 chiều | ❌ (deny — junction, không UPDATE) | ✅ 1 chiều (todos) | Two-sided từ `20260905000001_todo_tags_both_sides.sql` |
 | `task_templates` | ✅ | ✅ | ✅ USING + WITH CHECK (fix E-H4 ở `20260905000000_fix_templates_update_policy.sql`) | ✅ | |
 | `notes` | ✅ | ✅ | ✅ USING + WITH CHECK | ✅ | `20260824000000_notes_schema.sql` |
 | `note_tags` | ✅ 2 chiều (mẫu chuẩn) | ✅ 2 chiều | ❌ (deny) | ✅ | Mẫu cho todo_tags noi theo |

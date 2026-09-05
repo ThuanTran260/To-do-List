@@ -9,6 +9,7 @@ import {
   createNotesSyncChannel,
 } from '@/lib/notesDraftSync';
 import { useAuth } from '@/hooks/useAuth';
+import { csrfFetch } from '@/lib/security/csrfClient';
 import { Note, NoteColor, AutosaveStatus } from '@/types/note';
 
 interface UseAutosaveNoteProps {
@@ -233,7 +234,7 @@ export function useAutosaveNote({
 
   // Mobile Lifecycle: visibilitychange & pagehide with keepalive emergency sync
   useEffect(() => {
-    const handleVisibilityChange = () => {
+    const handleVisibilityChange = async () => {
       if (document.visibilityState === 'hidden' && isDirtyRef.current) {
         const noteId = activeNoteIdRef.current;
         if (noteId) {
@@ -259,16 +260,11 @@ export function useAutosaveNote({
           });
 
           try {
-            // Review fix: sync route giờ bắt CSRF — keepalive phải kèm token
-            // (đọc trực tiếp document.cookie vì đây là fire-and-forget).
-            const csrfToken =
-              document.cookie
-                .split('; ')
-                .find((c) => c.startsWith('csrf-token='))
-                ?.split('=')[1] ?? '';
-            fetch('/api/notes/sync', {
+            // Review fix: dùng csrfFetch chung (1 nguồn đọc token + credentials),
+            // giữ keepalive:true cho fire-and-forget khi đóng tab.
+            await csrfFetch('/api/notes/sync', {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-csrf-token': csrfToken },
+              headers: { 'Content-Type': 'application/json' },
               body: payload,
               keepalive: true,
             });

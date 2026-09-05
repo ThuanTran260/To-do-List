@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { passwordSchema } from '@/lib/validations/auth';
 
@@ -9,6 +9,26 @@ export default function UpdatePasswordPage() {
   const [confirm, setConfirm] = useState('');
   const [msg, setMsg] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Review fix: fallback khi email template vẫn trỏ thẳng /auth/update-password?code=...
+  // (chưa qua /auth/callback) — tự exchange code, không phụ thuộc manual Dashboard.
+  // Đọc window.location trực tiếp (client-only) để khỏi cần Suspense boundary.
+  useEffect(() => {
+    const code = new URLSearchParams(window.location.search).get('code');
+    if (!code) return;
+    createClient()
+      .auth.exchangeCodeForSession(code)
+      .then(({ error }) => {
+        if (error) {
+          console.error('[update-password] code exchange failed');
+          setMsg('Liên kết không hợp lệ hoặc đã hết hạn — hãy yêu cầu lại.');
+        }
+        window.history.replaceState(null, '', window.location.pathname);
+      })
+      .catch(() => {
+        setMsg('Liên kết không hợp lệ hoặc đã hết hạn — hãy yêu cầu lại.');
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

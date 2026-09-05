@@ -20,5 +20,6 @@ describe('resolveNextTarget (E-M12)', () => {
 
   it('defaults null/empty to dashboard', () => {
     expect(resolveNextTarget(null, ORIGIN)).toBe(`${ORIGIN}/dashboard`);
+    expect(resolveNextTarget('', ORIGIN)).toBe(`${ORIGIN}/dashboard`);
   });
 });

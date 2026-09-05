@@ -1,3 +1,4 @@
+import { useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import type { NoteInput, NoteUpdate } from '@/lib/validations/note';
@@ -228,16 +229,20 @@ export function useRestoreNote() {
 export function usePermanentDeleteNote() {
   const queryClient = useQueryClient();
   const { user: authUser } = useAuth();
+  // Review fix: capture userId trong mutationFn (có user chắc chắn sau getUser),
+  // tránh onSuccess race useAuth() null → orphan namespaced draft.
+  const userIdRef = useRef<string | null>(null);
 
   return useMutation({
     mutationFn: async (id: string) => {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Bạn cần đăng nhập.');
+      userIdRef.current = user.id;
       return permanentDeleteNote(supabase, user.id, id);
     },
     onSuccess: (id) => {
-      clearLocalDraft(authUser?.id ?? null, id);
+      clearLocalDraft(userIdRef.current ?? authUser?.id ?? null, id);
       queryClient.invalidateQueries({ queryKey: ['notes', 'trash'] });
     },
   });
