@@ -39,15 +39,26 @@ export async function performLogout(): Promise<void> {
         ?.split('=')[1] ?? '';
   } catch {}
 
+  // E-M3: check response — nếu server unreachable, thu hồi local + báo user
+  // (trước đây catch{} rồi redirect câm, user tưởng đã logout nhưng session còn sống).
+  let ok = false;
   try {
-    await fetch('/auth/logout', {
+    const res = await fetch('/auth/logout', {
       method: 'POST',
       headers: { 'x-csrf-token': csrfToken },
       body: JSON.stringify({}),
       credentials: 'same-origin',
     });
+    ok = res.ok;
   } catch {
-    // Network error — vẫn redirect về /login để dọn UI phía client
+    ok = false;
+  }
+  if (!ok) {
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      await createClient().auth.signOut({ scope: 'local' });
+    } catch {}
+    alert('Đăng xuất server thất bại (mất mạng?). Phiên cục bộ đã được xoá — hãy đăng xuất lại khi có mạng.');
   }
 
   // Ép chuyển hướng cứng (hard navigation) để xóa sạch state + cache
