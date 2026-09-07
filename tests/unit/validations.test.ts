@@ -42,9 +42,72 @@ describe('todoCreateSchema checklist (L-05 strict contract)', () => {
     });
     expect(result.success).toBe(false);
   });
+
+  it('rejects checklist item with whitespace or tab/newline title', () => {
+    expect(() =>
+      todoCreateSchema.parse({ title: 'Task', checklist: [{ id: '1', title: '   ', is_done: false }] })
+    ).toThrow();
+    expect(() =>
+      todoCreateSchema.parse({ title: 'Task', checklist: [{ id: '1', title: '\t\n', is_done: false }] })
+    ).toThrow();
+  });
+
+  it('sanitizes HTML in checklist title and rejects empty HTML', () => {
+    const parsed = todoCreateSchema.parse({
+      title: 'Task',
+      checklist: [{ id: '1', title: '  <i>Subtask</i>  ', is_done: false }],
+    });
+    expect(parsed.checklist?.[0].title).toBe('Subtask');
+
+    expect(() =>
+      todoCreateSchema.parse({
+        title: 'Task',
+        checklist: [{ id: '1', title: '<b>  </b>', is_done: false }],
+      })
+    ).toThrow();
+  });
 });
 
-describe('categorySchema (C-05 split)', () => {
+describe('todoCreateSchema title & description hygiene', () => {
+  it('rejects whitespace, tab, and newline title', () => {
+    expect(() => todoCreateSchema.parse({ title: '' })).toThrow();
+    expect(() => todoCreateSchema.parse({ title: '   ' })).toThrow();
+    expect(() => todoCreateSchema.parse({ title: '\t\n' })).toThrow();
+    expect(() => todoCreateSchema.parse({ title: ' \r\n ' })).toThrow();
+  });
+
+  it('sanitizes HTML in title and trims', () => {
+    const result = todoCreateSchema.parse({ title: '  <b>Clean Task</b>  ' });
+    expect(result.title).toBe('Clean Task');
+  });
+
+  it('rejects title that becomes empty after HTML sanitization', () => {
+    expect(() => todoCreateSchema.parse({ title: '<b>   </b>' })).toThrow();
+  });
+
+  it('normalizes whitespace-only description to undefined', () => {
+    expect(todoCreateSchema.parse({ title: 'Task', description: '   ' }).description).toBeUndefined();
+    expect(todoCreateSchema.parse({ title: 'Task', description: '\t\n' }).description).toBeUndefined();
+    expect(todoCreateSchema.parse({ title: 'Task', description: ' \r\n ' }).description).toBeUndefined();
+  });
+
+  it('sanitizes and trims description, keeping valid text', () => {
+    const result = todoCreateSchema.parse({ title: 'Task', description: '  <b>Chi tiết</b>   ' });
+    expect(result.description).toBe('Chi tiết');
+  });
+
+  it('normalizes description that becomes empty after sanitization to undefined', () => {
+    const result = todoCreateSchema.parse({ title: 'Task', description: '<b>   </b>' });
+    expect(result.description).toBeUndefined();
+  });
+
+  it('preserves undefined description when omitted', () => {
+    const result = todoCreateSchema.parse({ title: 'Task' });
+    expect(result.description).toBeUndefined();
+  });
+});
+
+describe('categorySchema hygiene', () => {
   it('validates and sanitizes category name', () => {
     const result = categorySchema.parse({ name: '  Work <b>bold</b>  ' });
     expect(result.name).toBe('Work bold');
@@ -53,6 +116,16 @@ describe('categorySchema (C-05 split)', () => {
 
   it('rejects empty name', () => {
     expect(() => categorySchema.parse({ name: '' })).toThrow();
+  });
+
+  it('rejects whitespace, tab, and newline category name', () => {
+    expect(() => categorySchema.parse({ name: '   ' })).toThrow();
+    expect(() => categorySchema.parse({ name: '\t\n' })).toThrow();
+    expect(() => categorySchema.parse({ name: ' \r\n ' })).toThrow();
+  });
+
+  it('rejects category name that becomes empty after HTML sanitization', () => {
+    expect(() => categorySchema.parse({ name: '<b>  </b>' })).toThrow();
   });
 });
 
