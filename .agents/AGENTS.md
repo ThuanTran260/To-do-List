@@ -40,8 +40,10 @@ AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải 
    - Không được tuyên bố hoàn thành hay báo lỗi đã sửa xong khi chưa chạy kiểm thử thực tế.
    - Phải chạy `npx tsc --noEmit` (đảm bảo 0 lỗi type) và `npm run build` (đảm bảo biên dịch Next.js thành công 100%).
 
-3. **BẮT BUỘC TẠO `implementation_plan.md` CHO CÁC THAY ĐỔI KIẾN TRÚC/UI NẶNG:**
-   - Phân tích nguyên nhân, đề xuất giải pháp, dự đoán xung đột và chờ sự phê duyệt của người dùng trước khi tiến hành viết code.
+3. **BẮT BUỘC TẠO `implementation_plan.md` & CẤM TỰ Ý CODE KHI CHƯA CÓ PROCEED (No Premature Coding):**
+   - Phân tích nguyên nhân, đề xuất giải pháp, dự đoán xung đột.
+   - **TUYỆT ĐỐI KHÔNG TỰ Ý SỬA / VIẾT SOURCE CODE** khi đang ở bước lập kế hoạch, phân tích hoặc review.
+   - Bắt buộc dừng lại chờ sự phê duyệt rõ ràng ("Proceed") từ người dùng trước khi tiến hành viết code.
 
 4. **BẮT BUỘC REVIEW PLAN TRƯỚC KHI CODE (Planning Review Gate — Áp dụng từ 2026-08-31 sau bài học CR-01→CR-06):**
    - **Không được code khi plan chưa qua review:** Mọi `implementation_plan.md` phải được review bởi ít nhất 1 reviewer độc lập (human hoặc AI `requesting-code-review` / `plan-document-reviewer-prompt.md`) trước khi sang Pha 3.
