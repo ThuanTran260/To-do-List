@@ -12,13 +12,13 @@
 ---
 
 ## ⛔ AN TOÀN TERMINAL & CẤM LỆNH NGUY HIỂM (BẮT BUỘC - HARNESS HARD CONSTRAINT)
-> MIRROR — bản chuẩn duy nhất là `AGENTS.md` (root) §Terminal safety. Không sửa section này tại đây; sửa root rồi sync + đóng dấu ngày/commit. Last synced: 2026-09-07 5fdbf9a.
+> MIRROR — bản chuẩn duy nhất là `AGENTS.md` (root) §Terminal safety. Không sửa section này tại đây; sửa root rồi sync + đóng dấu ngày/commit. Last synced: 2026-09-07 d4572fe.
 - **TUYỆT ĐỐI KHÔNG ĐƯA RA HOẶC TỰ ĐỘNG CHẠY CÁC CÂU LỆNH NGUY HIỂM / PHÁ HỦY HỆ THỐNG**:
-  - **Xóa / Format / Phân vùng ổ đĩa:** Cấm triệt để `format`, `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `Initialize-Disk`, `diskpart`, `mkfs`, `dd`, `fdisk`, `parted`, `shred`, `wipefs`.
+  - **Xóa / Format / Phân vùng ổ đĩa:** Cấm triệt để `format`, `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `Initialize-Disk`, `diskpart`, `mkfs`, `dd`, `fdisk`, `parted`, `shred`, `wipefs`, `Remove-Volume`, `Repair-Volume`, `Reset-PhysicalDisk`, `Set-Disk`, `Set-Partition`.
   - **Can thiệp Boot / Hệ điều hành / Registry:** Cấm `bcdedit`, `bootrec`, `vssadmin delete`, `cipher /w`, `sdelete`, `reg delete`.
   - **Tắt / Khởi động lại máy (Power commands):** Cấm `shutdown`, `Restart-Computer`, `Stop-Computer`.
-  - **Fork bomb & Thay đổi quyền đệ quy:** Cấm `:(){...}`, `chmod -R /`, `chown -R /`.
-  - **Lệnh xóa diện rộng & Xóa thư mục gốc / Hệ thống:** Cấm `rm -rf /`, `rm -rf ~`, `--no-preserve-root`, `rm /dev/sd*`, `rm /dev/nvme*`, `rm /dev/hd*`, và các lệnh PowerShell / CMD xóa nhắm vào thư mục gốc hoặc OS: `Remove-Item`, `del`, `rd`, `erase`, `rmdir` nhắm vào `C:\`, `C:\Windows`, `System32`, `Program Files`.
+  - **Fork bomb & Thay đổi quyền đệ quy:** Cấm `:(){...}`, `chmod -R /`, `chown -R /`, `icacls` diện rộng.
+  - **Lệnh xóa diện rộng & Xóa thư mục gốc mọi ổ đĩa / Hệ thống:** Cấm `rm -rf /`, `rm -rf ~`, `--no-preserve-root`, `rm /dev/sd*`, `rm /dev/nvme*`, `rm /dev/hd*`, và các lệnh PowerShell / CMD xóa nhắm vào thư mục gốc bất kỳ ổ đĩa nào hoặc OS: `Remove-Item`, `del`, `rd`, `erase`, `rmdir` nhắm vào mọi gốc ổ đĩa `C:\`, `D:\`, `E:\` (toàn bộ `[A-Za-z]:\`), `C:\Windows`, `System32`, `Program Files`, User Profile (`C:\Users`, `%USERPROFILE%`, `~`).
   - **Xóa sạch Repository / Ghi đè cấu hình:** Cấm `git clean -f*`, `git reset --hard*` (tránh xóa nhầm file môi trường `.env.local` chưa track), cấm `supabase db push` tự động (phải để người dùng chủ động chạy `[MANUAL]`).
 - **Quy tắc phạm vi (Scope Rules):**
   - Chỉ thao tác, tạo hoặc xóa file bên trong phạm vi thư mục workspace của dự án.
