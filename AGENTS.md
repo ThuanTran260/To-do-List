@@ -21,8 +21,7 @@
 | File | Loaded | Role — read it when... |
 |---|---|---|
 | `AGENTS.md` (this file, repo root) | Automatically, every session | Always in effect: git rules, terminal safety, planning gate, commands, file map. Source of hard constraints. |
-| `.agents/AGENTS.md` | On demand (NOT auto-loaded) | Doing real work: architecture (§1–5), Supabase/RLS rules (§3–4), **TipTap invariants (§6, mandatory for editor work)**, skills table (§7), UI/layout invariants (§8). Read the relevant section before touching those areas. Mostly Vietnamese. |
-| `.gemini/GEMINI.md` | Only by Gemini CLI / Antigravity | Mirror of the project brain for parallel non-opencode sessions. Keep in sync with `.agents/AGENTS.md` when rules change; opencode sessions ignore it. |
+| `.agents/AGENTS.md` | Auto-loaded / Project Brain | Doing real work: architecture (§1–5), Supabase/RLS rules (§3–4), **TipTap invariants (§6, mandatory for editor work)**, skills table (§7), UI/layout invariants (§8). Read the relevant section before touching those areas. Mostly Vietnamese. |
 
 # Subagents & skills
 
@@ -56,8 +55,12 @@ Khi ghim SHA cho các GitHub Actions trong `.github/workflows/*.yml`:
 
 > Bài học từ Hardening Plan 2026-08-30: 6 Critical + 14 Moderate bị sót lần đầu do single-agent audit, thiếu cross-reference.
 
-**Quy tắc:**
-1. Mọi thay đổi kiến trúc P0/P1 phải có `implementation_plan.md` trong `docs/superpowers/plans/` và **chưa được code** cho tới khi review pass.
+**Quy tắc Cốt Lõi — CẤM TỰ Ý CODE KHI CHƯA CÓ PROCEED (No Premature Coding):**
+- **TUYỆT ĐỐI KHÔNG VIẾT CODE / SỬA FILE SOURCE** khi đang ở bước phân tích, lập kế hoạch hoặc chờ review.
+- AI Assistant **BẮT BUỘC DỪNG LẠI** và chỉ bắt đầu triển khai mã nguồn khi người dùng đã xem xét kế hoạch và bấm **Proceed** hoặc có xác nhận phê duyệt rõ ràng.
+
+**Quy trình:**
+1. Mọi thay đổi kiến trúc P0/P1 phải có `implementation_plan.md` trong `docs/superpowers/plans/` và **chưa được code** cho tới khi review pass và user xác nhận proceed.
 2. Review phải dùng `dispatching-parallel-agents` (ít nhất 2 auditors) + checklist 10 mục ở `.agents/AGENTS.md:0.4`.
 3. Mỗi vòng review append `Appendix — Review Response Log` vào plan.
 4. `pnpm exec tsc --noEmit` phải PASS trước khi gửi plan đi review.
