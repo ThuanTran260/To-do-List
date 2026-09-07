@@ -7,9 +7,12 @@ import { sanitizeInput } from '@/lib/sanitize';
 export const categorySchema = z.object({
   name: z
     .string()
-    .min(1, 'Tên danh mục không được trống')
-    .max(100, 'Tối đa 100 ký tự')
-    .transform((val) => sanitizeInput(val.trim())),
+    .transform((val) => sanitizeInput(val.trim()))
+    .pipe(
+      z.string()
+        .min(1, 'Tên danh mục không được trống')
+        .max(100, 'Tối đa 100 ký tự')
+    ),
   color: z.string().optional().default('#6366f1'),
 });
 

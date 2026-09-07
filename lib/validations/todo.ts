@@ -5,19 +5,32 @@ import { categorySchema } from '@/lib/validations/category';
 // L-05 fix: checklist từ z.array(z.any()) → strict contract khớp types/todo.ts ChecklistItem
 const checklistItemSchema = z.object({
   id: z.string().min(1),
-  title: z.string().min(1).max(500).transform((val) => sanitizeInput(val.trim())),
+  title: z.string()
+    .transform((val) => sanitizeInput(val.trim()))
+    .pipe(
+      z.string()
+        .min(1, 'Tiêu đề không được để trống')
+        .max(500, 'Tiêu đề tối đa 500 ký tự')
+    ),
   is_done: z.boolean(),
 });
 
 export const todoCreateSchema = z.object({
   title: z.string()
-    .min(1, 'Tiêu đề không được để trống')
-    .max(500, 'Tiêu đề tối đa 500 ký tự')
-    .transform(val => sanitizeInput(val.trim())),
+    .transform((val) => sanitizeInput(val.trim()))
+    .pipe(
+      z.string()
+        .min(1, 'Tiêu đề không được để trống')
+        .max(500, 'Tiêu đề tối đa 500 ký tự')
+    ),
   description: z.string()
-    .max(5000, 'Mô tả tối đa 5000 ký tự')
-    .transform(val => val ? sanitizeInput(val.trim()) : undefined)
-    .optional(),
+    .optional()
+    .transform((val) => {
+      if (!val) return undefined;
+      const sanitized = sanitizeInput(val.trim());
+      return sanitized.length > 0 ? sanitized : undefined;
+    })
+    .pipe(z.string().max(5000, 'Mô tả tối đa 5000 ký tự').optional()),
   priority: z.enum(['low', 'medium', 'high']).optional().default('medium'),
   due_date: z.string().optional().nullable(),
   category_id: z.string().uuid().optional(),

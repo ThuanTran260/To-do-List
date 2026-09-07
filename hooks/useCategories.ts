@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { useEffect, useState } from 'react';
+import { categorySchema } from '@/lib/validations/category';
 
 export interface CategoryItemData {
   id: string;
@@ -78,25 +79,27 @@ export function useCreateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, color }: { name: string; color: string }) => {
+    mutationFn: async ({ name, color }: { name: string; color?: string }) => {
+      const validated = categorySchema.parse({ name, color });
+
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Bạn cần đăng nhập');
 
-      // Client-side duplicate check (case-insensitive)
+      // Client-side duplicate check (case-insensitive) dùng validated.name đã sanitize & trim
       const existing = queryClient.getQueryData<CategoryItemData[]>(['categories']) || [];
       const isDuplicate = existing.some(
-        (c) => c.name.trim().toLowerCase() === name.trim().toLowerCase()
+        (c) => c.name.trim().toLowerCase() === validated.name.toLowerCase()
       );
       if (isDuplicate) {
-        throw new Error(`Danh mục "${name.trim()}" đã tồn tại.`);
+        throw new Error(`Danh mục "${validated.name}" đã tồn tại.`);
       }
 
       const { data, error } = await supabase
         .from('categories')
         .insert({
-          name: name.trim(),
-          color: color || '#6366f1',
+          name: validated.name,
+          color: validated.color || '#6366f1',
           user_id: user.id,
         })
         .select()
