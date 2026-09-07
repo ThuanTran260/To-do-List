@@ -38,7 +38,7 @@ AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải 
 
 2. **BẮT BUỘC ÁP DỤNG `verification-before-completion` TRƯỚC KHI KẾT THÚC:**
    - Không được tuyên bố hoàn thành hay báo lỗi đã sửa xong khi chưa chạy kiểm thử thực tế.
-   - Phải chạy `npx tsc --noEmit` (đảm bảo 0 lỗi type) và `npm run build` (đảm bảo biên dịch Next.js thành công 100%).
+   - Phải chạy `pnpm exec tsc --noEmit` (đảm bảo 0 lỗi type) và `pnpm run build` (đảm bảo biên dịch Next.js thành công 100%).
 
 3. **BẮT BUỘC TẠO `implementation_plan.md` & CẤM TỰ Ý CODE KHI CHƯA CÓ PROCEED (No Premature Coding):**
    - Phân tích nguyên nhân, đề xuất giải pháp, dự đoán xung đột.
@@ -46,7 +46,7 @@ AI Agent làm việc trên dự án này **TUYỆT ĐỐI BẮT BUỘC** phải 
    - Bắt buộc dừng lại chờ sự phê duyệt rõ ràng ("Proceed") từ người dùng trước khi tiến hành viết code.
 
 4. **BẮT BUỘC REVIEW PLAN TRƯỚC KHI CODE (Planning Review Gate — Áp dụng từ 2026-08-31 sau bài học CR-01→CR-06):**
-   - **Không được code khi plan chưa qua review:** Mọi `implementation_plan.md` phải được review bởi ít nhất 1 reviewer độc lập (human hoặc AI `requesting-code-review` / `plan-document-reviewer-prompt.md`) trước khi sang Pha 3.
+   - **Không được code khi plan chưa qua review:** Mọi `implementation_plan.md` phải được review bởi ít nhất 2 auditors độc lập (human hoặc AI `requesting-code-review` / `plan-document-reviewer-prompt.md`) trước khi sang Pha 3.
    - **Bắt buộc dùng `dispatching-parallel-agents` để audit plan:** Dispatch 2-3 subagents song song (Security / Logic / DB-Migration) cross-reference plan với source thực tế (30+ files, 6 migrations, `next.config.ts`/`vercel.json`/`app/layout.tsx`). Single-agent audit bị cấm cho plan P0.
    - **Checklist Cross-Reference Bắt Buộc (phải tick trước khi duyệt):**
      - [ ] `grep CREATE POLICY` vs `DROP POLICY` diff — không sót policy legacy (PERMISSIVE OR = bypass, bài học CR-06)
@@ -296,7 +296,7 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, Tailwind C
 | # | Skill Name | Mục đích & Mô tả cốt lõi | Bối cảnh kích hoạt | Quy tắc bắt buộc (Iron Rules) |
 |---|---|---|---|---|
 | 1 | **`systematic-debugging`** | Phân tích nguyên nhân gốc rễ (Root Cause Analysis - RCA) và sửa lỗi hệ thống | Khi gặp bug, crash, lỗi hydration, sai lệch hành vi | **THE IRON LAW:** KHÔNG BAO GIỜ sửa code khi chưa tìm ra RCA. |
-| 2 | **`verification-before-completion`** | Thẩm định & kiểm thử thực tế trước khi tuyên bố hoàn thành | Trước khi kết thúc turn làm việc hoặc báo "đã fix" | **BẮT BUỘC:** Chạy `npx tsc --noEmit` (0 lỗi) & `npm run build` (Build OK 100%). |
+| 2 | **`verification-before-completion`** | Thẩm định & kiểm thử thực tế trước khi tuyên bố hoàn thành | Trước khi kết thúc turn làm việc hoặc báo "đã fix" | **BẮT BUỘC:** Chạy `pnpm exec tsc --noEmit` (0 lỗi) & `pnpm run build` (Build OK 100%). |
 | 3 | **`writing-plans`** | Lập tài liệu kiến trúc & kế hoạch thực thi chi tiết (`implementation_plan.md`) | Khi thay đổi kiến trúc nặng, refactor lớn, tính năng mới | Phân tích rủi ro, open questions và chờ user phê duyệt trước khi code. |
 | 4 | **`executing-plans`** | Thực thi theo kế hoạch đã phê duyệt | Ngay sau khi user duyệt `implementation_plan.md` | Thực hiện từng step, verify liên tục và báo cáo minh bạch. |
 | 5 | **`brainstorming`** | Phân tích ý tưởng, khảo sát phương án và trade-offs | Đầu nhiệm vụ mới, khi yêu cầu chưa rõ ràng | Đưa ra các lựa chọn cụ thể kèm ưu/nhược điểm. |
@@ -338,7 +338,7 @@ Khi làm việc với `@tiptap/react`, `@tiptap/extension-task-list`, Tailwind C
 ┌────────────────────────────────────────────────────────────────────────┐
 │  PHA 4: NGHIỆM THU & BẢO VỆ (Verification Before Completion)           │
 │  - BẮT BUỘC dùng `verification-before-completion`                      │
-│  - Chạy `npx tsc --noEmit` (0 lỗi) & `npm run build` (Build OK 100%)    │
+│  - Chạy `pnpm exec tsc --noEmit` (0 lỗi) & `pnpm run build` (Build OK) │
 │  - Tạo `walkthrough.md` tổng kết trước khi báo hoàn thành               │
 └────────────────────────────────────────────────────────────────────────┘
 ```

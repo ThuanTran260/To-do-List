@@ -127,6 +127,20 @@ describe('categorySchema hygiene', () => {
   it('rejects category name that becomes empty after HTML sanitization', () => {
     expect(() => categorySchema.parse({ name: '<b>  </b>' })).toThrow();
   });
+
+  it('normalizes category color to lowercase 6-digit hex or fallback', () => {
+    const res1 = categorySchema.parse({ name: 'Cat1', color: '#FF5500' });
+    expect(res1.color).toBe('#ff5500');
+
+    const res2 = categorySchema.parse({ name: 'Cat2', color: 'abc' });
+    expect(res2.color).toBe('#aabbcc');
+
+    const res3 = categorySchema.parse({ name: 'Cat3', color: 'invalid-color' });
+    expect(res3.color).toBe('#6366f1');
+
+    const res4 = categorySchema.parse({ name: 'Cat4' });
+    expect(res4.color).toBe('#6366f1');
+  });
 });
 
 import { loginSchema, signupSchema, passwordSchema } from '@/lib/validations/auth';

@@ -1,6 +1,5 @@
 import { z } from 'zod';
 import { sanitizeInput } from '@/lib/sanitize';
-import { categorySchema } from '@/lib/validations/category';
 
 // L-05 fix: checklist từ z.array(z.any()) → strict contract khớp types/todo.ts ChecklistItem
 const checklistItemSchema = z.object({
@@ -46,10 +45,6 @@ export const todoCreateSchema = z.object({
 export const todoUpdateSchema = todoCreateSchema.partial().extend({
   is_completed: z.boolean().optional(),
 });
-
-// Re-export giữ backward compat với các import cũ từ '@/lib/validations/todo'
-export { categorySchema };
-export type { CategoryInput } from '@/lib/validations/category';
 
 export type TodoInput = z.infer<typeof todoCreateSchema>;
 export type TodoUpdate = z.infer<typeof todoUpdateSchema>;
