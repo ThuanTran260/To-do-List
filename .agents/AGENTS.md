@@ -12,6 +12,7 @@
 ---
 
 ## ⛔ AN TOÀN TERMINAL & CẤM LỆNH NGUY HIỂM (BẮT BUỘC - HARNESS HARD CONSTRAINT)
+> MIRROR — bản chuẩn duy nhất là `AGENTS.md` (root) §Terminal safety. Không sửa section này tại đây; sửa root rồi sync + đóng dấu ngày/commit. Last synced: 2026-09-07 5fdbf9a.
 - **TUYỆT ĐỐI KHÔNG ĐƯA RA HOẶC TỰ ĐỘNG CHẠY CÁC CÂU LỆNH NGUY HIỂM / PHÁ HỦY HỆ THỐNG**:
   - **Xóa / Format / Phân vùng ổ đĩa:** Cấm triệt để `format`, `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `Initialize-Disk`, `diskpart`, `mkfs`, `dd`, `fdisk`, `parted`, `shred`, `wipefs`.
   - **Can thiệp Boot / Hệ điều hành / Registry:** Cấm `bcdedit`, `bootrec`, `vssadmin delete`, `cipher /w`, `sdelete`, `reg delete`.
