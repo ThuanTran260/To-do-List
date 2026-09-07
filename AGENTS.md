@@ -4,6 +4,12 @@
 - You MAY run `git add`, `git commit`, `git status`, `git diff`, `git log`, and branch operations locally.
 - When the user asks to "commit", do exactly that: stage the intended files and commit with a concise message. Then stop and remind the user to run `git push` themselves.
 
+# Terminal safety (destructive commands — hard constraint, auto-loaded)
+
+- **NEVER run destructive commands** via terminal: disk wipe / format / partition (`format`, `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `Initialize-Disk`, `diskpart`, `mkfs`, `dd`, `fdisk`, `parted`, `shred`, `wipefs`), boot / system (`bcdedit`, `bootrec`, `vssadmin delete`, `cipher /w`, `sdelete`, `reg delete`), power (`shutdown`, `Restart-Computer`, `Stop-Computer`), fork bomb (`:(){...}`), recursive permission/ownership change on `/` (`chmod/chown -R /`), deletes aimed at drive root / OS dirs / home root (`rm -rf /`, `rm -rf ~`, `--no-preserve-root`, `Remove-Item`/`del`/`rd` targeting `C:\`, `C:\Windows`, `System32`), repo wipes (`git clean -f*`, `git reset --hard*` — `git clean -fdx` would delete untracked `.env.local`), or `supabase db push` (always `[MANUAL]` by the user, never by an agent).
+- Hard-enforced by `opencode.json` (`permission.bash` deny list) — same mechanism as the `git push` ban. If a deny blocks legitimate work, stop and ask the user instead of rephrasing the command (aliases, `sudo`, `cmd /c`, `powershell -EncodedCommand`, `curl ... | sh`) to dodge the rule.
+- Scope rule: only create/delete files inside the workspace or `C:\Users\Admin\AppData\Local\Temp\opencode`. Before any delete, verify with `Test-Path -LiteralPath <parent>` and keep paths quoted. Prefer specialized file tools (`read`/`edit`/`write`/`glob`/`grep`) over shell deletes.
+
 # Slash commands (`/...`)
 
 - This repo defines **zero custom slash commands** — there is no `.opencode/` directory. Only opencode built-in commands exist; never hallucinate project-specific ones (e.g. there is no `/deploy`, `/migrate`, or `/review` here).
@@ -13,7 +19,7 @@
 
 | File | Loaded | Role — read it when... |
 |---|---|---|
-| `AGENTS.md` (this file, repo root) | Automatically, every session | Always in effect: git rules, planning gate, commands, file map. Source of hard constraints. |
+| `AGENTS.md` (this file, repo root) | Automatically, every session | Always in effect: git rules, terminal safety, planning gate, commands, file map. Source of hard constraints. |
 | `.agents/AGENTS.md` | On demand (NOT auto-loaded) | Doing real work: architecture (§1–5), Supabase/RLS rules (§3–4), **TipTap invariants (§6, mandatory for editor work)**, skills table (§7), UI/layout invariants (§8). Read the relevant section before touching those areas. Mostly Vietnamese. |
 | `.gemini/GEMINI.md` | Only by Gemini CLI / Antigravity | Mirror of the project brain for parallel non-opencode sessions. Keep in sync with `.agents/AGENTS.md` when rules change; opencode sessions ignore it. |
 
