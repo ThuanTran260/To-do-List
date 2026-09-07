@@ -62,7 +62,23 @@ export function useCreateTag() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        const pgError = error as { code?: string; message?: string };
+        if (
+          pgError.code === '23505' ||
+          pgError.message?.includes('duplicate key') ||
+          pgError.message?.includes('idx_tags_user_id_lower_name')
+        ) {
+          const { data: existingTag } = await supabase
+            .from('tags')
+            .select('*')
+            .eq('user_id', user.id)
+            .ilike('name', validated.name)
+            .single();
+          if (existingTag) return existingTag as TagData;
+        }
+        throw error;
+      }
       return data as TagData;
     },
     onSuccess: () => {
