@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
+import { tagSchema } from '@/lib/validations/tag';
 
 export interface TagData {
   id: string;
@@ -35,6 +36,16 @@ export function useCreateTag() {
 
   return useMutation({
     mutationFn: async ({ name, color }: { name: string; color?: string }) => {
+      const validated = tagSchema.parse({ name, color });
+
+      const existingTags = queryClient.getQueryData<TagData[]>(['tags']) || [];
+      const existing = existingTags.find(
+        (t) => t.name.toLowerCase() === validated.name.toLowerCase()
+      );
+      if (existing) {
+        return existing;
+      }
+
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -45,14 +56,14 @@ export function useCreateTag() {
         .from('tags')
         .insert({
           user_id: user.id,
-          name: name.trim(),
-          color: color || '#6366f1',
+          name: validated.name,
+          color: validated.color || '#6366f1',
         })
         .select()
         .single();
 
       if (error) throw error;
-      return data;
+      return data as TagData;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tags'] });

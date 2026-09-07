@@ -1,5 +1,7 @@
 'use client';
 
+import { getTagTint, normalizeHexColor } from '@/lib/tags/tagColor';
+
 export interface TagItem {
   id: string;
   name: string;
@@ -19,7 +21,11 @@ export function TagBadges({ tags }: TagBadgesProps) {
       {tags.map((tag) => (
         <span
           key={tag.id}
-          style={{ backgroundColor: `${tag.color}15`, color: tag.color, borderColor: `${tag.color}35` }}
+          style={{
+            backgroundColor: getTagTint(tag.color, '15'),
+            color: normalizeHexColor(tag.color),
+            borderColor: getTagTint(tag.color, '35'),
+          }}
           className="px-1.5 py-0.5 rounded text-[10px] font-medium border"
         >
           #{tag.name}
