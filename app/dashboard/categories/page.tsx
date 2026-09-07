@@ -9,6 +9,35 @@ import { EmptyState } from '@/components/ui/state/EmptyState';
 import { ErrorState } from '@/components/ui/state/ErrorState';
 import { FolderKanban, Plus, Trash2, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
 
+function formatCategoryError(err: unknown): string {
+  if (!err) return 'Có lỗi xảy ra, vui lòng thử lại.';
+  if (typeof err === 'object') {
+    if ('issues' in err && Array.isArray((err as { issues: { message?: string }[] }).issues)) {
+      const first = (err as { issues: { message?: string }[] }).issues[0];
+      if (first?.message) return first.message;
+    }
+    if ('errors' in err && Array.isArray((err as { errors: { message?: string }[] }).errors)) {
+      const first = (err as { errors: { message?: string }[] }).errors[0];
+      if (first?.message) return first.message;
+    }
+    if ('message' in err && typeof (err as { message: unknown }).message === 'string') {
+      const msg = (err as { message: string }).message;
+      if (msg.startsWith('[{') && msg.includes('"message"')) {
+        try {
+          const parsed = JSON.parse(msg);
+          if (Array.isArray(parsed) && parsed[0]?.message) {
+            return parsed[0].message;
+          }
+        } catch {
+          // fallback
+        }
+      }
+      return msg;
+    }
+  }
+  return 'Có lỗi xảy ra, vui lòng thử lại.';
+}
+
 export default function CategoriesPage() {
   const router = useRouter();
   const { data: categories = [], isLoading, isError, error, refetch } = useCategories();
@@ -42,7 +71,7 @@ export default function CategoriesPage() {
           setNewCatColor('#5e6ad2');
         },
         onError: (err) => {
-          setErrorMsg((err as Error).message);
+          setErrorMsg(formatCategoryError(err));
         },
       }
     );

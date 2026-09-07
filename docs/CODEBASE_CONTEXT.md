@@ -61,11 +61,15 @@
 - **Reorder Mutation:** `useReorderTodos()` trong `hooks/useTodos.ts` ➔ `reorderTodos()` trong `lib/services/todoService.ts`
 
 ### 3.3. Tags & Categories
-- **Picker Thẻ Tag:** `components/ui/TagPicker.tsx`
+- **Horizontal TagBar:** `components/todo/TagBar.tsx` (Thanh tag ngang trực quan dưới tiêu đề với nút + Gắn nhãn, badge xóa nhanh)
+- **Shared Popover Engine:** `components/ui/PortalPopover.tsx` (Engine popover dùng chung qua React Portal, triệt tiêu clipping)
+- **Shared Tag Popover Content:** `components/todo/TagPopoverContent.tsx` (Giao diện tìm kiếm, chọn và tạo tag mới dùng chung)
+- **Picker Thẻ Tag (Wrapper):** `components/ui/TagPicker.tsx` (Wrapper tích hợp dùng PortalPopover + TagPopoverContent)
 - **Badges Thẻ Tag:** `components/todo/TagBadges.tsx`
 - **Picker Danh Mục:** `components/ui/CustomCategorySelect.tsx` (PortalPopover)
 - **Trang Quản lý Danh mục:** `app/dashboard/categories/page.tsx`
-- **Hooks:** `hooks/useTags.ts` & `hooks/useCategories.ts`
+- **Validation Schemas:** `lib/validations/tag.ts` (Tag input & color normalization) & `lib/validations/category.ts` (Category input & color)
+- **Hooks:** `hooks/useTags.ts` (kèm catch 23505 graceful fallback & escape ilike) & `hooks/useCategories.ts`
 
 ### 3.4. Subtasks / Checklist
 - **Trình chỉnh sửa Checklist:** `components/todo/ChecklistEditor.tsx`

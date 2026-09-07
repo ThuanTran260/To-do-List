@@ -30,6 +30,14 @@ export function useTags() {
   });
 }
 
+/**
+ * Escape %, _ và \ cho exact case-insensitive lookup qua PostgREST .ilike()
+ * tránh PostgreSQL hiểu nhầm ký tự đặc biệt thành wildcard.
+ */
+export function escapeIlikePattern(value: string): string {
+  return value.replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+}
+
 export function useCreateTag() {
   const queryClient = useQueryClient();
   const supabase = createClient();
@@ -73,7 +81,7 @@ export function useCreateTag() {
             .from('tags')
             .select('*')
             .eq('user_id', user.id)
-            .ilike('name', validated.name)
+            .ilike('name', escapeIlikePattern(validated.name))
             .single();
           if (existingTag) return existingTag as TagData;
         }
