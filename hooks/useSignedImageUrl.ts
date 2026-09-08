@@ -1,7 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { extractPath, getSignedTaskImageUrl, getSignedAvatarUrl } from '@/lib/storage/signedUrl';
+import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { extractPath, getSignedTaskImageUrl, getSignedAvatarUrl, getBatchSignedTaskImageUrls } from '@/lib/storage/signedUrl';
 
 /**
  * Hook to resolve and cache Signed URLs for private Supabase Storage task images (MD-04).
@@ -27,9 +28,9 @@ export function useSignedImageUrl(imageUrlOrPath: string | null | undefined) {
     queryKey: ['signed-url', path],
     queryFn: () => getSignedTaskImageUrl(path!),
     enabled: !!path,
-    staleTime: 45 * 60 * 1000, // 45 minutes
-    gcTime: 60 * 60 * 1000,    // 60 minutes
-    refetchInterval: 45 * 60 * 1000,
+    staleTime: 6 * 24 * 60 * 60 * 1000, // 6 days
+    gcTime: 7 * 24 * 60 * 60 * 1000,    // 7 days
+    refetchInterval: 6 * 24 * 60 * 60 * 1000, // 6 days (refresh before 7-day URL expiry)
     refetchIntervalInBackground: false,
   });
 
@@ -80,4 +81,37 @@ export function useSignedAvatarUrl(avatarUrlOrPath: string | null | undefined) {
     displayUrl,
     isExternalUrl,
   };
+}
+
+export function useBatchSignedUrls(pathsOrUrls: (string | null | undefined)[]) {
+  const queryClient = useQueryClient();
+
+  const validPaths = useMemo(() => {
+    const extracted = (pathsOrUrls || [])
+      .map(extractPath)
+      .filter((p): p is string => Boolean(p));
+    return Array.from(new Set(extracted));
+  }, [pathsOrUrls]);
+
+  const queryKey = useMemo(() => ['batch-signed-urls', [...validPaths].sort().join(',')], [validPaths]);
+
+  return useQuery({
+    queryKey,
+    queryFn: async () => {
+      if (validPaths.length === 0) return {};
+      const urlMap = await getBatchSignedTaskImageUrls(validPaths);
+      // Pre-fill individual query cache for each path so TodoItem reads synchronously
+      for (const [path, url] of Object.entries(urlMap)) {
+        if (url) {
+          queryClient.setQueryData(['signed-url', path], url);
+        }
+      }
+      return urlMap;
+    },
+    enabled: validPaths.length > 0,
+    staleTime: 6 * 24 * 60 * 60 * 1000, // 6 days
+    gcTime: 7 * 24 * 60 * 60 * 1000,    // 7 days
+    refetchInterval: 6 * 24 * 60 * 60 * 1000, // 6 days (must match staleTime)
+    refetchOnWindowFocus: false,
+  });
 }
