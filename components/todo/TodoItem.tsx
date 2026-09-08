@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useToggleTodo, useDeleteTodo, type TodoItemData } from '@/hooks/useTodos';
 import { useCategories, getReadableTextColor } from '@/hooks/useCategories';
 import { useSignedImageUrl } from '@/hooks/useSignedImageUrl';
+import { getTaskThumbnail } from '@/lib/taskImages';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { ChecklistProgress } from '@/components/todo/ChecklistProgress';
@@ -30,7 +31,8 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
   const toggleMutation = useToggleTodo();
   const deleteMutation = useDeleteTodo();
   const { data: categories = [] } = useCategories();
-  const { displayUrl: displayImageUrl } = useSignedImageUrl(item.image_path || item.image_url);
+  const thumbPathOrUrl = getTaskThumbnail(item);
+  const { displayUrl: displayImageUrl } = useSignedImageUrl(thumbPathOrUrl);
 
   const itemCategory = item.category_id
     ? categories.find((c) => c.id === item.category_id)

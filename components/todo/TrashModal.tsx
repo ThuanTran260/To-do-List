@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { useTrashTodos, useRestoreTodo, usePermanentDeleteTodo } from '@/hooks/useTodos';
 import { deleteTaskImage } from '@/lib/storage';
+import { getTaskStoragePathsForDeletion } from '@/lib/taskImages';
 import { useQueryClient } from '@tanstack/react-query';
 import { createClient } from '@/lib/supabase/client';
 import { RotateCcw, Trash2, Calendar, AlertCircle, Loader2 } from 'lucide-react';
@@ -34,17 +35,9 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
     }
 
     setIsBulkProcessing(true);
-    setBulkStatus('Đang dọn dẹp ảnh storage...');
+    setBulkStatus('Đang xóa dữ liệu...');
 
     try {
-      for (const item of trashList) {
-        const imageToDelete = item.image_path || item.image_url;
-        if (imageToDelete) {
-          await deleteTaskImage(imageToDelete);
-        }
-      }
-
-      setBulkStatus('Đang xóa dữ liệu...');
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Bạn cần đăng nhập.');
@@ -53,6 +46,15 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
       const { data, error } = await supabase.from('todos').delete().in('id', ids).eq('user_id', user.id).select('id');
       if (error) throw error;
       if (!data || data.length === 0) throw new Error('Không xoá được mục nào (không tìm thấy hoặc không có quyền).');
+
+      setBulkStatus('Đang dọn dẹp ảnh storage...');
+      const allImagePaths: (string | null | undefined)[] = [];
+      for (const item of trashList) {
+        allImagePaths.push(...getTaskStoragePathsForDeletion(item));
+      }
+      if (allImagePaths.length > 0) {
+        await deleteTaskImage(...allImagePaths);
+      }
 
       queryClient.invalidateQueries({ queryKey: ['todos'] });
     } catch (err: unknown) {
@@ -181,10 +183,7 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
                   <button
                     onClick={async () => {
                       if (confirm('Xóa vĩnh viễn mục này?')) {
-                        const imageToDelete = item.image_path || item.image_url;
-                        if (imageToDelete) {
-                          await deleteTaskImage(imageToDelete);
-                        }
+                        await deleteTaskImage(...getTaskStoragePathsForDeletion(item));
                         permanentDeleteMutation.mutate(item.id);
                       }
                     }}

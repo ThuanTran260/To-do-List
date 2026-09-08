@@ -6,6 +6,7 @@ import { useUpdateTodo, type TodoItemData } from '@/hooks/useTodos';
 import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/hooks/useAuth';
 import { uploadTaskImage, deleteTaskImage } from '@/lib/storage';
+import { getTaskStoragePathsForDeletion } from '@/lib/taskImages';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DatePickerModal } from '@/components/ui/DatePickerModal';
 import { CustomPrioritySelect, type PriorityType } from '@/components/ui/CustomPrioritySelect';
@@ -66,18 +67,26 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
 
     setIsSubmitting(true);
     let newUploadedPath: string | null = null;
+    let newUploadedThumbPath: string | null = null;
     const oldImagePath = todo.image_path || todo.image_url;
+    const oldImageThumbPath = todo.image_thumb_path || null;
 
     try {
       let finalImagePath: string | null | undefined = imageUrl;
+      let finalImageThumbPath: string | null | undefined = todo.image_thumb_path || null;
 
       // 1. User selected a new image file -> Upload
       if (selectedFile && user) {
-        newUploadedPath = await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
+        const { image_path: uploadedImagePath, image_thumb_path: uploadedThumbPath } =
+          await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
+        newUploadedPath = uploadedImagePath;
+        newUploadedThumbPath = uploadedThumbPath;
         finalImagePath = newUploadedPath;
+        finalImageThumbPath = newUploadedThumbPath;
       } else if (removeImageRequested) {
         // 2. User explicitly removed existing image
         finalImagePath = null;
+        finalImageThumbPath = null;
       }
 
       setStatusText('Đang lưu...');
@@ -96,6 +105,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
             recurrence_rule: recurrenceRule,
             image_path: finalImagePath === null ? null : (isExternal ? null : finalImagePath),
+            image_thumb_path: finalImageThumbPath,
             image_url: finalImagePath === null ? null : (isExternal ? finalImagePath : null),
             is_vital: priority === 'high',
           },
@@ -103,15 +113,17 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
         {
           onSuccess: async () => {
             // Cleanup old image only after successful DB update
-            if ((selectedFile || removeImageRequested) && oldImagePath && oldImagePath !== finalImagePath) {
-              await deleteTaskImage(oldImagePath);
+            if (selectedFile || removeImageRequested) {
+              const olds = getTaskStoragePathsForDeletion({ image_path: oldImagePath, image_thumb_path: oldImageThumbPath });
+              const stillUsed = new Set([finalImagePath, finalImageThumbPath]);
+              await deleteTaskImage(...olds.filter((p): p is string => !!p && !stillUsed.has(p)));
             }
             onClose();
           },
           onError: async (err) => {
             // Rollback newly uploaded image if update fails
-            if (newUploadedPath) {
-              await deleteTaskImage(newUploadedPath);
+            if (newUploadedPath || newUploadedThumbPath) {
+              await deleteTaskImage(newUploadedPath, newUploadedThumbPath);
             }
             setErrorMsg((err as Error).message || 'Không thể cập nhật todo');
           },
@@ -122,8 +134,8 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
         }
       );
     } catch (err) {
-      if (newUploadedPath) {
-        await deleteTaskImage(newUploadedPath);
+      if (newUploadedPath || newUploadedThumbPath) {
+        await deleteTaskImage(newUploadedPath, newUploadedThumbPath);
       }
       setErrorMsg((err as Error).message || 'Lỗi lưu dữ liệu');
       setIsSubmitting(false);

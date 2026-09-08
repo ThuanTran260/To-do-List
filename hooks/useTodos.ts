@@ -82,6 +82,9 @@ export function useCreateTodo() {
         deleted_at: null,
         checklist: (newTodo.checklist as ChecklistItem[]) || [],
         recurrence_rule: newTodo.recurrence_rule || null,
+        image_path: newTodo.image_path || null,
+        image_thumb_path: newTodo.image_thumb_path || null,
+        image_url: newTodo.image_url || null,
       };
 
       queryClient.setQueryData<ActiveTodosData>(['todos', 'active', 1], (old) => {
