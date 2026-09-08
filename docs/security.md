@@ -64,7 +64,7 @@ Tất cả bảng trong Postgres DB đều **deny-by-default**. Bảng dưới �
 - **Buckets:** `public = false` cả 2 buckets (`20260831000000_storage_private.sql`).
 - **SELECT/INSERT/UPDATE/DELETE** trên `storage.objects`: chỉ owner (`auth.uid()::text = foldername(name)[1]`), role `authenticated`.
 - Legacy public policies (`Public Access Attachments`, `Task Attachments Public Read`, `Authenticated Upload Attachments`, ...) đã DROP toàn bộ.
-- Đọc ảnh qua **signed URL** (hết hạn 60 phút, cache client 45 phút).
+- Đọc ảnh qua **signed URL** (hết hạn 7 ngày / 604,800 giây, cache client 6 ngày, batch signing giảm lặp resolve. URL là bearer token — không chia sẻ publicly; thu hồi bằng cách xóa/xoay object).
 
 ---
 
