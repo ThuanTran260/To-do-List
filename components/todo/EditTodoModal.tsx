@@ -6,7 +6,7 @@ import { useUpdateTodo, type TodoItemData } from '@/hooks/useTodos';
 import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/hooks/useAuth';
 import { uploadTaskImage, deleteTaskImage } from '@/lib/storage';
-import { getTaskStoragePathsForDeletion } from '@/lib/taskImages';
+import { getTaskImages, getTaskStoragePathsForDeletion } from '@/lib/taskImages';
 import { ImageUpload } from '@/components/ui/ImageUpload';
 import { DatePickerModal } from '@/components/ui/DatePickerModal';
 import { CustomPrioritySelect, type PriorityType } from '@/components/ui/CustomPrioritySelect';
@@ -47,7 +47,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
       setPriority(todo.priority || 'medium');
       setCategoryId(todo.category_id || '');
       setRecurrenceRule(todo.recurrence_rule || null);
-      setImageUrl(todo.image_path || todo.image_url || null);
+      setImageUrl(getTaskImages(todo)[0] ?? null);
       setSelectedFile(null);
       setRemoveImageRequested(false);
       setDueDate(todo.due_date || '');
@@ -68,8 +68,6 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
     setIsSubmitting(true);
     let newUploadedPath: string | null = null;
     let newUploadedThumbPath: string | null = null;
-    const oldImagePath = todo.image_path || todo.image_url;
-    const oldImageThumbPath = todo.image_thumb_path || null;
 
     try {
       let finalImagePath: string | null | undefined = imageUrl;
@@ -114,7 +112,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
           onSuccess: async () => {
             // Cleanup old image only after successful DB update
             if (selectedFile || removeImageRequested) {
-              const olds = getTaskStoragePathsForDeletion({ image_path: oldImagePath, image_thumb_path: oldImageThumbPath });
+              const olds = getTaskStoragePathsForDeletion(todo);
               const stillUsed = new Set([finalImagePath, finalImageThumbPath]);
               await deleteTaskImage(...olds.filter((p): p is string => !!p && !stillUsed.has(p)));
             }
