@@ -2,6 +2,8 @@
 
 import { useMemo, useDeferredValue, useState, Suspense } from 'react';
 import { useTodos, useReorderTodos } from '@/hooks/useTodos';
+import { getTaskThumbnail } from '@/lib/taskImages';
+import { useBatchSignedUrls } from '@/hooks/useSignedImageUrl';
 import { useCategories } from '@/hooks/useCategories';
 import { useTags } from '@/hooks/useTags';
 import { useRealtimeTodos } from '@/hooks/useRealtimeTodos';
@@ -181,6 +183,12 @@ function TodoListContent() {
     const limitNum = parseInt(taskLimit, 10);
     return isNaN(limitNum) ? filteredTodos : filteredTodos.slice(0, limitNum);
   }, [filteredTodos, taskLimit]);
+
+  const thumbnailPaths = useMemo(
+    () => displayedTodos.map((t) => getTaskThumbnail(t)).filter((p): p is string => Boolean(p)),
+    [displayedTodos]
+  );
+  useBatchSignedUrls(thumbnailPaths);
 
   const activeCount = useMemo(() => todoList.filter((t) => !t.is_completed).length, [todoList]);
   const completedCount = useMemo(() => todoList.filter((t) => t.is_completed).length, [todoList]);

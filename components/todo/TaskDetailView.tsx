@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTodos, useDeleteTodo, useToggleTodo, useUpdateTodo } from '@/hooks/useTodos';
 import { useSignedImageUrl } from '@/hooks/useSignedImageUrl';
-import { deleteTaskImage } from '@/lib/storage';
+import { getTaskImages } from '@/lib/taskImages';
 import { PriorityBadge } from '@/components/ui/Badge';
 import { EditTodoModal } from '@/components/todo/EditTodoModal';
 import { ChecklistEditor } from '@/components/todo/ChecklistEditor';
@@ -33,8 +33,9 @@ function TaskDetailContent() {
 
   const currentTask = data?.todos.find((t) => t.id === activeTaskId);
 
-  const { data: signedImageUrl } = useSignedImageUrl(currentTask?.image_path || currentTask?.image_url);
-  const displayImageUrl = signedImageUrl || currentTask?.image_url;
+  const taskImages = getTaskImages(currentTask);
+  const fullImagePath = taskImages[0] || null;
+  const { displayUrl: displayImageUrl } = useSignedImageUrl(fullImagePath);
 
   const handleClose = () => {
     const params = new URLSearchParams(searchParams.toString());
@@ -44,11 +45,7 @@ function TaskDetailContent() {
 
   const handleDelete = async () => {
     if (!currentTask) return;
-    if (confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn công việc "${currentTask.title}"?`)) {
-      const imageToDelete = currentTask.image_path || currentTask.image_url;
-      if (imageToDelete) {
-        await deleteTaskImage(imageToDelete);
-      }
+    if (confirm(`Chuyển công việc "${currentTask.title}" vào thùng rác?`)) {
       deleteMutation.mutate(currentTask.id, {
         onSuccess: () => {
           handleClose();

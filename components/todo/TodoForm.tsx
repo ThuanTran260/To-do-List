@@ -81,17 +81,18 @@ export function TodoForm() {
       return;
     }
 
-    let uploadedImagePath: string | undefined = undefined;
+    let uploadedImagePath: string | null = null;
+    let uploadedThumbPath: string | null = null;
 
     try {
       setIsSubmitting(true);
 
       if (selectedFile && user) {
         setStatusText('Đang tải ảnh lên Supabase Storage...');
-        const uploaded = await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
-        if (uploaded) {
-          uploadedImagePath = uploaded;
-        }
+        const { image_path: uploadedImagePathResult, image_thumb_path: uploadedThumbPathResult } =
+          await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
+        uploadedImagePath = uploadedImagePathResult;
+        uploadedThumbPath = uploadedThumbPathResult;
       }
 
       const finalDueDate = dueDate || (nlpPreview ? nlpPreview.toISOString() : undefined);
@@ -105,6 +106,7 @@ export function TodoForm() {
           due_date: finalDueDate,
           category_id: categoryId || undefined,
           image_path: uploadedImagePath,
+          image_thumb_path: uploadedThumbPath,
           tag_ids: selectedTagIds,
           recurrence_rule: recurrenceRule,
         },
@@ -124,8 +126,8 @@ export function TodoForm() {
             setNlpPreview(null);
           },
           onError: async (err) => {
-            if (uploadedImagePath) {
-              await deleteTaskImage(uploadedImagePath);
+            if (uploadedImagePath || uploadedThumbPath) {
+              await deleteTaskImage(uploadedImagePath, uploadedThumbPath);
             }
             setErrorMsg((err as Error).message);
             setIsSubmitting(false);
@@ -134,8 +136,8 @@ export function TodoForm() {
         }
       );
     } catch (err) {
-      if (uploadedImagePath) {
-        await deleteTaskImage(uploadedImagePath);
+      if (uploadedImagePath || uploadedThumbPath) {
+        await deleteTaskImage(uploadedImagePath, uploadedThumbPath);
       }
       setErrorMsg((err as Error).message);
       setIsSubmitting(false);
