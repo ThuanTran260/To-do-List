@@ -11,7 +11,7 @@ import { extractPath, getSignedTaskImageUrl, getSignedAvatarUrl, getBatchSignedT
  * - Can take a relative path ("user_id/task-xxx.webp")
  * - Can take a legacy public URL ("https://.../task-attachments/user_id/task-xxx.webp")
  * - Safe displayUrl: Never leaks internal relative paths to <img src>, prevents 404 race condition.
- * - Caches signed URL for 45 minutes and proactively refetches before 60m expiration.
+ * - Caches signed URL for 6 days and proactively refetches before 7-day expiration.
  */
 export function useSignedImageUrl(imageUrlOrPath: string | null | undefined) {
   const path = imageUrlOrPath ? extractPath(imageUrlOrPath) : null;
