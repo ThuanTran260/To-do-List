@@ -45,8 +45,9 @@ function TaskDetailContent() {
   const handleDelete = async () => {
     if (!currentTask) return;
     if (confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn công việc "${currentTask.title}"?`)) {
-      if (currentTask.image_url) {
-        await deleteTaskImage(currentTask.image_url);
+      const imageToDelete = currentTask.image_path || currentTask.image_url;
+      if (imageToDelete) {
+        await deleteTaskImage(imageToDelete);
       }
       deleteMutation.mutate(currentTask.id, {
         onSuccess: () => {

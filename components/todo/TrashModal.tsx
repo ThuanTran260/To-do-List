@@ -38,8 +38,9 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
 
     try {
       for (const item of trashList) {
-        if (item.image_url) {
-          await deleteTaskImage(item.image_url);
+        const imageToDelete = item.image_path || item.image_url;
+        if (imageToDelete) {
+          await deleteTaskImage(imageToDelete);
         }
       }
 
@@ -180,8 +181,9 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
                   <button
                     onClick={async () => {
                       if (confirm('Xóa vĩnh viễn mục này?')) {
-                        if (item.image_url) {
-                          await deleteTaskImage(item.image_url);
+                        const imageToDelete = item.image_path || item.image_url;
+                        if (imageToDelete) {
+                          await deleteTaskImage(imageToDelete);
                         }
                         permanentDeleteMutation.mutate(item.id);
                       }
