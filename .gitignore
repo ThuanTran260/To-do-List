@@ -24,6 +24,9 @@
 .DS_Store
 *.pem
 
+# isolated git worktrees for agent-driven development (SDD skill)
+/.worktrees/
+
 # debug
 npm-debug.log*
 yarn-debug.log*
