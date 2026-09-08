@@ -41,6 +41,7 @@ export interface TodoItemData {
   category_id?: string | null;
   image_url?: string | null;
   image_path?: string | null;
+  image_thumb_path?: string | null;
   checklist?: ChecklistItem[];
   sort_order?: number;
   recurrence_rule?: string | null;
