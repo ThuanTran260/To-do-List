@@ -181,10 +181,13 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
                     <span className="hidden sm:inline">Khôi phục</span>
                   </button>
                   <button
-                    onClick={async () => {
+                    onClick={() => {
                       if (confirm('Xóa vĩnh viễn mục này?')) {
-                        await deleteTaskImage(...getTaskStoragePathsForDeletion(item));
-                        permanentDeleteMutation.mutate(item.id);
+                        permanentDeleteMutation.mutate(item.id, {
+                          onSuccess: async () => {
+                            await deleteTaskImage(...getTaskStoragePathsForDeletion(item));
+                          },
+                        });
                       }
                     }}
                     disabled={permanentDeleteMutation.isPending || isBulkProcessing}
