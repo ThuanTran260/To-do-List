@@ -36,6 +36,7 @@ export const todoCreateSchema = z.object({
   is_vital: z.boolean().optional(),
   image_url: z.string().url('URL không hợp lệ').or(z.literal('').transform(() => undefined)).optional().nullable(),
   image_path: z.string().optional().nullable(),
+  image_thumb_path: z.string().optional().nullable(),
   checklist: z.array(checklistItemSchema).optional(),
   recurrence_rule: z.string().nullable().optional(),
   sort_order: z.number().optional(),
