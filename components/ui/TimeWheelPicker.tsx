@@ -45,7 +45,7 @@ export function TimeWheelPicker({
   const handleHoursWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       e.stopPropagation();
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
 
       const now = Date.now();
       if (now - lastHourScroll.current > DEBOUNCE_MS) {
@@ -61,7 +61,7 @@ export function TimeWheelPicker({
   const handleMinutesWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       e.stopPropagation();
-      e.preventDefault();
+      if (e.cancelable) e.preventDefault();
 
       const now = Date.now();
       if (now - lastMinScroll.current > DEBOUNCE_MS) {

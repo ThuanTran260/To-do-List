@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useCreateTodo } from '@/hooks/useTodos';
 import { useCategories } from '@/hooks/useCategories';
 import { useAuth } from '@/hooks/useAuth';
-import { uploadTaskImage } from '@/lib/storage';
+import { uploadTaskImage, deleteTaskImage } from '@/lib/storage';
 import { DatePickerModal } from '@/components/ui/DatePickerModal';
 import { CustomPrioritySelect, type PriorityType } from '@/components/ui/CustomPrioritySelect';
 import { CustomCategorySelect } from '@/components/ui/CustomCategorySelect';
@@ -81,15 +81,16 @@ export function TodoForm() {
       return;
     }
 
+    let uploadedImagePath: string | undefined = undefined;
+
     try {
       setIsSubmitting(true);
-      let imageUrl: string | undefined = undefined;
 
       if (selectedFile && user) {
         setStatusText('Đang tải ảnh lên Supabase Storage...');
         const uploaded = await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
         if (uploaded) {
-          imageUrl = uploaded;
+          uploadedImagePath = uploaded;
         }
       }
 
@@ -103,8 +104,7 @@ export function TodoForm() {
           priority,
           due_date: finalDueDate,
           category_id: categoryId || undefined,
-          image_url: imageUrl,
-          image_path: imageUrl,
+          image_path: uploadedImagePath,
           tag_ids: selectedTagIds,
           recurrence_rule: recurrenceRule,
         },
@@ -123,7 +123,10 @@ export function TodoForm() {
             setIsSubmitting(false);
             setNlpPreview(null);
           },
-          onError: (err) => {
+          onError: async (err) => {
+            if (uploadedImagePath) {
+              await deleteTaskImage(uploadedImagePath);
+            }
             setErrorMsg((err as Error).message);
             setIsSubmitting(false);
             setStatusText('');
@@ -131,6 +134,9 @@ export function TodoForm() {
         }
       );
     } catch (err) {
+      if (uploadedImagePath) {
+        await deleteTaskImage(uploadedImagePath);
+      }
       setErrorMsg((err as Error).message);
       setIsSubmitting(false);
       setStatusText('');

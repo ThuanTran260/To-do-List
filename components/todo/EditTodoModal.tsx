@@ -46,7 +46,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
       setPriority(todo.priority || 'medium');
       setCategoryId(todo.category_id || '');
       setRecurrenceRule(todo.recurrence_rule || null);
-      setImageUrl(todo.image_url || null);
+      setImageUrl(todo.image_path || todo.image_url || null);
       setSelectedFile(null);
       setRemoveImageRequested(false);
       setDueDate(todo.due_date || '');
@@ -65,23 +65,25 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
     }
 
     setIsSubmitting(true);
+    let newUploadedPath: string | null = null;
+    const oldImagePath = todo.image_path || todo.image_url;
 
     try {
-      let newImageUrl = imageUrl;
+      let finalImagePath: string | null | undefined = imageUrl;
 
-      // 1. User selected a new image file -> Upload & Cleanup old image
+      // 1. User selected a new image file -> Upload
       if (selectedFile && user) {
-        if (todo.image_url) {
-          await deleteTaskImage(todo.image_url);
-        }
-        newImageUrl = await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
-      } else if (removeImageRequested && todo.image_url) {
-        // 2. User explicitly removed existing image -> Cleanup old image
-        await deleteTaskImage(todo.image_url);
-        newImageUrl = null;
+        newUploadedPath = await uploadTaskImage(selectedFile, user.id, (s) => setStatusText(s));
+        finalImagePath = newUploadedPath;
+      } else if (removeImageRequested) {
+        // 2. User explicitly removed existing image
+        finalImagePath = null;
       }
 
       setStatusText('Đang lưu...');
+
+      const isExternal = typeof finalImagePath === 'string' &&
+        (finalImagePath.startsWith('http://') || finalImagePath.startsWith('https://'));
 
       updateMutation.mutate(
         {
@@ -93,16 +95,24 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
             category_id: categoryId || undefined,
             due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
             recurrence_rule: recurrenceRule,
-            image_url: newImageUrl || undefined,
-            image_path: newImageUrl || undefined,
+            image_path: finalImagePath === null ? null : (isExternal ? null : finalImagePath),
+            image_url: finalImagePath === null ? null : (isExternal ? finalImagePath : null),
             is_vital: priority === 'high',
           },
         },
         {
-          onSuccess: () => {
+          onSuccess: async () => {
+            // Cleanup old image only after successful DB update
+            if ((selectedFile || removeImageRequested) && oldImagePath && oldImagePath !== finalImagePath) {
+              await deleteTaskImage(oldImagePath);
+            }
             onClose();
           },
-          onError: (err) => {
+          onError: async (err) => {
+            // Rollback newly uploaded image if update fails
+            if (newUploadedPath) {
+              await deleteTaskImage(newUploadedPath);
+            }
             setErrorMsg((err as Error).message || 'Không thể cập nhật todo');
           },
           onSettled: () => {
@@ -112,6 +122,9 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
         }
       );
     } catch (err) {
+      if (newUploadedPath) {
+        await deleteTaskImage(newUploadedPath);
+      }
       setErrorMsg((err as Error).message || 'Lỗi lưu dữ liệu');
       setIsSubmitting(false);
       setStatusText('');

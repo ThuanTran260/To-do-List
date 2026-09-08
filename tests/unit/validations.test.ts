@@ -253,3 +253,65 @@ describe('normalizeHexColor and getTagTint', () => {
   });
 });
 
+describe('todoCreateSchema & todoUpdateSchema image_path & image_url (Private Storage Parity)', () => {
+  it('accepts valid relative storage image_path without image_url', () => {
+    const result = todoCreateSchema.parse({
+      title: 'Công việc mới với ảnh webp',
+      image_path: 'b299e46a-74b8-40da-a3b0-681533adca66/task-1741484000-abcd1234.webp',
+    });
+    expect(result.image_path).toBe('b299e46a-74b8-40da-a3b0-681533adca66/task-1741484000-abcd1234.webp');
+    expect(result.image_url).toBeUndefined();
+  });
+
+  it('accepts image_path with null or empty image_url', () => {
+    const resNull = todoCreateSchema.parse({
+      title: 'Task null image_url',
+      image_path: 'user/task.webp',
+      image_url: null,
+    });
+    expect(resNull.image_url).toBeNull();
+
+    const resEmpty = todoCreateSchema.parse({
+      title: 'Task empty image_url',
+      image_path: 'user/task.webp',
+      image_url: '',
+    });
+    expect(resEmpty.image_url).toBeUndefined();
+  });
+
+  it('accepts legacy full URL in image_url', () => {
+    const result = todoCreateSchema.parse({
+      title: 'Task with legacy url',
+      image_url: 'https://hgonqjclipxcizyozwvz.supabase.co/storage/v1/object/public/task-attachments/user/task.webp',
+    });
+    expect(result.image_url).toBe('https://hgonqjclipxcizyozwvz.supabase.co/storage/v1/object/public/task-attachments/user/task.webp');
+  });
+
+  it('rejects non-URL string in image_url', () => {
+    expect(() =>
+      todoCreateSchema.parse({
+        title: 'Task with bad url',
+        image_url: 'not-a-valid-url',
+      })
+    ).toThrow();
+  });
+
+  it('update schema accepts image_path: null and image_url: null for image removal', () => {
+    const result = todoUpdateSchema.parse({
+      image_path: null,
+      image_url: null,
+    });
+    expect(result.image_path).toBeNull();
+    expect(result.image_url).toBeNull();
+  });
+
+  it('update schema accepts updated image_path', () => {
+    const result = todoUpdateSchema.parse({
+      image_path: 'user/new-task.webp',
+      image_url: null,
+    });
+    expect(result.image_path).toBe('user/new-task.webp');
+    expect(result.image_url).toBeNull();
+  });
+});
+
