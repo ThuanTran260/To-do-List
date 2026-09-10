@@ -44,7 +44,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
                 const event = new KeyboardEvent('keydown', { key: 'k', ctrlKey: true, metaKey: true });
                 window.dispatchEvent(event);
               }}
-              className="px-2 py-1 rounded-md text-xs font-medium text-ink-subtle bg-surface-2 border border-hairline hover:text-primary hover:border-primary-border flex items-center gap-1 transition-colors cursor-pointer"
+              className="hidden sm:flex px-2 py-1 rounded-md text-xs font-medium text-ink-subtle bg-surface-2 border border-hairline hover:text-primary hover:border-primary-border items-center gap-1 transition-colors cursor-pointer"
               title="Mở Command Palette (Ctrl+K)"
             >
               <span className="font-mono">⌘K</span>
