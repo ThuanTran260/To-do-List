@@ -18,12 +18,12 @@
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.111.0",
     "@tanstack/react-query": "^5.101.4",
-    "@tiptap/extension-highlight": "^3.30.2",
-    "@tiptap/extension-placeholder": "^3.30.2",
-    "@tiptap/extension-task-item": "^3.30.2",
-    "@tiptap/extension-task-list": "^3.30.2",
-    "@tiptap/react": "^3.30.2",
-    "@tiptap/starter-kit": "^3.30.2",
+    "@tiptap/extension-highlight": "^3.31.3",
+    "@tiptap/extension-placeholder": "^3.31.3",
+    "@tiptap/extension-task-item": "^3.31.3",
+    "@tiptap/extension-task-list": "^3.31.3",
+    "@tiptap/react": "^3.31.3",
+    "@tiptap/starter-kit": "^3.31.3",
     "chrono-node": "^2.10.1",
     "clsx": "^2.1.1",
     "dompurify": "^3.4.14",
@@ -51,5 +51,8 @@
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^4.1.11"
+  },
+  "overrides": {
+    "js-yaml": "^4.3.2"
   }
 }
