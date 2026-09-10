@@ -85,7 +85,7 @@ function NotificationPopoverContent() {
         )}
       </button>
 
-      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 sm:w-96 p-3.5 space-y-3">
+      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-full sm:w-96 p-3.5 space-y-3">
         {/* Header */}
         <div className="flex items-center justify-between pb-2 border-b border-hairline">
           <div className="flex items-center gap-2">

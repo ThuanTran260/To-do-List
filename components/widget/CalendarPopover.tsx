@@ -101,7 +101,7 @@ export function CalendarPopover() {
         <Calendar className="w-4 h-4 text-primary" />
       </button>
 
-      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-80 p-3.5 space-y-3">
+      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-full sm:w-80 p-3.5 space-y-3">
         {/* Header Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
