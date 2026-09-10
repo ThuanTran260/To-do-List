@@ -50,6 +50,7 @@ export default function UpdatePasswordPage() {
       console.error('[update-password]', { code: (error as { code?: string })?.code });
       setMsg('Không thể đổi mật khẩu. Liên kết có thể đã hết hạn — hãy yêu cầu lại.');
     } else {
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Hard reload required to flush auth cookies and server layout cache
       window.location.href = '/dashboard';
       return;
     }

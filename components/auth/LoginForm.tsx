@@ -98,6 +98,7 @@ export function LoginForm() {
     } else {
       clearFailures('login');
       // Full session refresh redirect
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Hard reload required to flush auth cookies and server layout cache
       window.location.href = '/dashboard';
     }
   };

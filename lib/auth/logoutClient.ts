@@ -68,5 +68,6 @@ export async function performLogout(): Promise<void> {
   }
 
   // Ép chuyển hướng cứng (hard navigation) để xóa sạch state + cache
+  // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Hard reload required to flush auth cookies and server layout cache
   window.location.href = '/login';
 }
