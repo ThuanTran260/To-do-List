@@ -109,7 +109,7 @@ export function SignupForm() {
       const isProd = process.env.NODE_ENV === 'production';
       document.cookie = `sb-remember-me=true; path=/; max-age=2592000; SameSite=Lax${isProd ? '; Secure' : ''}`;
       if (data.session) {
-        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Hard reload required to flush auth cookies and server layout cache
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- Hard reload required to flush auth cookies and session cache
         window.location.href = '/dashboard';
       } else {
         setSuccessMsg(
