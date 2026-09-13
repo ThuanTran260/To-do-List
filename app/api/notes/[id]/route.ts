@@ -28,7 +28,8 @@ export const PATCH = withAuth(
       return NextResponse.json({ error: 'Invalid note id' }, { status: 400 });
     }
 
-    if (!checkRateLimit(`notes:write:${user.id}`, 60, 60000)) {
+    // P0 RC4: nâng từ 60 lên 120 req/min để đệm an toàn cho debounce 600ms
+    if (!checkRateLimit(`notes:write:${user.id}`, 120, 60000)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
 

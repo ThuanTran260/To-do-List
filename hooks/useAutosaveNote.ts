@@ -59,8 +59,20 @@ export function useAutosaveNote({
   };
 
   const isDirtyRef = useRef(false);
-  const saveSeqRef = useRef(0);
+  const saveSeqCounterRef = useRef(0);
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // P1 RC2: Idempotency Key cho draft mới — gán lazy trong executeSave để giữ render hook pure
+  const clientDraftIdRef = useRef<string>('');
+
+  // P1 RC2: Single-tab creation concurrency guard — tránh bắn 2 createMutation gối nhau
+  const inFlightCreatePromiseRef = useRef<Promise<Note> | null>(null);
+
+  // Stable ref tham chiếu executeSave cho recursive debounce timeout (chống cycle declaration lint)
+  const executeSaveRef = useRef<(() => Promise<void>) | null>(null);
+
+  // P1 RC5: Keystroke timestamp — chống nuốt keystroke gõ giữa lúc request đang bay
+  const dirtyAtRef = useRef<number>(0);
 
   // E-M7: userId cho namespaced draft keys — mirror qua ref để callbacks
   // (executeSave dùng useCallback) luôn đọc giá trị mới nhất mà không churn deps.
@@ -101,6 +113,25 @@ export function useAutosaveNote({
       setStatus('saved');
       setHasConflict(false);
       isDirtyRef.current = false;
+      dirtyAtRef.current = 0;
+      inFlightCreatePromiseRef.current = null;
+      clientDraftIdRef.current = '';
+    } else if (!note?.id && activeNoteIdRef.current) {
+      // Fresh blank draft after a real note: drop all prior-note save state so the
+      // next save creates a new row instead of updating the previous note with a
+      // stale id (and never reuses its idempotency key).
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+      activeNoteIdRef.current = null;
+      lastKnownUpdatedAtRef.current = undefined;
+      clientDraftIdRef.current = '';
+      inFlightCreatePromiseRef.current = null;
+      isDirtyRef.current = false;
+      dirtyAtRef.current = 0;
+      setStatus('saved');
+      setHasConflict(false);
     }
   }, [note?.id, note?.updated_at, note?.title, note?.content, note?.color, note?.is_pinned]);
 
@@ -108,11 +139,13 @@ export function useAutosaveNote({
   const executeSave = useCallback(async () => {
     if (!isDirtyRef.current) return;
 
-    const currentSeq = ++saveSeqRef.current;
+    const currentSeq = ++saveSeqCounterRef.current;
+    const saveStartTime = Date.now();
     setStatus('saving');
 
     const { title: currentTitle, content: currentContent, color: currentColor, is_pinned: currentPinned } = dataRef.current;
-    const noteId = activeNoteIdRef.current;
+    let noteId = activeNoteIdRef.current;
+    let justCreated = false;
 
     try {
       if (!noteId) {
@@ -123,22 +156,60 @@ export function useAutosaveNote({
           return;
         }
 
-        const created = await createMutation.mutateAsync({
-          title: currentTitle,
-          content: currentContent,
-          color: currentColor,
-          is_pinned: currentPinned,
-        });
-
-        if (currentSeq === saveSeqRef.current) {
-          activeNoteIdRef.current = created.id;
-          lastKnownUpdatedAtRef.current = created.updated_at;
-          isDirtyRef.current = false;
-          setStatus('saved');
-          clearLocalDraft(userIdRef.current, created.id);
-          onNoteCreatedRef.current?.(created);
+        // Idempotency Key cho draft mới — khởi tạo trong handler/callback để giữ hook render pure.
+        // Không có crypto.randomUUID (Safari cũ / insecure context) thì bỏ id để server tự sinh,
+        // thay vì gửi string sai định dạng uuid khiến Zod reject toàn bộ autosave.
+        if (!clientDraftIdRef.current) {
+          if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+            clientDraftIdRef.current = crypto.randomUUID();
+          }
         }
-      } else {
+
+        let created: Note;
+        // P1 RC2: Nếu đã có 1 createMutation đang bay trong tab, join promise đó
+        if (inFlightCreatePromiseRef.current) {
+          created = await inFlightCreatePromiseRef.current;
+        } else {
+          const createPromise = createMutation.mutateAsync({
+            // id có thể vắng khi không sinh được UUID — server tự sinh UUID mới.
+            ...(clientDraftIdRef.current ? { id: clientDraftIdRef.current } : {}),
+            title: currentTitle,
+            content: currentContent,
+            color: currentColor,
+            is_pinned: currentPinned,
+          });
+          inFlightCreatePromiseRef.current = createPromise;
+          try {
+            created = await createPromise;
+          } finally {
+            inFlightCreatePromiseRef.current = null;
+          }
+        }
+
+        activeNoteIdRef.current = created.id;
+        lastKnownUpdatedAtRef.current = created.updated_at;
+        clearLocalDraft(userIdRef.current, created.id);
+        // NOTE: creator và joiner (nhánh in-flight bên dưới) đều đi qua đây —
+        // parent onNoteCreated phải idempotent (hiện là no-op nên an toàn).
+        onNoteCreatedRef.current?.(created);
+        noteId = created.id;
+        justCreated = true;
+      }
+
+      // Nếu trong lúc tạo (hoặc lúc update), người dùng đã gõ thêm ký tự sau saveStartTime
+      if (noteId && dirtyAtRef.current > saveStartTime) {
+        const freshest = dataRef.current;
+        const updated = await updateMutation.mutateAsync({
+          id: noteId,
+          title: freshest.title,
+          content: freshest.content,
+          color: freshest.color,
+          is_pinned: freshest.is_pinned,
+          lastKnownUpdatedAt: lastKnownUpdatedAtRef.current,
+        });
+        lastKnownUpdatedAtRef.current = updated.updated_at;
+        clearLocalDraft(userIdRef.current, noteId);
+      } else if (noteId && !justCreated && currentSeq === saveSeqCounterRef.current) {
         const updated = await updateMutation.mutateAsync({
           id: noteId,
           title: currentTitle,
@@ -147,25 +218,33 @@ export function useAutosaveNote({
           is_pinned: currentPinned,
           lastKnownUpdatedAt: lastKnownUpdatedAtRef.current,
         });
+        lastKnownUpdatedAtRef.current = updated.updated_at;
+        clearLocalDraft(userIdRef.current, noteId);
+      }
 
-        if (currentSeq === saveSeqRef.current) {
-          lastKnownUpdatedAtRef.current = updated.updated_at;
+      if (currentSeq === saveSeqCounterRef.current) {
+        // P1 RC5: Chỉ đánh dấu hết dirty nếu không có ký tự mới nào được gõ trong lúc request đang bay
+        if (dirtyAtRef.current <= saveStartTime) {
           isDirtyRef.current = false;
           setStatus('saved');
-          setHasConflict(false);
-          clearLocalDraft(userIdRef.current, noteId);
+        } else {
+          // Có keystroke mới — giữ dirty và trigger debounced save tiếp theo
+          isDirtyRef.current = true;
+          setStatus('dirty');
+          if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+          debounceTimerRef.current = setTimeout(() => {
+            executeSaveRef.current?.();
+          }, 600);
         }
+        setHasConflict(false);
       }
     } catch (err: unknown) {
-      if (currentSeq === saveSeqRef.current) {
-        // Review fix (#4): nhánh VERSION_CONFLICT chết từ Aug (optimistic lock
-        // bị gỡ ở bbc8841 vì lỗi 406) — không còn ai throw string này. Dọn dead code,
-        // giữ setStatus + emergency draft. setHasConflict giữ lại cho tương lai.
+      if (currentSeq === saveSeqCounterRef.current) {
         if (process.env.NODE_ENV === 'development') console.error('[autosave] save failed', err);
         setStatus('error');
 
         // Save emergency draft locally (namespaced per user; anonymous → legacy key)
-        const targetId = activeNoteIdRef.current || 'draft-new';
+        const targetId = activeNoteIdRef.current || clientDraftIdRef.current || 'draft-new';
         saveEmergencyDraft(userIdRef.current, targetId, {
           noteId: targetId,
           title: currentTitle,
@@ -178,9 +257,13 @@ export function useAutosaveNote({
     }
   }, [createMutation, updateMutation]);
 
+  // Đồng bộ ref thực thi cho timeout debounce
+  executeSaveRef.current = executeSave;
+
   // Trigger debounced save
   const triggerDebouncedSave = useCallback(() => {
     isDirtyRef.current = true;
+    dirtyAtRef.current = Date.now();
     setStatus('dirty');
 
     if (activeNoteIdRef.current) {
@@ -200,13 +283,13 @@ export function useAutosaveNote({
     }, 600);
   }, [executeSave]);
 
-  const flush = useCallback(() => {
+  const flush = useCallback(async () => {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
       debounceTimerRef.current = null;
     }
     if (isDirtyRef.current) {
-      executeSave();
+      await executeSave();
     }
   }, [executeSave]);
 
@@ -219,7 +302,7 @@ export function useAutosaveNote({
       if (isDirtyRef.current) {
         // Execute synchronous emergency flush
         const { title: t, content: c, color: col, is_pinned: p } = dataRef.current;
-        const nId = activeNoteIdRef.current || 'draft-new';
+        const nId = activeNoteIdRef.current || clientDraftIdRef.current || 'draft-new';
         saveEmergencyDraft(userIdRef.current, nId, {
           noteId: nId,
           title: t,
