@@ -14,8 +14,10 @@ const bodySchema = z.object({
 export const POST = withAuth(async (request, user, supabase) => {
   try {
     // MD-05: auth đã chạy trong withAuth — rateLimit SAU auth để tránh drain bucket chung.
-    // CSRF check nằm trong withAuth option requireCsrf (E-M1, B10).
-    // 60/phút: autosave debounce 600ms (~100 save/phút khi gõ liên tục) — 20/phút gây 429 khi soạn thảo (I-3).
+    // P0 RC4: notes:sync:${user.id} giữ nguyên 60/phút có chủ ý vì chỉ kích hoạt khẩn cấp
+    // khi đóng tab/ẩn trình duyệt (keepalive emergency sync), không chạy theo nhịp gõ chữ.
+    // Lưu ý kiến trúc: checkRateLimit là in-memory per-instance trên Vercel Serverless,
+    // ngăn ngừa client runaway loop cục bộ, không đóng vai trò distributed rate limiter.
     if (!checkRateLimit(`notes:sync:${user.id}`, 60, 60000)) {
       return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
     }
