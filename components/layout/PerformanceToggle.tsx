@@ -6,11 +6,18 @@ import { Gauge, Zap, Sparkles } from 'lucide-react';
 export function PerformanceToggle() {
   const { mode, isLiteActive, cycleMode, inspection } = usePerformance();
 
+  const getAutoReason = () => {
+    if (inspection.isSoftwareRasterizer) return 'máy ảo / đồ họa phần mềm';
+    if (inspection.prefersReducedMotion) return 'chế độ giảm chuyển động';
+    if (inspection.cores <= 2) return 'thiết bị cấu hình tiết kiệm';
+    return 'tự động tối ưu';
+  };
+
   const getTooltip = () => {
     if (mode === 'auto') {
       return `Hiệu năng: Tự động (${
         isLiteActive
-          ? 'Đang bật Lite Mode do phát hiện ' + (inspection.isSoftwareRasterizer ? 'máy ảo' : 'máy yếu')
+          ? `Đang bật Lite Mode do ${getAutoReason()}`
           : 'Đồ họa đầy đủ'
       }). Bấm để đổi.`;
     }

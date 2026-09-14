@@ -14,12 +14,17 @@ const SOFTWARE_RASTERIZER_TOKENS = [
   'softpipe',
   'swiftshader',
   'software rasterizer',
+  'software renderer',
   'mesa off-screen',
   'virtualbox',
   'vmware',
   'vmwgfx',
   'qemu',
   'virgl',
+  'basic render',
+  'microsoft basic render driver',
+  'lavapipe',
+  'parallels',
 ];
 
 let cachedInspection: HardwareInspectionResult | null = null;
@@ -48,17 +53,24 @@ export function inspectHardware(): HardwareInspectionResult {
 
   try {
     const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
     const gl = (canvas.getContext('webgl') || canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
 
-    if (gl && (typeof WebGLRenderingContext === 'undefined' || gl instanceof WebGLRenderingContext)) {
+    if (gl && typeof gl.getExtension === 'function') {
       const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
       if (debugInfo) {
         renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || '';
         vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || '';
       }
+      // Standard WebGL fallback if unmasked debug extension is unavailable or restricted
+      if (!renderer && typeof gl.getParameter === 'function') {
+        renderer = gl.getParameter(gl.RENDERER) || '';
+        vendor = gl.getParameter(gl.VENDOR) || '';
+      }
       // R2 Fix: Giải phóng ngay lập tức WebGL context để không bao giờ bị vượt hạn ngạch 8-16 context của browser
       const loseContextExt = gl.getExtension('WEBGL_lose_context');
-      if (loseContextExt) {
+      if (loseContextExt && typeof loseContextExt.loseContext === 'function') {
         loseContextExt.loseContext();
       }
     }
@@ -70,10 +82,16 @@ export function inspectHardware(): HardwareInspectionResult {
   isSoftwareRasterizer = SOFTWARE_RASTERIZER_TOKENS.some((token) => combined.includes(token));
 
   const cores = typeof navigator !== 'undefined' ? navigator.hardwareConcurrency || 4 : 4;
-  const prefersReducedMotion =
-    typeof window !== 'undefined' &&
-    typeof window.matchMedia === 'function' &&
-    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let prefersReducedMotion = false;
+  try {
+    prefersReducedMotion =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      Boolean(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  } catch {
+    prefersReducedMotion = false;
+  }
 
   // Máy ảo chạy llvmpipe/swiftshader hoặc máy chỉ có 1-2 core CPU
   const isLowEnd = isSoftwareRasterizer || cores <= 2;
@@ -97,8 +115,9 @@ export function resolveEffectiveLiteMode(
   if (mode === 'lite') return true;
   if (mode === 'full') return false;
 
+  const resolved = inspection || inspectHardware();
   // Mode 'auto': Ưu tiên bật Lite nếu phát hiện máy ảo/máy yếu hoặc user bật accessibility reduced motion
-  return inspection.isLowEnd || inspection.prefersReducedMotion;
+  return Boolean(resolved.isLowEnd || resolved.prefersReducedMotion);
 }
 
 export function getNextPerformanceMode(current: PerformanceMode): PerformanceMode {

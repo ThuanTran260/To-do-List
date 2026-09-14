@@ -51,7 +51,7 @@ export function PerformanceProvider({
   const [isLiteActive, setIsLiteActive] = useState<boolean>(false);
   const [, startTransition] = useTransition();
 
-  // Load saved preference from localStorage and inspect hardware on mount
+  // 1. Initial mount: probe hardware and restore saved preference from localStorage
   useEffect(() => {
     let initialMode: PerformanceMode = defaultMode;
     try {
@@ -66,35 +66,38 @@ export function PerformanceProvider({
     const detected = inspectHardware();
     setInspection(detected);
     setModeState(initialMode);
+    setIsLiteActive(resolveEffectiveLiteMode(initialMode, detected));
+  }, [defaultMode, storageKey]);
 
-    const active = resolveEffectiveLiteMode(initialMode, detected);
-    setIsLiteActive(active);
+  // 2. Synchronize .lite-mode class directly to document.documentElement with unmount cleanup
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
 
-    // Sync HTML class
-    if (active) {
+    if (isLiteActive) {
       document.documentElement.classList.add('lite-mode');
     } else {
       document.documentElement.classList.remove('lite-mode');
     }
-  }, [defaultMode, storageKey]);
 
-  // Listen for OS prefers-reduced-motion changes if in auto mode
+    return () => {
+      document.documentElement.classList.remove('lite-mode');
+    };
+  }, [isLiteActive]);
+
+  // 3. Listen for OS prefers-reduced-motion media query changes
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const handleChange = () => {
+      const freshInspection: HardwareInspectionResult = {
+        ...inspectHardware(),
+        prefersReducedMotion: mql.matches,
+      };
+      setInspection(freshInspection);
+
       if (mode === 'auto') {
-        const freshInspection = inspectHardware();
-        freshInspection.prefersReducedMotion = mql.matches;
-        setInspection({ ...freshInspection });
-        const active = resolveEffectiveLiteMode('auto', freshInspection);
-        setIsLiteActive(active);
-        if (active) {
-          document.documentElement.classList.add('lite-mode');
-        } else {
-          document.documentElement.classList.remove('lite-mode');
-        }
+        setIsLiteActive(resolveEffectiveLiteMode('auto', freshInspection));
       }
     };
 
@@ -113,12 +116,6 @@ export function PerformanceProvider({
 
       const active = resolveEffectiveLiteMode(newMode, inspection);
       setIsLiteActive(active);
-
-      if (active) {
-        document.documentElement.classList.add('lite-mode');
-      } else {
-        document.documentElement.classList.remove('lite-mode');
-      }
     });
   };
 

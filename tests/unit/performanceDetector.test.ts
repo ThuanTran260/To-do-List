@@ -8,6 +8,12 @@ import {
 } from '@/lib/hardware/performanceDetector';
 
 describe('performanceDetector.getNextPerformanceMode', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it('cycles correctly through auto -> lite -> full -> auto', () => {
     expect(getNextPerformanceMode('auto')).toBe('lite');
     expect(getNextPerformanceMode('lite')).toBe('full');
@@ -17,6 +23,12 @@ describe('performanceDetector.getNextPerformanceMode', () => {
 });
 
 describe('performanceDetector.resolveEffectiveLiteMode', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null);
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
   it('always activates lite mode when mode is "lite"', () => {
     expect(
       resolveEffectiveLiteMode('lite', {
@@ -94,11 +106,18 @@ describe('performanceDetector.resolveEffectiveLiteMode', () => {
       })
     ).toBe(true);
   });
+
+  it('handles null or undefined inspection gracefully without throwing', () => {
+    // @ts-expect-error test invalid input resilience
+    expect(typeof resolveEffectiveLiteMode('auto', null)).toBe('boolean');
+    expect(typeof resolveEffectiveLiteMode('auto', undefined)).toBe('boolean');
+  });
 });
 
 describe('performanceDetector.inspectHardware (SSR Safety & WebGL Probe)', () => {
   beforeEach(() => {
     _resetCachedInspection();
+    HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElement.prototype.getContext;
   });
 
   afterEach(() => {
@@ -157,6 +176,96 @@ describe('performanceDetector.inspectHardware (SSR Safety & WebGL Probe)', () =>
     expect(res.isLowEnd).toBe(true);
     expect(res.renderer).toBe('llvmpipe (LLVM 14.0.0, 256 bits)');
     expect(res.vendor).toBe('Mesa/X.org');
+  });
+
+  it('detects Microsoft Basic Render Driver in Windows virtual machines', () => {
+    const loseContextMock = vi.fn();
+    const mockGl = {
+      getExtension: vi.fn((ext: string) => {
+        if (ext === 'WEBGL_debug_renderer_info') {
+          return {
+            UNMASKED_RENDERER_WEBGL: 0x9246,
+            UNMASKED_VENDOR_WEBGL: 0x9245,
+          };
+        }
+        if (ext === 'WEBGL_lose_context') {
+          return { loseContext: loseContextMock };
+        }
+        return null;
+      }),
+      getParameter: vi.fn((param: number) => {
+        if (param === 0x9246) return 'Microsoft Basic Render Driver';
+        if (param === 0x9245) return 'Microsoft Corporation';
+        return '';
+      }),
+    };
+
+    vi.spyOn(document, 'createElement').mockReturnValue({
+      getContext: vi.fn().mockReturnValue(mockGl),
+    } as unknown as HTMLCanvasElement);
+
+    const res = inspectHardware();
+
+    expect(loseContextMock).toHaveBeenCalledTimes(1);
+    expect(res.isSoftwareRasterizer).toBe(true);
+    expect(res.isLowEnd).toBe(true);
+  });
+
+  it('detects lavapipe Vulkan software rasterizer', () => {
+    const mockGl = {
+      getExtension: vi.fn((ext: string) => {
+        if (ext === 'WEBGL_debug_renderer_info') {
+          return {
+            UNMASKED_RENDERER_WEBGL: 0x9246,
+            UNMASKED_VENDOR_WEBGL: 0x9245,
+          };
+        }
+        if (ext === 'WEBGL_lose_context') {
+          return { loseContext: vi.fn() };
+        }
+        return null;
+      }),
+      getParameter: vi.fn((param: number) => {
+        if (param === 0x9246) return 'Mesa lavapipe 23.1.0';
+        if (param === 0x9245) return 'Mesa';
+        return '';
+      }),
+    };
+
+    vi.spyOn(document, 'createElement').mockReturnValue({
+      getContext: vi.fn().mockReturnValue(mockGl),
+    } as unknown as HTMLCanvasElement);
+
+    const res = inspectHardware();
+    expect(res.isSoftwareRasterizer).toBe(true);
+    expect(res.isLowEnd).toBe(true);
+  });
+
+  it('falls back to standard gl.RENDERER when WEBGL_debug_renderer_info is unavailable', () => {
+    const mockGl = {
+      RENDERER: 0x1F01,
+      VENDOR: 0x1F00,
+      getExtension: vi.fn((ext: string) => {
+        if (ext === 'WEBGL_lose_context') {
+          return { loseContext: vi.fn() };
+        }
+        return null; // debug_info not available
+      }),
+      getParameter: vi.fn((param: number) => {
+        if (param === 0x1F01) return 'Software Renderer';
+        if (param === 0x1F00) return 'Generic';
+        return '';
+      }),
+    };
+
+    vi.spyOn(document, 'createElement').mockReturnValue({
+      getContext: vi.fn().mockReturnValue(mockGl),
+    } as unknown as HTMLCanvasElement);
+
+    const res = inspectHardware();
+    expect(res.renderer).toBe('Software Renderer');
+    expect(res.isSoftwareRasterizer).toBe(true);
+    expect(res.isLowEnd).toBe(true);
   });
 
   it('identifies dedicated GPU (NVIDIA) as not low-end on multi-core machine', () => {
@@ -222,5 +331,19 @@ describe('performanceDetector.inspectHardware (SSR Safety & WebGL Probe)', () =>
 
     expect(res).toBeDefined();
     expect(res.isSoftwareRasterizer).toBe(false);
+  });
+
+  it('handles throwing matchMedia gracefully', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation(() => {
+      throw new Error('matchMedia not supported');
+    });
+
+    try {
+      const res = inspectHardware();
+      expect(res.prefersReducedMotion).toBe(false);
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
   });
 });
