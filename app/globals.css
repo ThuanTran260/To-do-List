@@ -413,7 +413,8 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
   & aside,
   & [role="dialog"],
   & [data-floating-panel],
-  & .surface-panel {
+  & .surface-panel,
+  & [class*="backdrop-blur"][class*="bg-surface"] {
     background-color: var(--surface-1) !important;
   }
 
