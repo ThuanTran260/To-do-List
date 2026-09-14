@@ -19,6 +19,7 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  serverExternalPackages: ['jsdom'],
   turbopack: {},
 
   // Apply security headers to ALL responses (including static assets).
