@@ -25,4 +25,21 @@ describe('notes write contract (E-H1)', () => {
   it('getCsrfToken returns empty string server-side', () => {
     expect(getCsrfToken()).toBe('');
   });
+
+  it('preserves TipTap task list content on note creation payload validation and sanitization', () => {
+    const rawContent = '<ul data-type="taskList"><li data-type="taskItem" data-checked="true"><label><input type="checkbox" checked="checked"><span></span></label><div><p>Complete review</p></div></li></ul>';
+    const parsed = noteCreateSchema.safeParse({
+      title: 'Review Task',
+      content: rawContent,
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      const sanitized = sanitizeHtmlServer(parsed.data.content);
+      expect(sanitized).toContain('data-type="taskList"');
+      expect(sanitized).toContain('data-type="taskItem"');
+      expect(sanitized).toContain('data-checked="true"');
+      expect(sanitized).toContain('Complete review');
+    }
+  });
 });
+
