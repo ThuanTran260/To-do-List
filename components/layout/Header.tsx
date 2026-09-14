@@ -1,6 +1,7 @@
 'use client';
 
 import { ThemeToggle } from '@/components/layout/ThemeToggle';
+import { PerformanceToggle } from '@/components/layout/PerformanceToggle';
 import { SearchAutocomplete } from '@/components/widget/SearchAutocomplete';
 import { CalendarPopover } from '@/components/widget/CalendarPopover';
 import { NotificationPopover } from '@/components/widget/NotificationPopover';
@@ -50,6 +51,7 @@ export function Header({ onOpenSidebar }: HeaderProps) {
               <span className="font-mono">⌘K</span>
             </button>
             <ThemeToggle />
+            <PerformanceToggle />
             <CalendarPopover />
             <NotificationPopover />
 
