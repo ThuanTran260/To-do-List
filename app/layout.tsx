@@ -3,6 +3,7 @@ import { Inter, JetBrains_Mono } from 'next/font/google';
 import { headers } from 'next/headers';
 import QueryProvider from '@/providers/QueryProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
+import { PerformanceProvider } from '@/providers/PerformanceProvider';
 import { DropdownManagerProvider } from '@/hooks/useDropdownManager';
 import { IntroSplash } from '@/components/ui/IntroSplash';
 import { AppToaster } from '@/components/ui/AppToaster';
@@ -42,12 +43,14 @@ export default async function RootLayout({
     >
       <body className="antialiased selection:bg-primary selection:text-white">
         <ThemeProvider defaultTheme="dark" storageKey="flowstate-theme">
-          <QueryProvider>
-            <DropdownManagerProvider>
-              <IntroSplash>{children}</IntroSplash>
-              <AppToaster />
-            </DropdownManagerProvider>
-          </QueryProvider>
+          <PerformanceProvider defaultMode="auto" storageKey="flowstate-performance-mode">
+            <QueryProvider>
+              <DropdownManagerProvider>
+                <IntroSplash>{children}</IntroSplash>
+                <AppToaster />
+              </DropdownManagerProvider>
+            </QueryProvider>
+          </PerformanceProvider>
         </ThemeProvider>
       </body>
     </html>
