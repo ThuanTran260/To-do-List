@@ -387,3 +387,48 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
   box-decoration-break: clone;
   -webkit-box-decoration-break: clone;
 }
+
+/* ==========================================================================
+   Lite Mode: Zero-Cost Motion & Hardware Acceleration Fallback
+   Triệt tiêu 100% chi phí tích chập Gaussian của backdrop-blur và repaints
+   trên các máy ảo Linux chạy Software Rasterizer (LLVMpipe / SwiftShader).
+   ========================================================================== */
+
+.lite-mode {
+  /* 1. Tắt triệt để backdrop-filter trên toàn bộ các elements */
+  & [class*="backdrop-blur"],
+  & .backdrop-blur-none,
+  & .backdrop-blur-xs,
+  & .backdrop-blur-sm,
+  & .backdrop-blur-md,
+  & .backdrop-blur-lg,
+  & .backdrop-blur-xl {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* 2. Phòng vệ Opacity Bleed-Through: Khi mất blur, các surface nền mờ (bg-surface/80)
+     sẽ để lộ chữ cuộn bên dưới. Tự động ép màu nền đục 100% giữ độ tương phản cao. */
+  & header,
+  & aside,
+  & [role="dialog"],
+  & [data-floating-panel],
+  & .surface-panel {
+    background-color: var(--surface-1) !important;
+  }
+
+  /* 3. Giảm tải Box-Shadow nặng ngốn CPU */
+  & [class*="shadow-2xl"],
+  & [class*="shadow-xl"],
+  & [class*="shadow-lg"] {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  /* 4. Tắt animation lặp vô tận (pulse, bounce, ping) gây repaints liên tục 60fps */
+  & .animate-pulse,
+  & .animate-bounce,
+  & .animate-ping {
+    animation: none !important;
+  }
+}
+
