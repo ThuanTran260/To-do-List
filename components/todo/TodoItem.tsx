@@ -109,7 +109,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
           item.is_completed
             ? 'bg-surface-2/60 border-hairline opacity-75'
             : isOverdue
-            ? 'bg-surface-1 border-hairline border-l-4 border-l-danger hover:border-hairline-strong'
+            ? 'bg-surface-1 border-hairline border-l-4 border-l-danger hover:border-hairline-strong hover:border-l-danger'
             : 'bg-surface-1 border-hairline hover:border-hairline-strong'
         } ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
       >

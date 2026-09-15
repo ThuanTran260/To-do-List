@@ -39,6 +39,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
     <div className="fixed inset-0 z-[9000] flex items-center justify-center p-3 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
+        aria-hidden="true"
         className="fixed inset-0 bg-overlay backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
