@@ -9,7 +9,7 @@
 - **NEVER run destructive commands** via terminal: disk wipe / format / partition (`format`, `Format-Volume`, `Clear-Disk`, `Remove-Partition`, `Initialize-Disk`, `diskpart`, `mkfs`, `dd`, `fdisk`, `parted`, `shred`, `wipefs`, `Remove-Volume`, `Repair-Volume`, `Reset-PhysicalDisk`, `Set-Disk`, `Set-Partition`), boot / system (`bcdedit`, `bootrec`, `vssadmin delete`, `cipher /w`, `sdelete`, `reg delete`), power (`shutdown`, `Restart-Computer`, `Stop-Computer`), fork bomb (`:(){...}`), recursive permission/ownership change on `/` (`chmod/chown -R /`, `icacls`), deletes aimed at drive roots / OS dirs / home roots (`rm -rf /`, `rm -rf ~`, `--no-preserve-root`, `rm /dev/sd*`, `rm /dev/nvme*`, `rm /dev/hd*`, and PowerShell / CMD deletes targeting any drive root: `Remove-Item`, `del`, `rd`, `erase`, `rmdir` targeting `C:\`, `D:\`, `E:\` or any `[A-Za-z]:\`, `C:\Windows`, `System32`, `Program Files`, User Profile `C:\Users`, `%USERPROFILE%`), repo wipes (`git clean -f*`, `git reset --hard*` — `git clean -fdx` would delete untracked `.env.local`), or `supabase db push` (always `[MANUAL]` by the user, never by an agent).
 - Hard-enforced by `opencode.json` (`permission.bash` deny list) — same mechanism as the `git push` ban. If a deny blocks legitimate work, stop and ask the user instead of rephrasing the command (aliases, `sudo`, `cmd /c`, `powershell -EncodedCommand`, `curl ... | sh`) to dodge the rule.
 - Scope rule: only create/delete files inside the workspace or `C:\Users\Admin\AppData\Local\Temp\opencode`. Before any delete, verify with `Test-Path -LiteralPath <parent>` and keep paths quoted. Prefer specialized file tools (`read`/`edit`/`write`/`glob`/`grep`) over shell deletes.
-- **Single source of truth:** this section is canonical. Mirrors exist only for harness coverage and MUST be synced from here, never edited independently: `.agents/AGENTS.md` (§ terminal), `C:\Users\Admin\.gemini\GEMINI.md` (Antigravity global rules). Sync procedure: edit here first → copy to mirrors → stamp `Last synced: YYYY-MM-DD <commit>` in each mirror header.
+- **Single source of truth:** this section is canonical. Mirrors exist only for harness coverage and MUST be synced from here, never edited independently: `.agents/PROJECT_BRAIN.md` (§ terminal), `C:\Users\Admin\.gemini\GEMINI.md` (Antigravity global rules). Sync procedure: edit here first → copy to mirrors → stamp `Last synced: YYYY-MM-DD <commit>` in each mirror header.
 
 # Slash commands (`/...`)
 
@@ -21,12 +21,12 @@
 | File | Loaded | Role — read it when... |
 |---|---|---|
 | `AGENTS.md` (this file, repo root) | Automatically, every session | Always in effect: git rules, terminal safety, planning gate, commands, file map. Source of hard constraints. |
-| `.agents/AGENTS.md` | Auto-loaded / Project Brain | Doing real work: architecture (§1–5), Supabase/RLS rules (§3–4), **TipTap invariants (§6, mandatory for editor work)**, skills table (§7), UI/layout invariants (§8). Read the relevant section before touching those areas. Mostly Vietnamese. |
+| `.agents/PROJECT_BRAIN.md` | On-demand / Project Brain | Doing real work: architecture (§1–5), Supabase/RLS rules (§3–4), **TipTap invariants (§6, mandatory for editor work)**, skills table (§7), UI/layout invariants (§8). Read the relevant section via `view_file` before touching those areas. |
 
 # Subagents & skills
 
 - No custom agents are defined (no `.opencode/agent/`). Subagents come from the harness Task tool: `explore` (fast codebase recon — prefer over blind `Glob`+`Grep` loops) and `general` (multi-step research, parallel audits, code review).
-- Skills live in the **non-standard path `.agents/skills/`** (`superpowers/*`, `tiptap-prosemirror-best-practices`) — not `.opencode/skills`. Full trigger table is at `.agents/AGENTS.md` §7. Load via the skill tool **before** acting when a task matches:
+- Skills live in the **non-standard path `.agents/skills/`** (`superpowers/*`, `tiptap-prosemirror-best-practices`) — not `.opencode/skills`. Full trigger table is at `.agents/PROJECT_BRAIN.md` §7. Load via the skill tool **before** acting when a task matches:
   - any bug/failure → `systematic-debugging` (Iron Law: root-cause first, never fix blind)
   - P0/P1 plan review → `dispatching-parallel-agents` (≥2 auditors) — see Planning Gate below
   - after each phase / before merge → `requesting-code-review`
@@ -61,7 +61,7 @@ Khi ghim SHA cho các GitHub Actions trong `.github/workflows/*.yml`:
 
 **Quy trình:**
 1. Mọi thay đổi kiến trúc P0/P1 phải có `implementation_plan.md` trong `docs/superpowers/plans/` và **chưa được code** cho tới khi review pass và user xác nhận proceed.
-2. Review phải dùng `dispatching-parallel-agents` (ít nhất 2 auditors) + checklist 10 mục ở `.agents/AGENTS.md:0.4`.
+2. Review phải dùng `dispatching-parallel-agents` (ít nhất 2 auditors) + checklist 10 mục ở `.agents/PROJECT_BRAIN.md:0.4`.
 3. Mỗi vòng review append `Appendix — Review Response Log` vào plan.
 4. `pnpm exec tsc --noEmit` phải PASS trước khi gửi plan đi review.
 
