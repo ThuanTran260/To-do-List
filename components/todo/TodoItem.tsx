@@ -109,7 +109,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
           item.is_completed
             ? 'bg-surface-2/60 border-hairline opacity-75'
             : isOverdue
-            ? 'bg-danger/8 border-danger/30'
+            ? 'bg-surface-1 border-hairline border-l-4 border-l-danger hover:border-hairline-strong'
             : 'bg-surface-1 border-hairline hover:border-hairline-strong'
         } ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
       >
@@ -184,8 +184,8 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
                 )}
 
                 {item.pomodoro_count && item.pomodoro_count > 0 ? (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-danger/10 text-danger border border-danger/20 flex items-center gap-1">
-                    <Timer className="w-3 h-3" />
+                  <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-danger-subtle text-danger border border-danger-border flex items-center gap-1">
+                    <Timer className="w-3.5 h-3.5" />
                     <span>🍅 {item.pomodoro_count}</span>
                   </span>
                 ) : null}
@@ -207,7 +207,7 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
                         : 'text-ink-subtle'
                     }`}
                   >
-                    {isOverdue ? <Clock className="w-3.5 h-3.5" /> : <Calendar className="w-3.5 h-3.5" />}
+                    {isOverdue ? <Clock className="w-3.5 h-3.5 text-danger" /> : <Calendar className="w-3.5 h-3.5" />}
                     <span>{isOverdue ? `Quá hạn: ${formattedDueDate}` : formattedDueDate}</span>
                   </div>
                 )}

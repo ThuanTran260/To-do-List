@@ -33,7 +33,7 @@ export function PerformanceToggle() {
       onClick={cycleMode}
       className={`p-1.5 rounded-md border transition-colors cursor-pointer flex items-center gap-1 text-xs font-medium ${
         isLiteActive
-          ? 'bg-warning/10 text-warning border-warning/30 hover:bg-warning/20'
+          ? 'bg-warning-subtle text-warning border-warning-border hover:bg-warning/20'
           : 'bg-surface-2 text-ink-muted hover:text-ink border-hairline'
       }`}
       title={getTooltip()}

@@ -107,14 +107,14 @@ export function ImageUpload({
       </label>
 
       {errorMsg && (
-        <div className="p-2 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs flex items-center gap-1.5 font-medium">
+        <div className="p-2 rounded-md bg-danger-subtle border border-danger-border text-danger text-xs flex items-center gap-1.5 font-medium">
           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
       {displayUrl ? (
-        <div className="relative rounded-lg overflow-hidden border border-hairline bg-surface-2 group aspect-video sm:aspect-[2/1] max-h-56 flex items-center justify-center">
+        <div className="relative rounded-lg overflow-hidden border border-hairline bg-surface-2 group aspect-video sm:aspect-[2/1] max-h-40 sm:max-h-44 flex items-center justify-center">
           <Image
             src={displayUrl}
             alt="Task attachment preview"

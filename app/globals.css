@@ -31,9 +31,17 @@
 
   /* Semantics */
   --success: #27a644;
+  --success-subtle: rgba(39, 166, 68, 0.08);
+  --success-border: rgba(39, 166, 68, 0.25);
   --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.08);
+  --warning-border: rgba(245, 158, 11, 0.25);
   --danger: #f2555a;
+  --danger-subtle: rgba(242, 85, 90, 0.08);
+  --danger-border: rgba(242, 85, 90, 0.25);
   --info: #3b82f6;
+  --info-subtle: rgba(59, 130, 246, 0.08);
+  --info-border: rgba(59, 130, 246, 0.25);
   
   /* Overlay */
   --overlay: rgba(0, 0, 0, 0.5);
@@ -75,9 +83,17 @@
 
   /* Semantics */
   --success: #27a644;
+  --success-subtle: rgba(39, 166, 68, 0.12);
+  --success-border: rgba(39, 166, 68, 0.3);
   --warning: #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.12);
+  --warning-border: rgba(245, 158, 11, 0.3);
   --danger: #f2555a;
+  --danger-subtle: rgba(242, 85, 90, 0.12);
+  --danger-border: rgba(242, 85, 90, 0.3);
   --info: #3b82f6;
+  --info-subtle: rgba(59, 130, 246, 0.12);
+  --info-border: rgba(59, 130, 246, 0.3);
   
   /* Overlay */
   --overlay: rgba(0, 0, 0, 0.7);
@@ -114,9 +130,17 @@
   --color-on-primary: var(--on-primary);
 
   --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-success-border: var(--success-border);
   --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-warning-border: var(--warning-border);
   --color-danger: var(--danger);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-danger-border: var(--danger-border);
   --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+  --color-info-border: var(--info-border);
   --color-overlay: var(--overlay);
 
   --radius-xs: 4px;
@@ -389,6 +413,56 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
 }
 
 /* ==========================================================================
+   Legacy Browser Fallback: Color-Mix & Opacity Modifiers
+   Fallback cho các trình duyệt hoặc renderer cũ không hỗ trợ CSS color-mix()
+   ========================================================================== */
+@supports not (color: color-mix(in lab, red, red)) {
+  .bg-danger\/8,
+  .bg-danger\/10 {
+    background-color: var(--danger-subtle) !important;
+  }
+  .border-danger\/20,
+  .border-danger\/25,
+  .border-danger\/30 {
+    border-color: var(--danger-border) !important;
+  }
+  .bg-warning\/10,
+  .bg-warning\/15,
+  .bg-warning\/20 {
+    background-color: var(--warning-subtle) !important;
+  }
+  .border-warning\/20,
+  .border-warning\/25,
+  .border-warning\/30 {
+    border-color: var(--warning-border) !important;
+  }
+  .bg-success\/10 {
+    background-color: var(--success-subtle) !important;
+  }
+  .border-success\/20,
+  .border-success\/25 {
+    border-color: var(--success-border) !important;
+  }
+  .bg-info\/10 {
+    background-color: var(--info-subtle) !important;
+  }
+  .border-info\/20,
+  .border-info\/25 {
+    border-color: var(--info-border) !important;
+  }
+  .bg-primary\/8,
+  .bg-primary\/10,
+  .bg-primary\/20 {
+    background-color: var(--primary-subtle) !important;
+  }
+  .border-primary\/20,
+  .border-primary\/25,
+  .border-primary\/30 {
+    border-color: var(--primary-border) !important;
+  }
+}
+
+/* ==========================================================================
    Lite Mode: Zero-Cost Motion & Hardware Acceleration Fallback
    Triệt tiêu 100% chi phí tích chập Gaussian của backdrop-blur và repaints
    trên các máy ảo Linux chạy Software Rasterizer (LLVMpipe / SwiftShader).
@@ -407,25 +481,27 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
     -webkit-backdrop-filter: none !important;
   }
 
-  /* 2. Phòng vệ Opacity Bleed-Through: Khi mất blur, các surface nền mờ (bg-surface/80)
-     sẽ để lộ chữ cuộn bên dưới. Tự động ép màu nền đục 100% giữ độ tương phản cao. */
+  /* 2. Phòng vệ Opacity Bleed-Through: Chỉ áp dụng màu nền đục cho layout containers chính */
   & header,
-  & aside,
-  & [role="dialog"],
-  & [data-floating-panel],
-  & .surface-panel,
-  & [class*="backdrop-blur"][class*="bg-surface"] {
+  & aside {
     background-color: var(--surface-1) !important;
   }
 
-  /* 3. Giảm tải Box-Shadow nặng ngốn CPU */
+  /* 3. Triệt tiêu toàn bộ thời gian transition và animation (Zero-Cost Transitions) */
+  &,
+  & * {
+    transition-duration: 0s !important;
+    animation-duration: 0s !important;
+  }
+
+  /* 4. Giảm tải Box-Shadow nặng ngốn CPU */
   & [class*="shadow-2xl"],
   & [class*="shadow-xl"],
   & [class*="shadow-lg"] {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.06) !important;
   }
 
-  /* 4. Tắt animation lặp vô tận (pulse, bounce, ping) gây repaints liên tục 60fps */
+  /* 5. Tắt animation lặp vô tận (pulse, bounce, ping) gây repaints liên tục 60fps */
   & .animate-pulse,
   & .animate-bounce,
   & .animate-ping {
