@@ -156,7 +156,7 @@ export function EditTodoModal({ todo, isOpen, onClose }: EditTodoModalProps) {
       <Modal isOpen={isOpen} onClose={onClose} title="Chỉnh sửa công việc">
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMsg && (
-            <p className="text-xs text-danger font-medium p-2 rounded-md bg-danger/10 border border-danger/20">
+            <p className="text-xs text-danger font-medium p-2 rounded-md bg-danger-subtle border border-danger-border">
               {errorMsg}
             </p>
           )}

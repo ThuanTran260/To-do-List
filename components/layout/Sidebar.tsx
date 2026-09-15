@@ -187,7 +187,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                       <span>{item.label}</span>
                     </div>
                     {item.badge && (
-                      <span className="relative z-10 px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning/15 text-warning border border-warning/30">
+                      <span className="relative z-10 px-1.5 py-0.5 rounded text-[10px] font-medium bg-warning-subtle text-warning border border-warning-border">
                         {item.badge}
                       </span>
                     )}

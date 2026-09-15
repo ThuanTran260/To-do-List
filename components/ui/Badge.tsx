@@ -10,9 +10,9 @@ interface BadgeProps {
 
 export function PriorityBadge({ priority = 'medium', className = '' }: BadgeProps) {
   const styles = {
-    low: 'bg-success/10 text-success border-success/20',
-    medium: 'bg-warning/10 text-warning border-warning/20',
-    high: 'bg-danger/10 text-danger border-danger/20',
+    low: 'bg-success-subtle text-success border-success-border',
+    medium: 'bg-warning-subtle text-warning border-warning-border',
+    high: 'bg-danger-subtle text-danger border-danger-border',
   };
 
   const dotColors = {
