@@ -460,6 +460,17 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
   .border-primary\/30 {
     border-color: var(--primary-border) !important;
   }
+  .hover\:bg-danger\/10:hover,
+  .hover\:bg-danger\/20:hover {
+    background-color: var(--danger-subtle) !important;
+  }
+  .hover\:bg-warning\/20:hover {
+    background-color: var(--warning-subtle) !important;
+  }
+  .hover\:bg-primary\/10:hover,
+  .hover\:bg-primary\/20:hover {
+    background-color: var(--primary-subtle) !important;
+  }
 }
 
 /* ==========================================================================
@@ -489,9 +500,15 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
 
   /* 3. Triệt tiêu toàn bộ thời gian transition và animation (Zero-Cost Transitions) */
   &,
-  & * {
+  & *,
+  & *::before,
+  & *::after,
+  &::before,
+  &::after {
     transition-duration: 0s !important;
+    transition-delay: 0s !important;
     animation-duration: 0s !important;
+    animation-delay: 0s !important;
   }
 
   /* 4. Giảm tải Box-Shadow nặng ngốn CPU */

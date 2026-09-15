@@ -198,7 +198,7 @@ export function TodoForm() {
           </div>
 
           {errorMsg && (
-            <div className="p-2.5 rounded-md bg-danger/10 border border-danger/20 text-danger text-xs font-medium flex items-center gap-2">
+            <div className="p-2.5 rounded-md bg-danger-subtle border border-danger-border text-danger text-xs font-medium flex items-center gap-2">
               <AlertCircle className="w-4 h-4 flex-shrink-0" />
               <span>{errorMsg}</span>
             </div>
