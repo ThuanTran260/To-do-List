@@ -213,12 +213,18 @@ describe('PerformanceProvider & PerformanceToggle integration tests', () => {
     expect(tooltip).toContain('chế độ giảm chuyển động');
     expect(tooltip).not.toContain('máy yếu');
 
+    // Plan B v2.1: Visible label is "Auto" (NOT "Lite (Auto)") on high-end device with reduced motion
+    const labelSpan = button?.querySelector('span');
+    expect(labelSpan?.textContent).toBe('Auto');
+    // Class .lite-mode must NOT be added to <html>
+    expect(document.documentElement.classList.contains('lite-mode')).toBe(false);
+
     await act(async () => {
       root.unmount();
     });
   });
 
-  it('PerformanceToggle displays "máy ảo / đồ họa phần mềm" when software rasterizer is detected', async () => {
+  it('PerformanceToggle displays "máy ảo / đồ họa phần mềm" and "Lite (Auto)" when software rasterizer is detected', async () => {
     const mockGl = {
       getExtension: vi.fn((ext: string) => {
         if (ext === 'WEBGL_debug_renderer_info') {
@@ -256,6 +262,59 @@ describe('PerformanceProvider & PerformanceToggle integration tests', () => {
     const button = container.querySelector('button');
     const tooltip = button?.getAttribute('title');
     expect(tooltip).toContain('máy ảo / đồ họa phần mềm');
+
+    // Plan B v2.1: Visible label is "Lite (Auto)" because isFidelityLite is true
+    const labelSpan = button?.querySelector('span');
+    expect(labelSpan?.textContent).toBe('Lite (Auto)');
+    // Class .lite-mode is added to <html>
+    expect(document.documentElement.classList.contains('lite-mode')).toBe(true);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it('runtime prefers-reduced-motion media query listener updates only motion axis without adding .lite-mode', async () => {
+    let mediaChangeHandler: (() => void) | null = null;
+    let matchValue = false;
+
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      get matches() {
+        return query.includes('prefers-reduced-motion') ? matchValue : false;
+      },
+      media: query,
+      addEventListener: vi.fn((event: string, handler: () => void) => {
+        if (event === 'change') mediaChangeHandler = handler;
+      }),
+      removeEventListener: vi.fn(),
+    }));
+
+    let capturedVal!: PerformanceContextValue;
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <PerformanceProvider defaultMode="auto">
+          <TestConsumer onRender={(val) => { capturedVal = val; }} />
+        </PerformanceProvider>
+      );
+    });
+
+    expect(capturedVal.isMotionReduced).toBe(false);
+    expect(capturedVal.isFidelityLite).toBe(false);
+    expect(document.documentElement.classList.contains('lite-mode')).toBe(false);
+
+    // Simulate OS turning on reduced motion dynamically at runtime
+    matchValue = true;
+    await act(async () => {
+      mediaChangeHandler?.();
+    });
+
+    // Motion axis is updated
+    expect(capturedVal.isMotionReduced).toBe(true);
+    // Fidelity axis remains untouched!
+    expect(capturedVal.isFidelityLite).toBe(false);
+    expect(document.documentElement.classList.contains('lite-mode')).toBe(false);
 
     await act(async () => {
       root.unmount();

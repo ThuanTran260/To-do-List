@@ -4,7 +4,8 @@ import { createContext, useContext, useEffect, useState, useTransition, type Rea
 import { MotionConfig } from 'framer-motion';
 import {
   inspectHardware,
-  resolveEffectiveLiteMode,
+  resolveFidelityLite,
+  resolveMotionReduced,
   getNextPerformanceMode,
   type PerformanceMode,
   type HardwareInspectionResult,
@@ -13,6 +14,8 @@ import {
 export interface PerformanceContextValue {
   mode: PerformanceMode;
   isLiteActive: boolean;
+  isFidelityLite: boolean;
+  isMotionReduced: boolean;
   inspection: HardwareInspectionResult;
   setMode: (mode: PerformanceMode) => void;
   cycleMode: () => void;
@@ -30,6 +33,8 @@ const defaultInspection: HardwareInspectionResult = {
 const PerformanceContext = createContext<PerformanceContextValue>({
   mode: 'auto',
   isLiteActive: false,
+  isFidelityLite: false,
+  isMotionReduced: false,
   inspection: defaultInspection,
   setMode: () => {},
   cycleMode: () => {},
@@ -48,8 +53,11 @@ export function PerformanceProvider({
 }: PerformanceProviderProps) {
   const [mode, setModeState] = useState<PerformanceMode>(defaultMode);
   const [inspection, setInspection] = useState<HardwareInspectionResult>(defaultInspection);
-  const [isLiteActive, setIsLiteActive] = useState<boolean>(false);
+  const [isFidelityLite, setIsFidelityLite] = useState<boolean>(false);
+  const [isMotionReduced, setIsMotionReduced] = useState<boolean>(false);
   const [, startTransition] = useTransition();
+
+  const isLiteActive = isFidelityLite || isMotionReduced;
 
   // 1. Initial mount: probe hardware and restore saved preference from localStorage
   useEffect(() => {
@@ -66,14 +74,15 @@ export function PerformanceProvider({
     const detected = inspectHardware();
     setInspection(detected);
     setModeState(initialMode);
-    setIsLiteActive(resolveEffectiveLiteMode(initialMode, detected));
+    setIsFidelityLite(resolveFidelityLite(initialMode, detected));
+    setIsMotionReduced(resolveMotionReduced(initialMode, detected));
   }, [defaultMode, storageKey]);
 
-  // 2. Synchronize .lite-mode class directly to document.documentElement with unmount cleanup
+  // 2. Synchronize .lite-mode class strictly based on isFidelityLite with unmount cleanup
   useEffect(() => {
     if (typeof document === 'undefined') return;
 
-    if (isLiteActive) {
+    if (isFidelityLite) {
       document.documentElement.classList.add('lite-mode');
     } else {
       document.documentElement.classList.remove('lite-mode');
@@ -82,9 +91,9 @@ export function PerformanceProvider({
     return () => {
       document.documentElement.classList.remove('lite-mode');
     };
-  }, [isLiteActive]);
+  }, [isFidelityLite]);
 
-  // 3. Listen for OS prefers-reduced-motion media query changes
+  // 3. Listen for OS prefers-reduced-motion media query changes (updates motion axis only)
   useEffect(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -97,7 +106,7 @@ export function PerformanceProvider({
       setInspection(freshInspection);
 
       if (mode === 'auto') {
-        setIsLiteActive(resolveEffectiveLiteMode('auto', freshInspection));
+        setIsMotionReduced(resolveMotionReduced('auto', freshInspection));
       }
     };
 
@@ -114,8 +123,8 @@ export function PerformanceProvider({
         // Ignore localStorage errors in private browsing/sandboxes
       }
 
-      const active = resolveEffectiveLiteMode(newMode, inspection);
-      setIsLiteActive(active);
+      setIsFidelityLite(resolveFidelityLite(newMode, inspection));
+      setIsMotionReduced(resolveMotionReduced(newMode, inspection));
     });
   };
 
@@ -129,13 +138,15 @@ export function PerformanceProvider({
       value={{
         mode,
         isLiteActive,
+        isFidelityLite,
+        isMotionReduced,
         inspection,
         setMode,
         cycleMode,
       }}
     >
-      {/* Zero Component Pollution: Framer Motion instantly collapses spring physics across the entire tree */}
-      <MotionConfig reducedMotion={isLiteActive ? 'always' : 'user'}>
+      {/* Zero Component Pollution: Framer Motion collapses spring physics based strictly on isMotionReduced */}
+      <MotionConfig reducedMotion={isMotionReduced ? 'always' : 'user'}>
         {children}
       </MotionConfig>
     </PerformanceContext.Provider>
