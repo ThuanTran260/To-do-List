@@ -2,8 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   inspectHardware,
   resolveEffectiveLiteMode,
+  resolveFidelityLite,
+  resolveMotionReduced,
   getNextPerformanceMode,
   _resetCachedInspection,
+  INSPECTION_SCHEMA_VERSION,
   type PerformanceMode,
 } from '@/lib/hardware/performanceDetector';
 
@@ -111,6 +114,141 @@ describe('performanceDetector.resolveEffectiveLiteMode', () => {
     // @ts-expect-error test invalid input resilience
     expect(typeof resolveEffectiveLiteMode('auto', null)).toBe('boolean');
     expect(typeof resolveEffectiveLiteMode('auto', undefined)).toBe('boolean');
+  });
+});
+
+describe('performanceDetector.resolveFidelityLite (Two-Axis Fidelity)', () => {
+  it('always activates lite (true) when mode is "lite"', () => {
+    expect(
+      resolveFidelityLite('lite', {
+        isSoftwareRasterizer: false,
+        renderer: 'NVIDIA RTX 4070',
+        vendor: 'NVIDIA',
+        cores: 16,
+        prefersReducedMotion: false,
+        isLowEnd: false,
+      })
+    ).toBe(true);
+  });
+
+  it('never activates lite (false) when mode is "full"', () => {
+    expect(
+      resolveFidelityLite('full', {
+        isSoftwareRasterizer: true,
+        renderer: 'llvmpipe',
+        vendor: 'Mesa',
+        cores: 1,
+        prefersReducedMotion: true,
+        isLowEnd: true,
+      })
+    ).toBe(false);
+  });
+
+  it('activates lite in "auto" if software rasterizer is detected', () => {
+    expect(
+      resolveFidelityLite('auto', {
+        isSoftwareRasterizer: true,
+        renderer: 'llvmpipe (LLVM 14.0.0)',
+        vendor: 'Mesa',
+        cores: 4,
+        prefersReducedMotion: false,
+        isLowEnd: true,
+      })
+    ).toBe(true);
+  });
+
+  it('activates lite in "auto" if cores <= 2 (including Firefox RFP spoofing)', () => {
+    expect(
+      resolveFidelityLite('auto', {
+        isSoftwareRasterizer: false,
+        renderer: 'Intel Iris',
+        vendor: 'Intel',
+        cores: 2,
+        prefersReducedMotion: false,
+        isLowEnd: true,
+      })
+    ).toBe(true);
+  });
+
+  it('DECOUPLING CRITICAL: keeps lite OFF (false) in "auto" on desktop with prefers-reduced-motion: true', () => {
+    // Powerful machine: user has reduced motion turned on in OS for vestibular accessibility.
+    // Fidelity must remain Full (isFidelityLite === false) so rich colors and ambient glow are preserved!
+    expect(
+      resolveFidelityLite('auto', {
+        isSoftwareRasterizer: false,
+        renderer: 'NVIDIA GeForce RTX 4070',
+        vendor: 'NVIDIA',
+        cores: 16,
+        prefersReducedMotion: true,
+        isLowEnd: false,
+      })
+    ).toBe(false);
+  });
+
+  it('handles null or undefined inspection gracefully without throwing', () => {
+    // @ts-expect-error test invalid input resilience
+    expect(typeof resolveFidelityLite('auto', null)).toBe('boolean');
+    expect(typeof resolveFidelityLite('auto', undefined)).toBe('boolean');
+  });
+});
+
+describe('performanceDetector.resolveMotionReduced (Two-Axis Motion)', () => {
+  it('always reduces motion (true) when mode is "lite"', () => {
+    expect(
+      resolveMotionReduced('lite', {
+        isSoftwareRasterizer: false,
+        renderer: 'Apple M3',
+        vendor: 'Apple',
+        cores: 8,
+        prefersReducedMotion: false,
+        isLowEnd: false,
+      })
+    ).toBe(true);
+  });
+
+  it('never reduces motion (false) when mode is "full" (explicit user agency override)', () => {
+    expect(
+      resolveMotionReduced('full', {
+        isSoftwareRasterizer: false,
+        renderer: 'Apple M3',
+        vendor: 'Apple',
+        cores: 8,
+        prefersReducedMotion: true,
+        isLowEnd: false,
+      })
+    ).toBe(false);
+  });
+
+  it('reduces motion in "auto" when prefers-reduced-motion is true', () => {
+    expect(
+      resolveMotionReduced('auto', {
+        isSoftwareRasterizer: false,
+        renderer: 'Apple M3',
+        vendor: 'Apple',
+        cores: 8,
+        prefersReducedMotion: true,
+        isLowEnd: false,
+      })
+    ).toBe(true);
+  });
+
+  it('does NOT reduce motion in "auto" when prefers-reduced-motion is false even on low-end hardware', () => {
+    expect(
+      resolveMotionReduced('auto', {
+        isSoftwareRasterizer: true,
+        renderer: 'llvmpipe',
+        vendor: 'Mesa',
+        cores: 1,
+        prefersReducedMotion: false,
+        isLowEnd: true,
+      })
+    ).toBe(false);
+  });
+
+  it('handles null or undefined inspection gracefully without throwing', () => {
+    // @ts-expect-error test invalid input resilience
+    expect(typeof resolveMotionReduced('auto', null)).toBe('boolean');
+    expect(typeof resolveMotionReduced('auto', undefined)).toBe('boolean');
   });
 });
 
@@ -345,5 +483,12 @@ describe('performanceDetector.inspectHardware (SSR Safety & WebGL Probe)', () =>
     } finally {
       window.matchMedia = originalMatchMedia;
     }
+  });
+
+  it('handles undefined navigator.deviceMemory gracefully on Firefox/Safari', () => {
+    // navigator.deviceMemory is not supported in Firefox and Safari
+    const res = inspectHardware();
+    expect(res).toBeDefined();
+    expect(res.schemaVersion).toBe(INSPECTION_SCHEMA_VERSION);
   });
 });

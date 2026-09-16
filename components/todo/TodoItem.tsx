@@ -105,11 +105,13 @@ function TodoItemContent({ item, isSelected = false, onToggleSelect, showBulkSel
   return (
     <>
       <div
-        className={`group relative p-3.5 sm:p-4 rounded-lg border transition-colors card-hover ${
+        className={`group relative p-3.5 sm:p-4 rounded-lg border transition-colors ${
+          !isOverdue ? 'card-hover' : ''
+        } ${
           item.is_completed
             ? 'bg-surface-2/60 border-hairline opacity-75'
             : isOverdue
-            ? 'bg-surface-1 border-hairline border-l-4 border-l-danger hover:border-hairline-strong hover:border-l-danger'
+            ? 'task-card-overdue'
             : 'bg-surface-1 border-hairline hover:border-hairline-strong'
         } ${isSelected ? 'ring-2 ring-primary border-primary' : ''}`}
       >

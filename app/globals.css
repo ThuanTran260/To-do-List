@@ -46,6 +46,14 @@
   /* Overlay */
   --overlay: rgba(0, 0, 0, 0.5);
 
+  /* Overdue Card Variables — Full Mode (Light) */
+  --overdue-bg: var(--danger-subtle);
+  --overdue-border: var(--danger-border);
+  --overdue-border-l-width: 1px;
+  --overdue-border-l-color: var(--danger-border);
+  --overdue-glow-hover: 0 0 16px -2px rgba(242, 85, 90, 0.2);
+  --overdue-backdrop: blur(4px);
+
   /* Backward Compatibility Tokens during Migration */
   --bg-main: var(--canvas);
   --text-main: var(--ink);
@@ -97,6 +105,14 @@
   
   /* Overlay */
   --overlay: rgba(0, 0, 0, 0.7);
+
+  /* Overdue Card Variables — Full Mode (Dark) */
+  --overdue-bg: var(--danger-subtle);
+  --overdue-border: var(--danger-border);
+  --overdue-border-l-width: 1px;
+  --overdue-border-l-color: var(--danger-border);
+  --overdue-glow-hover: 0 0 20px -2px rgba(242, 85, 90, 0.26);
+  --overdue-backdrop: blur(4px);
 
   /* Backward Compatibility Tokens during Migration */
   --bg-main: var(--canvas);
@@ -182,6 +198,25 @@ body {
 
 .card-hover:hover {
   border-color: var(--hairline-strong);
+}
+
+/* Overdue Task Card (Full vs Lite via CSS Custom Properties) */
+.task-card-overdue {
+  background-color: var(--overdue-bg);
+  border-color: var(--overdue-border);
+  border-left-width: var(--overdue-border-l-width);
+  border-left-color: var(--overdue-border-l-color);
+  backdrop-filter: var(--overdue-backdrop);
+  -webkit-backdrop-filter: var(--overdue-backdrop);
+}
+
+/* Tối ưu hiệu năng: Glow chỉ xuất hiện khi Hover/Focus, không render nghỉ trên danh sách 100+ cards */
+.task-card-overdue:hover,
+.task-card-overdue:focus-within,
+.task-card-overdue:focus-visible {
+  border-color: var(--danger);
+  border-left-color: var(--overdue-border-l-color);
+  box-shadow: var(--overdue-glow-hover);
 }
 
 /* Legacy glass-panel alias mapping to clean surface */
@@ -480,6 +515,14 @@ ul[data-type="taskList"] li[data-type="taskItem"][data-checked="true"] > div {
    ========================================================================== */
 
 .lite-mode {
+  /* Overdue Card Variables — Lite Mode / VM Override */
+  --overdue-bg: var(--surface-1);
+  --overdue-border: var(--hairline);
+  --overdue-border-l-width: 4px;
+  --overdue-border-l-color: var(--danger);
+  --overdue-glow-hover: none;
+  --overdue-backdrop: none;
+
   /* 1. Tắt triệt để backdrop-filter trên toàn bộ các elements */
   & [class*="backdrop-blur"],
   & .backdrop-blur-none,

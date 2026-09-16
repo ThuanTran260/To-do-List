@@ -429,19 +429,15 @@ describe('TodoItem Clean Overdue Indicator & Pomodoro Badge', () => {
     const card = container.querySelector('div.group.relative');
     expect(card).not.toBeNull();
 
-    // 1. Clean surface without full-card bg-danger tint
-    expect(card?.className).toContain('bg-surface-1');
-    expect(card?.className).not.toContain('bg-danger/8');
+    // 1. Uses adaptive task-card-overdue class driven by CSS variables (--overdue-*)
+    expect(card?.className).toContain('task-card-overdue');
+    expect(card?.className).not.toContain('border-l-4');
+    expect(card?.className).not.toContain('border-l-danger');
 
-    // 2. High contrast left border accent
-    expect(card?.className).toContain('border-l-4');
-    expect(card?.className).toContain('border-l-danger');
+    // 2. Hover defense: card-hover is excluded on overdue cards to prevent border-color specificity collision
+    expect(card?.className).not.toContain('card-hover');
 
-    // 3. Hover defense preserving left danger border
-    expect(card?.className).toContain('hover:border-hairline-strong');
-    expect(card?.className).toContain('hover:border-l-danger');
-
-    // 4. Overdue clock icon has explicit text-danger
+    // 3. Overdue clock icon has explicit text-danger
     const clockIcon = container.querySelector('svg.text-danger');
     expect(clockIcon).not.toBeNull();
 
