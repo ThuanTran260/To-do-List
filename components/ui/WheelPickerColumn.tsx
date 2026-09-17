@@ -122,6 +122,8 @@ export function WheelPickerColumn({
     const el = columnRef.current;
     if (!el) return;
 
+    let wheelTimeout: NodeJS.Timeout | null = null;
+
     const nativeWheelHandler = (e: WheelEvent) => {
       e.stopPropagation();
       if (e.cancelable) e.preventDefault();
@@ -133,19 +135,27 @@ export function WheelPickerColumn({
       const threshold = ITEM_HEIGHT;
 
       if (Math.abs(wheelAccumulator.current) >= threshold) {
-        const steps = Math.trunc(wheelAccumulator.current / threshold);
-        wheelAccumulator.current -= steps * threshold;
+        // Move strictly 1 unit per scroll action/threshold crossing
+        const dir = wheelAccumulator.current > 0 ? 1 : -1;
+        wheelAccumulator.current = 0;
 
-        const next = clampOrLoopRef.current(safeValueRef.current + steps * step);
+        const next = clampOrLoopRef.current(safeValueRef.current + dir * step);
         if (next !== safeValueRef.current) {
           onChangeRef.current(next);
         }
       }
+
+      // Reset any leftover micro-accumulator when user stops scrolling
+      if (wheelTimeout) clearTimeout(wheelTimeout);
+      wheelTimeout = setTimeout(() => {
+        wheelAccumulator.current = 0;
+      }, 150);
     };
 
     el.addEventListener('wheel', nativeWheelHandler, { passive: false });
     return () => {
       el.removeEventListener('wheel', nativeWheelHandler);
+      if (wheelTimeout) clearTimeout(wheelTimeout);
     };
   }, [step]);
 
