@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react';
 
 interface UseWheelMonthScrollProps {
   onMonthChange: (deltaMonths: number) => void;
@@ -24,7 +24,8 @@ export function useWheelMonthScroll({
   threshold = 40,
   debounceMs,
 }: UseWheelMonthScrollProps) {
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const [containerNode, setContainerNode] = useState<HTMLDivElement | null>(null);
+  const refStore = useRef<HTMLDivElement | null>(null);
   const lastScrollTime = useRef<number>(0);
   const accumulatedDelta = useRef<number>(0);
 
@@ -33,7 +34,7 @@ export function useWheelMonthScroll({
   const handleWheelCore = useCallback(
     (e: WheelEvent | React.WheelEvent<HTMLDivElement>) => {
       const target = (e.target as HTMLElement | null) ?? null;
-      const scrollableParent = target?.closest('.overflow-y-auto, .overflow-y-scroll');
+      const scrollableParent = target?.closest?.('.overflow-y-auto, .overflow-y-scroll') as HTMLElement | null;
 
       // If user is wheeling inside an internal scrollable list with actual overflow,
       // let it scroll internally without changing the calendar month or leaking to page
@@ -71,9 +72,31 @@ export function useWheelMonthScroll({
     [onMonthChange, effectiveCooldown, threshold]
   );
 
+  // Dual-mode ref object & callback: works as <div ref={containerRef}>, onPanelMount={containerRef},
+  // or imperative containerRef.current = node.
+  const containerRef = useMemo(() => {
+    const callbackRef = (node: HTMLDivElement | null) => {
+      refStore.current = node;
+      setContainerNode(node);
+    };
+    Object.defineProperty(callbackRef, 'current', {
+      get() {
+        return refStore.current;
+      },
+      set(node: HTMLDivElement | null) {
+        refStore.current = node;
+        setContainerNode(node);
+      },
+      configurable: true,
+      enumerable: true,
+    });
+    return callbackRef as unknown as React.RefObject<HTMLDivElement | null> &
+      ((node: HTMLDivElement | null) => void);
+  }, []);
+
   // Attach native non-passive wheel listener directly to container element
   useEffect(() => {
-    const el = containerRef.current;
+    const el = containerNode ?? refStore.current;
     if (!el) return;
 
     const nativeHandler = (e: WheelEvent) => {
@@ -84,7 +107,7 @@ export function useWheelMonthScroll({
     return () => {
       el.removeEventListener('wheel', nativeHandler);
     };
-  }, [handleWheelCore]);
+  }, [containerNode, handleWheelCore]);
 
   // Provide synthetic handleWheel handler for React components or fallbacks
   const handleWheel = useCallback(

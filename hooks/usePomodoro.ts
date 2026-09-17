@@ -20,7 +20,7 @@ export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
         }
       }
     }
-    return initialFocusMinutes;
+    return Math.min(120, Math.max(1, initialFocusMinutes));
   });
 
   const [breakMinutes] = useState<number>(initialBreakMinutes);
@@ -81,6 +81,7 @@ export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
     mode,
     focusMinutes,
     setFocusMinutes,
+    breakMinutes,
     secondsLeft,
     formattedTime,
     isActive,

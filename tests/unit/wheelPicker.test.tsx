@@ -562,4 +562,97 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
       root.unmount();
     });
   });
+
+  it('handles break mode: displays coffee icon countdown, hides wheel picker, and restores wheel picker on mode transition back to focus', async () => {
+    vi.useFakeTimers();
+    try {
+      const root = createRoot(container);
+      await act(async () => {
+        root.render(<PomodoroTimer />);
+      });
+
+      // Open widget
+      const trigger = container.querySelector('button[title="Mở đồng hồ Pomodoro"]') as HTMLButtonElement;
+      await act(async () => {
+        trigger.click();
+      });
+
+      // Start focus timer (Bắt đầu)
+      const startBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Bắt đầu')
+      );
+      expect(startBtn).toBeDefined();
+      await act(async () => {
+        startBtn?.click();
+      });
+
+      // Advance timers by 25 minutes (1500 seconds) so focus session completes
+      await act(async () => {
+        vi.advanceTimersByTime(1500 * 1000);
+      });
+
+      // Focus session completed! Mode should now be 'break'
+      // 1. Header should show "Nghỉ Giải Lao"
+      expect(container.textContent).toContain('Nghỉ Giải Lao');
+      // 2. Wheel picker is NOT rendered
+      expect(container.querySelector('[role="spinbutton"]')).toBeNull();
+      // 3. Coffee cup break message is shown
+      expect(container.textContent).toContain('Nghỉ ngơi lấy lại năng lượng');
+      // 4. Default break time 05:00 is displayed
+      expect(container.textContent).toContain('05:00');
+
+      // Start break timer
+      const startBreakBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Bắt đầu')
+      );
+      expect(startBreakBtn).toBeDefined();
+      await act(async () => {
+        startBreakBtn?.click();
+      });
+
+      // Advance 60s into break
+      await act(async () => {
+        vi.advanceTimersByTime(60 * 1000);
+      });
+      expect(container.textContent).toContain('04:00');
+
+      // Pause break timer
+      const pauseBreakBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Tạm dừng')
+      );
+      expect(pauseBreakBtn).toBeDefined();
+      await act(async () => {
+        pauseBreakBtn?.click();
+      });
+
+      // Paused state in break mode: shows (Tạm dừng) and button says "Tiếp tục"
+      expect(container.textContent).toContain('Nghỉ giải lao (Tạm dừng)');
+      const resumeBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+        b.textContent?.includes('Tiếp tục')
+      );
+      expect(resumeBtn).toBeDefined();
+
+      // Resume and finish the break timer (remaining 240 seconds)
+      await act(async () => {
+        resumeBtn?.click();
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(240 * 1000);
+      });
+
+      // Break finished! Mode transitions back to 'focus'
+      // hasStarted is reset to false, isIdle is true!
+      // Wheel picker should be restored for the next session!
+      expect(container.textContent).toContain('Phiên Tập Trung');
+      const restoredSpinbutton = container.querySelector('[role="spinbutton"]');
+      expect(restoredSpinbutton).not.toBeNull();
+      expect(restoredSpinbutton?.getAttribute('aria-valuenow')).toBe('25');
+
+      await act(async () => {
+        root.unmount();
+      });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

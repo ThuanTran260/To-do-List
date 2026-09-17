@@ -49,6 +49,15 @@ export function WheelPickerColumn({
     }
   }, [value, safeValue, onChange]);
 
+  // Clean up typeAhead timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typeAheadTimeout.current) {
+        clearTimeout(typeAheadTimeout.current);
+      }
+    };
+  }, []);
+
   // Clamp or loop value logic
   const clampOrLoop = useCallback(
     (val: number): number => {
@@ -101,9 +110,19 @@ export function WheelPickerColumn({
     }
   };
 
-  // Mouse Wheel processing
-  const processWheel = useCallback(
-    (e: WheelEvent | React.WheelEvent<HTMLDivElement>) => {
+  const safeValueRef = useRef(safeValue);
+  safeValueRef.current = safeValue;
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const clampOrLoopRef = useRef(clampOrLoop);
+  clampOrLoopRef.current = clampOrLoop;
+
+  // Native non-passive wheel listener attachment with threshold accumulator
+  useEffect(() => {
+    const el = columnRef.current;
+    if (!el) return;
+
+    const nativeWheelHandler = (e: WheelEvent) => {
       e.stopPropagation();
       if (e.cancelable) e.preventDefault();
 
@@ -117,29 +136,18 @@ export function WheelPickerColumn({
         const steps = Math.trunc(wheelAccumulator.current / threshold);
         wheelAccumulator.current -= steps * threshold;
 
-        const next = clampOrLoop(safeValue + steps * step);
-        if (next !== safeValue) {
-          onChange(next);
+        const next = clampOrLoopRef.current(safeValueRef.current + steps * step);
+        if (next !== safeValueRef.current) {
+          onChangeRef.current(next);
         }
       }
-    },
-    [clampOrLoop, safeValue, step, onChange]
-  );
-
-  // Native non-passive wheel listener attachment
-  useEffect(() => {
-    const el = columnRef.current;
-    if (!el) return;
-
-    const nativeWheelHandler = (e: WheelEvent) => {
-      processWheel(e);
     };
 
     el.addEventListener('wheel', nativeWheelHandler, { passive: false });
     return () => {
       el.removeEventListener('wheel', nativeWheelHandler);
     };
-  }, [processWheel]);
+  }, [step]);
 
   // Pointer drag handling with pointer capture
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -214,7 +222,6 @@ export function WheelPickerColumn({
       aria-valuemax={max}
       aria-valuetext={ariaValueText}
       onKeyDown={handleKeyDown}
-      onWheel={(e) => processWheel(e)}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -246,7 +253,7 @@ export function WheelPickerColumn({
 
           return (
             <div
-              key={`${offset}-${val}`}
+              key={val}
               data-wheel-item={val}
               style={{
                 height: `${ITEM_HEIGHT}px`,
