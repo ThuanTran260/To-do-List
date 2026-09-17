@@ -338,6 +338,43 @@ describe('WheelPickerColumn Unit & A11y Tests', () => {
     });
   });
 
+  it('moves strictly 1 unit per wheel notch even with deltaY >= 100', async () => {
+    const handleChange = vi.fn();
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <WheelPickerColumn
+          value={25}
+          onChange={handleChange}
+          min={1}
+          max={120}
+        />
+      );
+    });
+
+    const spinbutton = container.querySelector('[role="spinbutton"]') as HTMLElement;
+
+    // Standard Windows mouse notch downwards: deltaY = 100
+    await act(async () => {
+      const notchDown = new WheelEvent('wheel', { deltaY: 100, bubbles: true, cancelable: true });
+      spinbutton.dispatchEvent(notchDown);
+    });
+    expect(handleChange).toHaveBeenCalledTimes(1);
+    expect(handleChange).toHaveBeenCalledWith(26);
+
+    // Standard Windows mouse notch upwards: deltaY = -100
+    await act(async () => {
+      const notchUp = new WheelEvent('wheel', { deltaY: -100, bubbles: true, cancelable: true });
+      spinbutton.dispatchEvent(notchUp);
+    });
+    expect(handleChange).toHaveBeenCalledTimes(2);
+    expect(handleChange).toHaveBeenLastCalledWith(24);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   it('handles pointer drag with pointer capture', async () => {
     const handleChange = vi.fn();
     const root = createRoot(container);
