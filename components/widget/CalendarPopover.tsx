@@ -23,14 +23,16 @@ export function CalendarPopover() {
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // Smooth mouse wheel scroll handler to change months smoothly
-  const { handleWheel } = useWheelMonthScroll({
+  // Smooth mouse wheel scroll handler to change months smoothly and isolate page scroll
+  const { containerRef, handleWheel } = useWheelMonthScroll({
     onMonthChange: (deltaMonths: number) => {
       setCurrentDate((prev) => {
         const next = new Date(prev.getFullYear(), prev.getMonth() + deltaMonths, 1);
         return next;
       });
     },
+    cooldownMs: 180,
+    threshold: 40,
   });
 
   // Days calculation for Vietnam timezone (Monday as first day)
@@ -101,7 +103,14 @@ export function CalendarPopover() {
         <Calendar className="w-4 h-4 text-primary" />
       </button>
 
-      <FloatingPanel isOpen={isOpen} onClose={closeAll} className="w-full sm:w-80 p-3.5 space-y-3">
+      <FloatingPanel
+        isOpen={isOpen}
+        onClose={closeAll}
+        onPanelMount={(node) => {
+          containerRef.current = node;
+        }}
+        className="w-full sm:w-80 p-3.5 space-y-3 overscroll-contain"
+      >
         {/* Header Controls */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">

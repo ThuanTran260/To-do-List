@@ -8,12 +8,24 @@ interface FloatingPanelProps {
   onClose: () => void;
   children: ReactNode;
   className?: string;
+  onPanelMount?: (node: HTMLDivElement | null) => void;
 }
 
-export function FloatingPanel({ isOpen, onClose, children, className = '' }: FloatingPanelProps) {
-  const panelRef = useRef<HTMLDivElement>(null);
+export function FloatingPanel({
+  isOpen,
+  onClose,
+  children,
+  className = '',
+  onPanelMount,
+}: FloatingPanelProps) {
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  const setRef = (node: HTMLDivElement | null) => {
+    panelRef.current = node;
+    onPanelMount?.(node);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -63,13 +75,13 @@ export function FloatingPanel({ isOpen, onClose, children, className = '' }: Flo
 
         {/* Viewport-Safe Centered Panel */}
         <div
-          ref={panelRef}
+          ref={setRef}
           style={{
             animation: 'popoverIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards',
           }}
           className={`fixed inset-x-3 top-16 z-[9000] max-w-sm mx-auto max-h-[85dvh] overflow-y-auto rounded-xl surface-panel bg-surface-1 border border-hairline shadow-2xl p-3.5 space-y-3 ${className}`}
         >
-          <style jsx>{`
+          <style>{`
             @keyframes popoverIn {
               from {
                 opacity: 0;
@@ -91,13 +103,13 @@ export function FloatingPanel({ isOpen, onClose, children, className = '' }: Flo
   // Desktop In-Place Render (Unchanged)
   return (
     <div
-      ref={panelRef}
+      ref={setRef}
       style={{
         animation: 'popoverIn 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards',
       }}
       className={`absolute right-0 top-full mt-1.5 z-50 rounded-xl surface-panel bg-surface-1 border border-hairline shadow-xl ${className}`}
     >
-      <style jsx>{`
+      <style>{`
         @keyframes popoverIn {
           from {
             opacity: 0;

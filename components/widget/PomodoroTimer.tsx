@@ -1,19 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePomodoro } from '@/hooks/usePomodoro';
 import { Play, Pause, RotateCcw, Timer, Flame, Coffee, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { WheelPickerColumn } from '@/components/ui/WheelPickerColumn';
 
 export function PomodoroTimer() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [inputVal, setInputVal] = useState('');
 
   const {
     mode,
     focusMinutes,
     setFocusMinutes,
+    secondsLeft,
     formattedTime,
     isActive,
     toggleTimer,
@@ -21,14 +21,33 @@ export function PomodoroTimer() {
   } = usePomodoro();
 
   const presets = [15, 25, 45, 60, 90];
+  const [hasStarted, setHasStarted] = useState(false);
 
-  const handleApplyCustomMinutes = (mins: number) => {
-    if (!isNaN(mins) && mins > 0) {
-      setFocusMinutes(mins);
+  useEffect(() => {
+    if (isActive) {
+      setHasStarted(true);
     }
-    setIsEditing(false);
-    setInputVal('');
+  }, [isActive]);
+
+  // Auto-clamp guard: ensure values > 120 clamp to 120
+  useEffect(() => {
+    if (focusMinutes > 120) {
+      setFocusMinutes(120);
+    }
+  }, [focusMinutes, setFocusMinutes]);
+
+  const handleReset = () => {
+    setHasStarted(false);
+    resetTimer();
   };
+
+  const handlePresetSelect = (mins: number) => {
+    setHasStarted(false);
+    setFocusMinutes(mins);
+  };
+
+  const isIdle = mode === 'focus' && !isActive && !hasStarted && secondsLeft === focusMinutes * 60;
+  const isPaused = mode === 'focus' && !isActive && (hasStarted || secondsLeft < focusMinutes * 60);
 
   return (
     <>
@@ -64,73 +83,59 @@ export function PomodoroTimer() {
                 </span>
               </div>
               <button
-                onClick={() => {
-                  setIsOpen(false);
-                  setIsEditing(false);
-                }}
+                onClick={() => setIsOpen(false)}
                 className="p-1 rounded-md text-ink-subtle hover:text-ink hover:bg-surface-2 cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Time Display with Click-to-Edit */}
-            <div className="text-center py-1">
-              {isEditing && !isActive && mode === 'focus' ? (
-                <div className="flex items-center justify-center gap-1.5 py-1">
-                  <input
-                    type="number"
-                    min="1"
-                    max="720"
-                    autoFocus
-                    value={inputVal}
-                    onChange={(e) => setInputVal(e.target.value)}
-                    placeholder={String(focusMinutes)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        handleApplyCustomMinutes(parseInt(inputVal, 10));
-                      } else if (e.key === 'Escape') {
-                        setIsEditing(false);
-                      }
+            {/* Time Display or 3D WheelPicker */}
+            {isIdle ? (
+              <div className="py-1">
+                <div className="relative flex items-center justify-center rounded-lg bg-surface-2 h-[180px] border border-hairline w-full overflow-hidden">
+                  {/* Center lens highlight bar */}
+                  <div
+                    style={{
+                      height: '36px',
+                      top: '72px',
                     }}
-                    className="w-20 text-center font-mono text-2xl font-bold bg-surface-2 border border-primary-border rounded-md px-2 py-0.5 text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+                    className="absolute inset-x-2 rounded-md bg-primary-subtle border border-primary-border pointer-events-none z-0"
                   />
-                  <span className="text-xs text-ink-muted font-medium">phút</span>
-                  <button
-                    type="button"
-                    onClick={() => handleApplyCustomMinutes(parseInt(inputVal, 10))}
-                    className="ml-1 px-2.5 py-1 rounded bg-primary text-on-primary text-xs font-medium cursor-pointer"
-                  >
-                    Lưu
-                  </button>
+                  <WheelPickerColumn
+                    value={focusMinutes}
+                    onChange={setFocusMinutes}
+                    min={1}
+                    max={120}
+                    unit="phút"
+                    ariaLabel="Thời lượng tập trung"
+                    className="w-full"
+                  />
                 </div>
-              ) : (
-                <div
-                  onClick={() => {
-                    if (!isActive && mode === 'focus') {
-                      setInputVal(String(focusMinutes));
-                      setIsEditing(true);
-                    }
-                  }}
-                  className={`group inline-flex flex-col items-center justify-center ${
-                    !isActive && mode === 'focus' ? 'cursor-pointer' : ''
-                  }`}
-                  title={!isActive && mode === 'focus' ? 'Bấm để tùy chỉnh số phút' : undefined}
-                >
-                  <span className="font-mono text-3xl font-semibold text-primary tracking-tight transition-transform group-hover:scale-105">
+              </div>
+            ) : (
+              <div className="text-center py-6">
+                <div className="inline-flex flex-col items-center justify-center">
+                  <span className="font-mono text-4xl font-semibold text-primary tracking-tight">
                     {formattedTime}
                   </span>
-                  {!isActive && mode === 'focus' && (
-                    <span className="text-[10px] text-ink-subtle opacity-70 group-hover:opacity-100 group-hover:text-primary transition-colors">
-                      (Bấm để đổi số phút)
+                  {isPaused && (
+                    <span className="text-xs text-ink-subtle mt-1 font-medium">
+                      (Tạm dừng)
+                    </span>
+                  )}
+                  {mode === 'break' && (
+                    <span className="text-xs text-warning mt-1 font-medium flex items-center gap-1">
+                      <Coffee className="w-3.5 h-3.5" />
+                      <span>Nghỉ ngơi lấy lại năng lượng</span>
                     </span>
                   )}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Quick Presets (Only when in focus mode and not running) */}
-            {mode === 'focus' && !isActive && (
+            {/* Quick Presets (Only when in focus mode and isIdle) */}
+            {isIdle && (
               <div className="space-y-1.5 pt-1">
                 <div className="text-[10px] uppercase font-semibold tracking-wider text-ink-subtle text-center">
                   Thời lượng nhanh
@@ -142,10 +147,7 @@ export function PomodoroTimer() {
                       <button
                         key={p}
                         type="button"
-                        onClick={() => {
-                          setFocusMinutes(p);
-                          setIsEditing(false);
-                        }}
+                        onClick={() => handlePresetSelect(p)}
                         className={`px-2 py-1 rounded text-xs font-medium transition-colors cursor-pointer border ${
                           isSelected
                             ? 'bg-primary text-on-primary border-primary shadow-xs'
@@ -171,11 +173,11 @@ export function PomodoroTimer() {
                 }`}
               >
                 {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                <span>{isActive ? 'Tạm dừng' : 'Bắt đầu'}</span>
+                <span>{isActive ? 'Tạm dừng' : isPaused ? 'Tiếp tục' : 'Bắt đầu'}</span>
               </button>
 
               <button
-                onClick={resetTimer}
+                onClick={handleReset}
                 className="p-1.5 rounded-md bg-surface-2 hover:bg-surface-3 text-ink text-xs font-medium border border-hairline cursor-pointer"
                 title="Đặt lại"
               >

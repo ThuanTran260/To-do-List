@@ -11,7 +11,13 @@ export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = parseInt(saved, 10);
-        if (!isNaN(parsed) && parsed > 0 && parsed <= 720) return parsed;
+        if (!isNaN(parsed) && parsed > 0) {
+          const clamped = Math.min(120, Math.max(1, parsed));
+          if (clamped !== parsed) {
+            localStorage.setItem(STORAGE_KEY, String(clamped));
+          }
+          return clamped;
+        }
       }
     }
     return initialFocusMinutes;
@@ -24,7 +30,7 @@ export function usePomodoro(initialFocusMinutes = 25, initialBreakMinutes = 5) {
   const [activeTaskTitle, setActiveTaskTitle] = useState<string | null>(null);
 
   const setFocusMinutes = useCallback((newMinutes: number) => {
-    const validMins = Math.max(1, Math.min(720, Math.round(newMinutes)));
+    const validMins = Math.max(1, Math.min(120, Math.round(newMinutes)));
     setFocusMinutesState(validMins);
     if (typeof window !== 'undefined') {
       localStorage.setItem(STORAGE_KEY, String(validMins));
