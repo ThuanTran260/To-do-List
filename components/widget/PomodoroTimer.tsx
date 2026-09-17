@@ -13,6 +13,7 @@ export function PomodoroTimer() {
     mode,
     focusMinutes,
     setFocusMinutes,
+    breakMinutes,
     secondsLeft,
     formattedTime,
     isActive,
@@ -28,6 +29,11 @@ export function PomodoroTimer() {
       setHasStarted(true);
     }
   }, [isActive]);
+
+  // Reset hasStarted whenever mode transitions (focus <-> break)
+  useEffect(() => {
+    setHasStarted(false);
+  }, [mode]);
 
   // Auto-clamp guard: ensure values > 120 clamp to 120
   useEffect(() => {
@@ -46,8 +52,9 @@ export function PomodoroTimer() {
     setFocusMinutes(mins);
   };
 
-  const isIdle = mode === 'focus' && !isActive && !hasStarted && secondsLeft === focusMinutes * 60;
-  const isPaused = mode === 'focus' && !isActive && (hasStarted || secondsLeft < focusMinutes * 60);
+  const totalSeconds = mode === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
+  const isIdle = mode === 'focus' && !isActive && !hasStarted && secondsLeft === totalSeconds;
+  const isPaused = !isActive && (hasStarted || secondsLeft < totalSeconds);
 
   return (
     <>
@@ -119,7 +126,7 @@ export function PomodoroTimer() {
                   <span className="font-mono text-4xl font-semibold text-primary tracking-tight">
                     {formattedTime}
                   </span>
-                  {isPaused && (
+                  {isPaused && mode === 'focus' && (
                     <span className="text-xs text-ink-subtle mt-1 font-medium">
                       (Tạm dừng)
                     </span>
@@ -127,7 +134,7 @@ export function PomodoroTimer() {
                   {mode === 'break' && (
                     <span className="text-xs text-warning mt-1 font-medium flex items-center gap-1">
                       <Coffee className="w-3.5 h-3.5" />
-                      <span>Nghỉ ngơi lấy lại năng lượng</span>
+                      <span>{isPaused ? 'Nghỉ giải lao (Tạm dừng)' : 'Nghỉ ngơi lấy lại năng lượng'}</span>
                     </span>
                   )}
                 </div>

@@ -207,7 +207,63 @@ describe('Calendar Scroll Isolation & useWheelMonthScroll Tests', () => {
     expect(onMonthChange).not.toHaveBeenCalled();
   });
 
-  it('CalendarPopover attaches containerRef with overscroll-contain and preserves internal task list scroll', async () => {
+  it('preserves native scrolling for internal overflowing child elements without triggering month change or blocking scroll', async () => {
+    const onMonthChange = vi.fn();
+
+    function NestedScrollTestComponent() {
+      const { containerRef } = useWheelMonthScroll({
+        onMonthChange,
+        cooldownMs: 0,
+        threshold: 40,
+      });
+
+      return (
+        <div ref={containerRef} data-testid="panel-container">
+          <div
+            data-testid="scrollable-inner"
+            className="overflow-y-auto"
+            style={{ height: 100 }}
+          >
+            <div data-testid="scrollable-item" style={{ height: 300 }}>
+              Long Content
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<NestedScrollTestComponent />);
+    });
+
+    const scrollableInner = container.querySelector('[data-testid="scrollable-inner"]') as HTMLElement;
+    const scrollableItem = container.querySelector('[data-testid="scrollable-item"]') as HTMLElement;
+
+    // Mock scrollHeight > clientHeight to represent overflowing internal content
+    Object.defineProperty(scrollableInner, 'scrollHeight', { value: 300, configurable: true });
+    Object.defineProperty(scrollableInner, 'clientHeight', { value: 100, configurable: true });
+
+    const innerWheelEvent = new WheelEvent('wheel', {
+      deltaY: 50,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    scrollableItem.dispatchEvent(innerWheelEvent);
+
+    // Internal scroll MUST NOT be preventDefault'd (so user can scroll internal list)
+    expect(innerWheelEvent.defaultPrevented).toBe(false);
+
+    // Month change MUST NOT be triggered
+    expect(onMonthChange).not.toHaveBeenCalled();
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it('CalendarPopover dynamically attaches native listener via containerRef, isolates page scroll, and supports month change', async () => {
     function CalendarWrapper() {
       const { togglePanel } = useDropdownManager();
       return (
@@ -236,12 +292,37 @@ describe('Calendar Scroll Isolation & useWheelMonthScroll Tests', () => {
     });
 
     // Panel should have overscroll-contain
-    const panel = container.querySelector('.overscroll-contain');
+    const panel = container.querySelector('.overscroll-contain') as HTMLElement;
     expect(panel).not.toBeNull();
 
-    // Internal task list container exists and has overflow-y-auto (not stuck)
+    // Internal task list container exists and has both overflow-y-auto and overscroll-contain
     const taskList = container.querySelector('.overflow-y-auto');
     expect(taskList).not.toBeNull();
+    expect(taskList?.classList.contains('overscroll-contain')).toBe(true);
+
+    // Initial month text
+    const initialHeader = container.querySelector('span.text-xs.font-semibold')?.textContent;
+    expect(initialHeader).toBeDefined();
+
+    // Dispatch native wheel event on the panel
+    const wheelEvent = new WheelEvent('wheel', {
+      deltaY: 60,
+      bubbles: true,
+      cancelable: true,
+    });
+
+    await act(async () => {
+      panel.dispatchEvent(wheelEvent);
+    });
+
+    // Page scroll MUST be prevented
+    expect(wheelEvent.defaultPrevented).toBe(true);
+    expect(window.scrollY).toBe(0);
+    expect(document.documentElement.scrollTop).toBe(0);
+
+    // Month should have transitioned
+    const newHeader = container.querySelector('span.text-xs.font-semibold')?.textContent;
+    expect(newHeader).not.toBe(initialHeader);
 
     await act(async () => {
       root.unmount();

@@ -24,7 +24,7 @@ export function CalendarPopover() {
   const month = currentDate.getMonth();
 
   // Smooth mouse wheel scroll handler to change months smoothly and isolate page scroll
-  const { containerRef, handleWheel } = useWheelMonthScroll({
+  const { containerRef } = useWheelMonthScroll({
     onMonthChange: (deltaMonths: number) => {
       setCurrentDate((prev) => {
         const next = new Date(prev.getFullYear(), prev.getMonth() + deltaMonths, 1);
@@ -146,10 +146,7 @@ export function CalendarPopover() {
         </div>
 
         {/* Days Grid with Smooth Mouse Wheel Month Scroll */}
-        <div
-          onWheel={handleWheel}
-          className="grid grid-cols-7 gap-1 text-center text-xs font-medium select-none"
-        >
+        <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium select-none">
           {Array.from({ length: startingDayIndex }).map((_, i) => (
             <div key={`empty-${i}`} className="h-7" />
           ))}
@@ -224,7 +221,7 @@ export function CalendarPopover() {
             )}
 
             {/* Day Tasks List */}
-            <div className="max-h-28 overflow-y-auto space-y-1 pr-1">
+            <div className="max-h-28 overflow-y-auto overscroll-contain space-y-1 pr-1">
               {selectedDayTasks.length === 0 ? (
                 <p className="text-[11px] text-ink-subtle italic">Không có công việc nào.</p>
               ) : (
