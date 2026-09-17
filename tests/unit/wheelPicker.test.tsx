@@ -458,7 +458,7 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
     localStorage.clear();
   });
 
-  it('safely clamps legacy focus minutes > 120 down to 120 and updates localStorage', async () => {
+  it('safely migrates legacy focus minutes > 120 to v2 storage key, clamps to 120, and deletes legacy key', async () => {
     localStorage.setItem('flowstate_pomodoro_focus_minutes', '180');
 
     const root = createRoot(container);
@@ -472,20 +472,57 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
       trigger.click();
     });
 
-    // Verify localStorage was updated to 120
-    expect(localStorage.getItem('flowstate_pomodoro_focus_minutes')).toBe('120');
+    // Legacy key deleted and v2 key created with clamped mins = 120, secs = 0
+    expect(localStorage.getItem('flowstate_pomodoro_focus_minutes')).toBeNull();
+    const v2Raw = localStorage.getItem('flowstate_pomodoro_focus_v2');
+    expect(v2Raw).not.toBeNull();
+    const parsedV2 = JSON.parse(v2Raw!);
+    expect(parsedV2).toEqual({ v: 2, mins: 120, secs: 0 });
 
-    // Spinbutton rendered with value 120
-    const spinbutton = container.querySelector('[role="spinbutton"]');
-    expect(spinbutton).not.toBeNull();
-    expect(spinbutton?.getAttribute('aria-valuenow')).toBe('120');
+    // Both spinbuttons rendered
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    expect(spinbuttons.length).toBe(2);
+    expect(spinbuttons[0].getAttribute('aria-valuenow')).toBe('120');
+    expect(spinbuttons[1].getAttribute('aria-valuenow')).toBe('0');
 
     await act(async () => {
       root.unmount();
     });
   });
 
-  it('renders 3D WheelPicker in isIdle state and updates when quick preset is clicked', async () => {
+  it('handles post-mount hydration sync smoothly without mismatch and updates formattedTime', async () => {
+    // Pre-seed v2 storage with 15 minutes, 30 seconds
+    localStorage.setItem(
+      'flowstate_pomodoro_focus_v2',
+      JSON.stringify({ v: 2, mins: 15, secs: 30 })
+    );
+
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<PomodoroTimer />);
+    });
+
+    // After mount, trigger button should immediately display the synced time 15:30
+    const triggerSpan = container.querySelector('button[title="Mở đồng hồ Pomodoro"] span');
+    expect(triggerSpan?.textContent).toBe('15:30');
+
+    // Open widget and verify 2 spinbuttons reflect synced values
+    const trigger = container.querySelector('button[title="Mở đồng hồ Pomodoro"]') as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    expect(spinbuttons.length).toBe(2);
+    expect(spinbuttons[0].getAttribute('aria-valuenow')).toBe('15');
+    expect(spinbuttons[1].getAttribute('aria-valuenow')).toBe('30');
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it('renders 2 columns (Phút and Giây) with colon separator in isIdle state', async () => {
     const root = createRoot(container);
     await act(async () => {
       root.render(<PomodoroTimer />);
@@ -497,10 +534,91 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
       trigger.click();
     });
 
-    // In isIdle state, WheelPickerColumn is displayed
-    const spinbutton = container.querySelector('[role="spinbutton"]');
-    expect(spinbutton).not.toBeNull();
-    expect(spinbutton?.getAttribute('aria-valuenow')).toBe('25');
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    expect(spinbuttons.length).toBe(2);
+
+    const minutesColumn = spinbuttons[0] as HTMLElement;
+    const secondsColumn = spinbuttons[1] as HTMLElement;
+
+    expect(minutesColumn.getAttribute('aria-label')).toBe('Số phút tập trung');
+    expect(minutesColumn.getAttribute('aria-valuenow')).toBe('25');
+    expect(minutesColumn.getAttribute('aria-valuemin')).toBe('0');
+    expect(minutesColumn.getAttribute('aria-valuemax')).toBe('120');
+
+    expect(secondsColumn.getAttribute('aria-label')).toBe('Số giây tập trung');
+    expect(secondsColumn.getAttribute('aria-valuenow')).toBe('0');
+    expect(secondsColumn.getAttribute('aria-valuemin')).toBe('0');
+    expect(secondsColumn.getAttribute('aria-valuemax')).toBe('59');
+
+    // Colon separator is present
+    expect(container.textContent).toContain(':');
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it('adjusts seconds with loop (59 -> 00) and ensures independent columns (no carry/borrow to minutes)', async () => {
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<PomodoroTimer />);
+    });
+
+    const trigger = container.querySelector('button[title="Mở đồng hồ Pomodoro"]') as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    const minutesColumn = spinbuttons[0] as HTMLElement;
+    const secondsColumn = spinbuttons[1] as HTMLElement;
+
+    expect(minutesColumn.getAttribute('aria-valuenow')).toBe('25');
+    expect(secondsColumn.getAttribute('aria-valuenow')).toBe('0');
+
+    // ArrowDown on seconds column: wraps 00 -> 59 (with loop=true)
+    await act(async () => {
+      secondsColumn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    });
+
+    // Seconds should be 59
+    expect(secondsColumn.getAttribute('aria-valuenow')).toBe('59');
+    // Minutes column MUST NOT carry/borrow — remains 25!
+    expect(minutesColumn.getAttribute('aria-valuenow')).toBe('25');
+
+    // ArrowUp on seconds column: wraps 59 -> 00
+    await act(async () => {
+      secondsColumn.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp', bubbles: true }));
+    });
+
+    expect(secondsColumn.getAttribute('aria-valuenow')).toBe('0');
+    // Minutes column remains 25!
+    expect(minutesColumn.getAttribute('aria-valuenow')).toBe('25');
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it('resets seconds to 00 and updates minutes when quick preset is clicked', async () => {
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<PomodoroTimer />);
+    });
+
+    const trigger = container.querySelector('button[title="Mở đồng hồ Pomodoro"]') as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    const secondsColumn = spinbuttons[1] as HTMLElement;
+
+    // Change seconds to 15 (PageUp on seconds)
+    await act(async () => {
+      secondsColumn.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageUp', bubbles: true }));
+    });
+    expect(secondsColumn.getAttribute('aria-valuenow')).toBe('15');
 
     // Click 45p preset
     const preset45 = Array.from(container.querySelectorAll('button')).find(
@@ -511,21 +629,71 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
       preset45?.click();
     });
 
-    // Spinbutton updates to 45
-    expect(container.querySelector('[role="spinbutton"]')?.getAttribute('aria-valuenow')).toBe('45');
+    // Spinbuttons: minutes should be 45, seconds should be reset to 0
+    expect(spinbuttons[0].getAttribute('aria-valuenow')).toBe('45');
+    expect(spinbuttons[1].getAttribute('aria-valuenow')).toBe('0');
+
+    // 45p button should have active highlight
+    expect(preset45?.className).toContain('bg-primary');
 
     await act(async () => {
       root.unmount();
     });
   });
 
-  it('preserves paused time MM:SS and hides wheel picker when paused', async () => {
+  it('disables Bắt đầu button and guards against timer start when duration is 00:00', async () => {
     const root = createRoot(container);
     await act(async () => {
       root.render(<PomodoroTimer />);
     });
 
-    // Open widget
+    const trigger = container.querySelector('button[title="Mở đồng hồ Pomodoro"]') as HTMLButtonElement;
+    await act(async () => {
+      trigger.click();
+    });
+
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    const minutesColumn = spinbuttons[0] as HTMLElement;
+
+    // Set minutes to 0 (Home key)
+    await act(async () => {
+      minutesColumn.dispatchEvent(new KeyboardEvent('keydown', { key: 'Home', bubbles: true }));
+    });
+    expect(minutesColumn.getAttribute('aria-valuenow')).toBe('0');
+    expect(spinbuttons[1].getAttribute('aria-valuenow')).toBe('0');
+
+    // Start button should be disabled
+    const startBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Bắt đầu')
+    );
+    expect(startBtn).toBeDefined();
+    expect(startBtn?.hasAttribute('disabled')).toBe(true);
+
+    // Clicking disabled start button should not start timer
+    await act(async () => {
+      startBtn?.click();
+    });
+
+    // Spinbuttons remain visible (still idle, not started)
+    expect(container.querySelectorAll('[role="spinbutton"]').length).toBe(2);
+
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
+  it('preserves both minutes and seconds when paused and when reset', async () => {
+    // Seed storage with 25 mins and 30 secs
+    localStorage.setItem(
+      'flowstate_pomodoro_focus_v2',
+      JSON.stringify({ v: 2, mins: 25, secs: 30 })
+    );
+
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<PomodoroTimer />);
+    });
+
     const trigger = container.querySelector('button[title="Mở đồng hồ Pomodoro"]') as HTMLButtonElement;
     await act(async () => {
       trigger.click();
@@ -541,7 +709,7 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
       startBtn?.click();
     });
 
-    // Wheel picker is replaced by running countdown
+    // Wheel picker replaced by running countdown
     expect(container.querySelector('[role="spinbutton"]')).toBeNull();
 
     // Pause timer (Tạm dừng)
@@ -554,16 +722,31 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
       pauseBtn?.click();
     });
 
-    // Wheel picker should STILL NOT be rendered while paused; displays paused countdown MM:SS
+    // While paused, displays paused countdown MM:SS and (Tạm dừng)
     expect(container.querySelector('[role="spinbutton"]')).toBeNull();
-    expect(container.textContent).toContain('25:00');
+    expect(container.textContent).toContain('25:30');
+    expect(container.textContent).toContain('(Tạm dừng)');
+
+    // Reset timer (Đặt lại)
+    const resetBtn = container.querySelector('button[title="Đặt lại"]') as HTMLButtonElement;
+    expect(resetBtn).toBeDefined();
+
+    await act(async () => {
+      resetBtn.click();
+    });
+
+    // Wheel picker is restored with both minutes (25) and seconds (30)
+    const spinbuttons = container.querySelectorAll('[role="spinbutton"]');
+    expect(spinbuttons.length).toBe(2);
+    expect(spinbuttons[0].getAttribute('aria-valuenow')).toBe('25');
+    expect(spinbuttons[1].getAttribute('aria-valuenow')).toBe('30');
 
     await act(async () => {
       root.unmount();
     });
   });
 
-  it('handles break mode: displays coffee icon countdown, hides wheel picker, and restores wheel picker on mode transition back to focus', async () => {
+  it('handles break mode: displays coffee icon countdown, hides wheel picker, and restores both columns on mode transition back to focus', async () => {
     vi.useFakeTimers();
     try {
       const root = createRoot(container);
@@ -642,11 +825,12 @@ describe('PomodoroTimer Wheel Integration & State Machine', () => {
 
       // Break finished! Mode transitions back to 'focus'
       // hasStarted is reset to false, isIdle is true!
-      // Wheel picker should be restored for the next session!
+      // Wheel picker should be restored for the next session with both columns!
       expect(container.textContent).toContain('Phiên Tập Trung');
-      const restoredSpinbutton = container.querySelector('[role="spinbutton"]');
-      expect(restoredSpinbutton).not.toBeNull();
-      expect(restoredSpinbutton?.getAttribute('aria-valuenow')).toBe('25');
+      const restoredSpinbuttons = container.querySelectorAll('[role="spinbutton"]');
+      expect(restoredSpinbuttons.length).toBe(2);
+      expect(restoredSpinbuttons[0].getAttribute('aria-valuenow')).toBe('25');
+      expect(restoredSpinbuttons[1].getAttribute('aria-valuenow')).toBe('0');
 
       await act(async () => {
         root.unmount();

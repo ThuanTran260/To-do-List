@@ -12,7 +12,10 @@ export function PomodoroTimer() {
   const {
     mode,
     focusMinutes,
+    focusSeconds,
     setFocusMinutes,
+    setFocusSeconds,
+    setFocusTime,
     breakMinutes,
     secondsLeft,
     formattedTime,
@@ -49,12 +52,13 @@ export function PomodoroTimer() {
 
   const handlePresetSelect = (mins: number) => {
     setHasStarted(false);
-    setFocusMinutes(mins);
+    setFocusTime(mins, 0);
   };
 
-  const totalSeconds = mode === 'focus' ? focusMinutes * 60 : breakMinutes * 60;
+  const totalSeconds = mode === 'focus' ? focusMinutes * 60 + focusSeconds : breakMinutes * 60;
   const isIdle = mode === 'focus' && !isActive && !hasStarted && secondsLeft === totalSeconds;
   const isPaused = !isActive && (hasStarted || secondsLeft < totalSeconds);
+  const isZeroDuration = mode === 'focus' && focusMinutes === 0 && focusSeconds === 0;
 
   return (
     <>
@@ -65,7 +69,12 @@ export function PomodoroTimer() {
         title="Mở đồng hồ Pomodoro"
       >
         <Timer className="w-4 h-4 text-primary" />
-        <span className="font-mono font-medium text-xs hidden sm:inline">{formattedTime}</span>
+        <span
+          suppressHydrationWarning
+          className="font-mono font-medium text-xs hidden sm:inline"
+        >
+          {formattedTime}
+        </span>
       </button>
 
       {/* Floating Pomodoro Widget Modal */}
@@ -97,11 +106,11 @@ export function PomodoroTimer() {
               </button>
             </div>
 
-            {/* Time Display or 3D WheelPicker */}
+            {/* Time Display or 2-Column 3D WheelPicker */}
             {isIdle ? (
               <div className="py-1">
-                <div className="relative flex items-center justify-center rounded-lg bg-surface-2 h-[180px] border border-hairline w-full overflow-hidden">
-                  {/* Center lens highlight bar */}
+                <div className="relative flex items-center justify-center rounded-lg bg-surface-2 h-[180px] border border-hairline w-full overflow-hidden px-4">
+                  {/* Center lens highlight bar spanning across both columns */}
                   <div
                     style={{
                       height: '36px',
@@ -109,14 +118,35 @@ export function PomodoroTimer() {
                     }}
                     className="absolute inset-x-2 rounded-md bg-primary-subtle border border-primary-border pointer-events-none z-0"
                   />
+
+                  {/* Column 1: Minutes (0..120) */}
                   <WheelPickerColumn
                     value={focusMinutes}
                     onChange={setFocusMinutes}
-                    min={1}
+                    min={0}
                     max={120}
                     unit="phút"
-                    ariaLabel="Thời lượng tập trung"
-                    className="w-full"
+                    formatLabel={(v) => String(v).padStart(2, '0')}
+                    ariaLabel="Số phút tập trung"
+                    className="w-24 z-10"
+                  />
+
+                  {/* Colon separator */}
+                  <div className="font-mono text-xl font-bold text-primary px-2 z-10 select-none pointer-events-none">
+                    :
+                  </div>
+
+                  {/* Column 2: Seconds (0..59, loop=true) */}
+                  <WheelPickerColumn
+                    value={focusSeconds}
+                    onChange={setFocusSeconds}
+                    min={0}
+                    max={59}
+                    loop={true}
+                    unit="giây"
+                    formatLabel={(v) => String(v).padStart(2, '0')}
+                    ariaLabel="Số giây tập trung"
+                    className="w-24 z-10"
                   />
                 </div>
               </div>
@@ -149,7 +179,7 @@ export function PomodoroTimer() {
                 </div>
                 <div className="flex items-center justify-center gap-1 flex-wrap">
                   {presets.map((p) => {
-                    const isSelected = focusMinutes === p;
+                    const isSelected = focusMinutes === p && focusSeconds === 0;
                     return (
                       <button
                         key={p}
@@ -173,10 +203,13 @@ export function PomodoroTimer() {
             <div className="flex items-center justify-center gap-2 pt-1 border-t border-hairline">
               <button
                 onClick={toggleTimer}
-                className={`py-1.5 px-5 rounded-md text-on-primary font-medium text-xs shadow-xs transition-colors flex items-center gap-1.5 cursor-pointer ${
-                  isActive
-                    ? 'bg-warning hover:bg-warning/90'
-                    : 'bg-primary hover:bg-primary-hover'
+                disabled={isZeroDuration}
+                className={`py-1.5 px-5 rounded-md text-on-primary font-medium text-xs shadow-xs transition-colors flex items-center gap-1.5 ${
+                  isZeroDuration
+                    ? 'opacity-40 cursor-not-allowed bg-ink-subtle'
+                    : isActive
+                    ? 'bg-warning hover:bg-warning/90 cursor-pointer'
+                    : 'bg-primary hover:bg-primary-hover cursor-pointer'
                 }`}
               >
                 {isActive ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
