@@ -12,7 +12,11 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:k6:smoke": "k6 run tests/k6/smoke.js",
+    "test:k6:load": "k6 run tests/k6/load.js",
+    "test:k6:stress": "k6 run tests/k6/stress.js",
+    "test:k6:local": "k6 run -e BASE_URL=http://localhost:3000 tests/k6/smoke.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
