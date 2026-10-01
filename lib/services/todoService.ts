@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { todoCreateSchema, todoUpdateSchema, type TodoInput, type TodoUpdate } from '@/lib/validations/todo';
 import { createNextRecurringTodo } from '@/lib/services/recurrenceService';
 import { assertOwnedRow, assertBulkAffected } from '@/lib/services/dbGuard';
+import { deleteTaskImage } from '@/lib/storage';
 import type { TodoItemData } from '@/types/todo';
 
 interface RawTodoRow {
@@ -70,13 +71,95 @@ export async function fetchActiveTodos(
 }
 
 /**
- * Fetches soft-deleted todos in trash.
+ * Purges todos soft-deleted more than 30 days ago for the user.
+ * Cleans up associated images from Storage and deletes database rows in chunks of 100.
  */
-export async function fetchTrashTodos(supabase: SupabaseClient): Promise<TodoItemData[]> {
+export async function purgeExpiredTrashTodos(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: expired, error: fetchError } = await supabase
+    .from('todos')
+    .select('id, image_path, image_thumb_path')
+    .not('deleted_at', 'is', null)
+    .lt('deleted_at', cutoff)
+    .eq('user_id', userId)
+    .limit(500);
+
+  if (fetchError || !expired || expired.length === 0) {
+    return 0;
+  }
+
+  // Extract all image paths and clean up storage
+  const imagePaths: string[] = [];
+  for (const item of expired as Array<{ id: string; image_path?: string | null; image_thumb_path?: string | null }>) {
+    if (item.image_path) imagePaths.push(item.image_path);
+    if (item.image_thumb_path) imagePaths.push(item.image_thumb_path);
+  }
+
+  if (imagePaths.length > 0) {
+    try {
+      await deleteTaskImage(...imagePaths);
+    } catch (storageError) {
+      console.error('[trash] Failed to delete expired todo images from storage', storageError);
+    }
+  }
+
+  // Batch delete database rows in chunks of 100
+  const CHUNK_SIZE = 100;
+  const ids = (expired as Array<{ id: string }>).map((item) => item.id).filter(Boolean);
+  let purgedCount = 0;
+
+  for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+    const chunk = ids.slice(i, i + CHUNK_SIZE);
+    const { count, error: deleteError } = await supabase
+      .from('todos')
+      .delete({ count: 'exact' })
+      .in('id', chunk)
+      .eq('user_id', userId);
+
+    if (deleteError) {
+      console.error('[trash] Failed to delete batch of expired todos', deleteError);
+    } else {
+      purgedCount += count ?? chunk.length;
+    }
+  }
+
+  return purgedCount;
+}
+
+/**
+ * Fetches soft-deleted todos in trash within 30 days.
+ * Triggers background non-blocking fire-and-forget purge of older trash items.
+ */
+export async function fetchTrashTodos(
+  supabase: SupabaseClient,
+  userId?: string
+): Promise<TodoItemData[]> {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  void (async () => {
+    try {
+      let targetUserId = userId;
+      if (!targetUserId) {
+        const { data: authData } = await supabase.auth.getUser();
+        targetUserId = authData.user?.id;
+      }
+      if (targetUserId) {
+        await purgeExpiredTrashTodos(supabase, targetUserId);
+      }
+    } catch (purgeErr) {
+      console.error('[trash] background purge todos failed', purgeErr);
+    }
+  })();
+
   const { data, error } = await supabase
     .from('todos')
     .select('*')
     .not('deleted_at', 'is', null)
+    .gte('deleted_at', cutoff)
     .order('deleted_at', { ascending: false });
 
   if (error) throw error;
