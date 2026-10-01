@@ -94,13 +94,79 @@ export async function fetchActiveNotes(
 }
 
 /**
- * Fetches trash notes.
+ * Purges notes soft-deleted more than 30 days ago for the user.
+ * Deletes database rows in chunks of 100.
  */
-export async function fetchTrashNotes(supabase: SupabaseClient): Promise<Note[]> {
+export async function purgeExpiredTrashNotes(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<number> {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  const { data: expired, error: fetchError } = await supabase
+    .from('notes')
+    .select('id')
+    .not('deleted_at', 'is', null)
+    .lt('deleted_at', cutoff)
+    .eq('user_id', userId)
+    .limit(500);
+
+  if (fetchError || !expired || expired.length === 0) {
+    return 0;
+  }
+
+  const CHUNK_SIZE = 100;
+  const ids = (expired as Array<{ id: string }>).map((item) => item.id).filter(Boolean);
+  let purgedCount = 0;
+
+  for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+    const chunk = ids.slice(i, i + CHUNK_SIZE);
+    const { count, error: deleteError } = await supabase
+      .from('notes')
+      .delete({ count: 'exact' })
+      .in('id', chunk)
+      .eq('user_id', userId);
+
+    if (deleteError) {
+      console.error('[trash] Failed to delete batch of expired notes', deleteError);
+    } else {
+      purgedCount += count ?? chunk.length;
+    }
+  }
+
+  return purgedCount;
+}
+
+/**
+ * Fetches trash notes within 30 days.
+ * Triggers background non-blocking fire-and-forget purge of older trash notes.
+ */
+export async function fetchTrashNotes(
+  supabase: SupabaseClient,
+  userId?: string
+): Promise<Note[]> {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+  void (async () => {
+    try {
+      let targetUserId = userId;
+      if (!targetUserId) {
+        const { data: authData } = await supabase.auth.getUser();
+        targetUserId = authData.user?.id;
+      }
+      if (targetUserId) {
+        await purgeExpiredTrashNotes(supabase, targetUserId);
+      }
+    } catch (purgeErr) {
+      console.error('[trash] background purge notes failed', purgeErr);
+    }
+  })();
+
   const { data, error } = await supabase
     .from('notes')
     .select('*, note_tags(tags(*))')
     .not('deleted_at', 'is', null)
+    .gte('deleted_at', cutoff)
     .order('deleted_at', { ascending: false });
 
   if (error) {
@@ -109,6 +175,7 @@ export async function fetchTrashNotes(supabase: SupabaseClient): Promise<Note[]>
       .from('notes')
       .select('*')
       .not('deleted_at', 'is', null)
+      .gte('deleted_at', cutoff)
       .order('deleted_at', { ascending: false });
 
     if (fallback.error) throw fallback.error;

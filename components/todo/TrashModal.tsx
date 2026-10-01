@@ -135,7 +135,11 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
         </div>
 
         {isBulkProcessing && (
-          <div className="p-2.5 rounded-md bg-primary-subtle border border-primary-border text-primary text-xs font-medium flex items-center justify-center gap-2">
+          <div
+            role="status"
+            aria-live="polite"
+            className="p-2.5 rounded-md bg-primary-subtle border border-primary-border text-primary text-xs font-medium flex items-center justify-center gap-2"
+          >
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>{bulkStatus || 'Đang xử lý hàng loạt...'}</span>
           </div>
@@ -149,26 +153,40 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
             <p className="text-xs font-medium">Thùng rác trống</p>
           </div>
         ) : (
-          <div className="space-y-2">
-            {trashList.map((item) => (
-              <div
-                key={item.id}
-                className="flex items-center justify-between p-3 rounded-lg border border-hairline bg-surface-2 text-ink"
-              >
-                <div className="space-y-1 max-w-[70%]">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-xs truncate line-through text-ink-subtle">
-                      {item.title}
-                    </span>
-                    <PriorityBadge priority={item.priority} />
-                  </div>
-                  {item.deleted_at && (
-                    <div className="flex items-center gap-1 text-[10px] text-ink-subtle">
-                      <Calendar className="w-3 h-3" />
-                      <span>Đã xóa: {new Date(item.deleted_at).toLocaleDateString('vi-VN')}</span>
+          <div className="space-y-2" aria-live="polite">
+            {trashList.map((item) => {
+              const daysRemaining = item.deleted_at
+                // eslint-disable-next-line react-hooks/purity
+                ? Math.max(1, 30 - Math.floor((Date.now() - new Date(item.deleted_at).getTime()) / (24 * 60 * 60 * 1000)))
+                : 30;
+
+              return (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-hairline bg-surface-2 text-ink"
+                >
+                  <div className="space-y-1 max-w-[70%]">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-xs truncate line-through text-ink-subtle">
+                        {item.title}
+                      </span>
+                      <PriorityBadge priority={item.priority} />
                     </div>
-                  )}
-                </div>
+                    {item.deleted_at && (
+                      <div className="flex items-center gap-2 text-[10px] text-ink-subtle">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          <span>Đã xóa: {new Date(item.deleted_at).toLocaleDateString('vi-VN')}</span>
+                        </div>
+                        <span
+                          className="text-warning font-medium"
+                          aria-label={`Tự động xóa sau ${daysRemaining} ngày`}
+                        >
+                          (Còn {daysRemaining} ngày)
+                        </span>
+                      </div>
+                    )}
+                  </div>
 
                 <div className="flex items-center gap-1.5">
                   <button
@@ -198,7 +216,8 @@ export function TrashModal({ isOpen, onClose }: TrashModalProps) {
                   </button>
                 </div>
               </div>
-            ))}
+            );
+          })}
           </div>
         )}
       </div>

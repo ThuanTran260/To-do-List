@@ -80,7 +80,7 @@ export function NoteTrashModal({ isOpen, onClose }: NoteTrashModalProps) {
           </div>
 
           {/* Modal Content List */}
-          <div className="p-4 flex-1 overflow-y-auto space-y-2">
+          <div className="p-4 flex-1 overflow-y-auto space-y-2" aria-live="polite">
             {isLoading ? (
               <div className="py-12 text-center text-xs text-ink-subtle">
                 Đang tải thùng rác...
@@ -97,6 +97,11 @@ export function NoteTrashModal({ isOpen, onClose }: NoteTrashModalProps) {
             ) : (
               trashNotes.map((note) => {
                 const plainText = extractPlainText(note.content);
+                const daysRemaining = note.deleted_at
+                  // eslint-disable-next-line react-hooks/purity
+                  ? Math.max(1, 30 - Math.floor((Date.now() - new Date(note.deleted_at).getTime()) / (24 * 60 * 60 * 1000)))
+                  : 30;
+
                 return (
                   <div
                     key={note.id}
@@ -106,11 +111,19 @@ export function NoteTrashModal({ isOpen, onClose }: NoteTrashModalProps) {
                       <h4 className="font-medium text-xs sm:text-sm text-ink truncate">
                         {note.title || 'Ghi chú không có tiêu đề'}
                       </h4>
-                      {plainText && (
-                        <p className="text-xs text-ink-muted line-clamp-1 mt-0.5">
-                          {plainText}
-                        </p>
-                      )}
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {plainText && (
+                          <p className="text-xs text-ink-muted line-clamp-1 flex-1">
+                            {plainText}
+                          </p>
+                        )}
+                        <span
+                          className="text-[10px] text-warning font-medium shrink-0"
+                          aria-label={`Tự động xóa sau ${daysRemaining} ngày`}
+                        >
+                          (Còn {daysRemaining} ngày)
+                        </span>
+                      </div>
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">
@@ -140,7 +153,10 @@ export function NoteTrashModal({ isOpen, onClose }: NoteTrashModalProps) {
           </div>
 
           {/* Modal Footer */}
-          <div className="p-3 bg-surface-2/60 border-t border-hairline flex items-center justify-between text-xs text-ink-subtle">
+          <div
+            className="p-3 bg-surface-2/60 border-t border-hairline flex items-center justify-between text-xs text-ink-subtle"
+            aria-live="polite"
+          >
             <span>{trashNotes.length} ghi chú trong thùng rác</span>
             <button
               onClick={onClose}
