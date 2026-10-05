@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { PERMISSIONS_POLICY } from "./lib/security/headers";
 
 const securityHeaders = [
   // Prevent MIME-type sniffing (e.g. serving JS as text/html)
@@ -9,8 +10,8 @@ const securityHeaders = [
   { key: 'X-XSS-Protection', value: '1; mode=block' },
   // Control referrer information sent with requests
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  // Restrict browser feature access
-  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  // Restrict browser feature access (single source: lib/security/headers.ts)
+  { key: 'Permissions-Policy', value: PERMISSIONS_POLICY },
   // Force HTTPS for 2 years, including subdomains (only effective on HTTPS)
   {
     key: 'Strict-Transport-Security',

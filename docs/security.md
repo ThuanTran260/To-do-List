@@ -30,7 +30,7 @@
 | `X-Frame-Options` | `DENY` (Chống Clickjacking) |
 | `X-Content-Type-Options` | `nosniff` (Chống MIME Sniffing) |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` (nguồn duy nhất: `lib/security/headers.ts`) |
 
 - **Dynamic Nonce-based CSP:** Sinh nonce ngẫu nhiên per-request trong middleware, loại bỏ `'unsafe-inline'` ở production.
 
