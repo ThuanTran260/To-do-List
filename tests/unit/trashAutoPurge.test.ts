@@ -243,7 +243,7 @@ describe('Integration Test Suite: 30-Day Trash Auto-Purge Mechanism', () => {
               not: vi.fn().mockReturnThis(),
               lt: vi.fn().mockReturnThis(),
               limit: vi.fn().mockResolvedValue({
-                data: [{ id: 'cron-todo-1', image_path: 'path1.png', image_thumb_path: null }],
+                data: [{ id: 'cron-todo-1', user_id: 'user-1', image_path: 'user-1/path1.png', image_thumb_path: null }],
                 error: null,
               }),
               delete: vi.fn().mockReturnValue({
@@ -282,7 +282,7 @@ describe('Integration Test Suite: 30-Day Trash Auto-Purge Mechanism', () => {
       expect(json.purgedTodos).toBe(1);
       expect(json.purgedNotes).toBe(1);
       expect(typeof json.durationMs).toBe('number');
-      expect(removeStorageSpy).toHaveBeenCalledWith(['path1.png']);
+      expect(removeStorageSpy).toHaveBeenCalledWith(['user-1/path1.png']);
     });
   });
 });

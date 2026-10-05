@@ -14,14 +14,18 @@ export function buildCspHeader(nonce: string, isDev: boolean): string {
     : `script-src 'self' 'nonce-${nonce}'`;
   // C-2 fix (review): nonce KHÔNG áp dụng cho style attribute (23 chỗ style={{}})
   // và 'unsafe-inline' bị bỏ qua khi có nonce trong cùng directive → styles phải dùng 'unsafe-inline' thuần.
-  const styleSrc = "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com";
+  // Fonts: app/layout.tsx uses next/font/google (Inter, JetBrains_Mono) =>
+  // Next self-hosts font files at build, NEVER requests fonts.googleapis.com/gstatic.
+  const styleSrc = "style-src 'self' 'unsafe-inline'";
   return [
     "default-src 'self'",
     scriptSrc,
     styleSrc,
-    "font-src 'self' https://fonts.gstatic.com data:",
-    // I-2 fix: Google OAuth avatar (lh3.googleusercontent.com)
-    "img-src 'self' data: blob: https://*.supabase.co https://*.googleusercontent.com",
+    "font-src 'self' data:",
+    // Google OAuth NOT enabled (app/auth/callback/route.ts: "if enabled in the
+    // future") => drop googleusercontent.com wildcard. Re-add the exact domain
+    // in use when OAuth ships.
+    "img-src 'self' data: blob: https://*.supabase.co",
     "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
     "object-src 'none'",
     "frame-ancestors 'none'",

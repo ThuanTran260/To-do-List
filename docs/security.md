@@ -30,7 +30,7 @@
 | `X-Frame-Options` | `DENY` (Chống Clickjacking) |
 | `X-Content-Type-Options` | `nosniff` (Chống MIME Sniffing) |
 | `Referrer-Policy` | `strict-origin-when-cross-origin` |
-| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=()` (nguồn duy nhất: `lib/security/headers.ts`) |
 
 - **Dynamic Nonce-based CSP:** Sinh nonce ngẫu nhiên per-request trong middleware, loại bỏ `'unsafe-inline'` ở production.
 
@@ -55,9 +55,23 @@ Tất cả bảng trong Postgres DB đều **deny-by-default**. Bảng dưới �
 
 - B-tree Index trên `user_id` ở tất cả các bảng (`supabase/migrations/20260808000000_add_user_id_indexes.sql`).
 
-### 3.2 Security Definer Functions
-- Các hàm `handle_new_user()` và `purge_old_deleted_todos()` được gán `set search_path = public` (chống search_path injection).
-- Đã thu hồi quyền thực thi công khai: `revoke execute on function ... from public, anon, authenticated;`.
+### 3.2 Database Functions & search_path
+- Mọi function trong `public` đều gán `set search_path` cố định (chống
+  search_path injection): `handle_new_user()` (`20260801000000:31`),
+  `set_updated_at()` (`20260801000000:115` — lưu ý `20260824000000:7-13` ghi đè
+  lại hàm này mà không kèm search_path, cần fix khi chạm migration notes),
+  `purge_old_deleted_todos()` (`20260801000000:133`),
+  `purge_old_deleted_notes()` (`20260824000000:104`),
+  `rls_auto_enable()` (`20261005000003`: `pg_catalog`, cố ý hẹp hơn).
+- SECURITY DEFINER functions đã thu hồi quyền thực thi công khai:
+  `revoke execute on function ... from public, anon, authenticated;` kèm
+  `grant execute ... to service_role`. Danh sách: `handle_new_user()`,
+  `purge_old_deleted_todos()`, `purge_old_deleted_notes()`, `rls_auto_enable()`.
+- Default privileges cho role `postgres` đã revoke `anon`/`authenticated`
+  (`20261005000002`). Residual: 3 dòng grantor `supabase_admin` không đổi được
+  từ SQL Editor (42501) — bù bằng REVOKE tường minh + trigger + CI invariant.
+- **Bất kỳ SECURITY DEFINER function mới PHẢI kèm `revoke` trong cùng migration.**
+  Invariant này được test `tests/unit/migrationSecurity.test.ts` chốt trong CI.
 
 ### 3.3 Storage Objects (`task-attachments`, `avatars`) — PRIVATE
 

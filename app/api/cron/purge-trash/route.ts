@@ -4,12 +4,29 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 function timingSafeEqualStr(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // Không return sớm khi length khác nhau — sẽ rò độ dài secret qua thời gian.
+  // Vẫn duyệt hết maxLength để mọi lần gọi tốn thời gian như nhau.
+  // (Thực tế là Info: secret là hex 64 ký tự, độ dài đã biết — sửa cho đúng chuẩn.)
+  let diff = a.length ^ b.length;
+  const maxLength = Math.max(a.length, b.length);
+  for (let i = 0; i < maxLength; i++) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   }
   return diff === 0;
+}
+
+/**
+ * Storage path hợp lệ luôn bắt đầu bằng folder user: `{userId}/...`
+ * (khớp policy 20260831000001_storage_private.sql dùng foldername(name)[1]).
+ * Cron chạy bằng service_role nên bypass RLS — phải tự validate trước khi xoá:
+ * attacker ghi image_path trỏ sang file user khác trong todo của chính mình
+ * thì cron sẽ xoá nhầm file nạn nhân. Path không owned => skip + log,
+ * không abort cả batch (fail-closed mềm).
+ */
+function isOwnedStoragePath(path: string | null | undefined, ownerId: string | null | undefined): path is string {
+  if (!path || !ownerId) return false;
+  const firstSegment = path.split('/')[0];
+  return firstSegment === ownerId;
 }
 
 async function handlePurge(req: Request) {
@@ -41,7 +58,7 @@ async function handlePurge(req: Request) {
     // Query expired todos
     const { data: expiredTodos, error: todosError } = await supabase
       .from('todos')
-      .select('id, image_path, image_thumb_path')
+      .select('id, user_id, image_path, image_thumb_path')
       .not('deleted_at', 'is', null)
       .lt('deleted_at', cutoff)
       .limit(500);
@@ -54,9 +71,22 @@ async function handlePurge(req: Request) {
     let purgedTodos = 0;
     if (expiredTodos && expiredTodos.length > 0) {
       const imagePaths: string[] = [];
-      for (const item of expiredTodos as Array<{ id: string; image_path?: string | null; image_thumb_path?: string | null }>) {
-        if (item.image_path) imagePaths.push(item.image_path);
-        if (item.image_thumb_path) imagePaths.push(item.image_thumb_path);
+      for (const item of expiredTodos as Array<{
+        id: string;
+        user_id?: string | null;
+        image_path?: string | null;
+        image_thumb_path?: string | null;
+      }>) {
+        if (isOwnedStoragePath(item.image_path, item.user_id)) {
+          imagePaths.push(item.image_path);
+        } else if (item.image_path) {
+          console.error('[cron/purge-trash] Skipping unowned image_path:', item.image_path);
+        }
+        if (isOwnedStoragePath(item.image_thumb_path, item.user_id)) {
+          imagePaths.push(item.image_thumb_path);
+        } else if (item.image_thumb_path) {
+          console.error('[cron/purge-trash] Skipping unowned image_thumb_path:', item.image_thumb_path);
+        }
       }
 
       if (imagePaths.length > 0) {
