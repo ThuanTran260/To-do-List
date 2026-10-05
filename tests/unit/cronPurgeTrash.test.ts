@@ -120,8 +120,9 @@ describe('Cron /api/cron/purge-trash route handler', () => {
     it('purges expired todos & notes, cleans up images via service role storage, and batches DB deletes', async () => {
       const expiredTodos = Array.from({ length: 150 }, (_, i) => ({
         id: `todo-${i + 1}`,
-        image_path: i % 2 === 0 ? `path-${i + 1}.webp` : null,
-        image_thumb_path: i % 3 === 0 ? `thumb-${i + 1}.webp` : null,
+        user_id: 'owner-1',
+        image_path: i % 2 === 0 ? `owner-1/path-${i + 1}.webp` : null,
+        image_thumb_path: i % 3 === 0 ? `owner-1/thumb-${i + 1}.webp` : null,
       }));
 
       const expiredNotes = Array.from({ length: 120 }, (_, i) => ({
@@ -196,7 +197,7 @@ describe('Cron /api/cron/purge-trash route handler', () => {
       );
 
       // Verify todos query filters
-      expect(todosQuery.select).toHaveBeenCalledWith('id, image_path, image_thumb_path');
+      expect(todosQuery.select).toHaveBeenCalledWith('id, user_id, image_path, image_thumb_path');
       expect(todosQuery.not).toHaveBeenCalledWith('deleted_at', 'is', null);
       expect(todosQuery.lt).toHaveBeenCalledWith(
         'deleted_at',
@@ -208,8 +209,8 @@ describe('Cron /api/cron/purge-trash route handler', () => {
       expect(mockStorageFrom).toHaveBeenCalledWith('task-attachments');
       expect(mockStorageRemove).toHaveBeenCalledTimes(1);
       const passedImagePaths = mockStorageRemove.mock.calls[0][0];
-      expect(passedImagePaths).toContain('path-1.webp');
-      expect(passedImagePaths).toContain('thumb-1.webp');
+      expect(passedImagePaths).toContain('owner-1/path-1.webp');
+      expect(passedImagePaths).toContain('owner-1/thumb-1.webp');
       expect(new Set(passedImagePaths).size).toBe(passedImagePaths.length);
 
       // Verify chunking for todos (150 -> 100 + 50)
@@ -266,7 +267,7 @@ describe('Cron /api/cron/purge-trash route handler', () => {
       });
 
       const expiredTodos = [
-        { id: 'todo-1', image_path: 'failed-img.webp', image_thumb_path: null },
+        { id: 'todo-1', user_id: 'user-A', image_path: 'user-A/failed-img.webp', image_thumb_path: null },
       ];
 
       const todosQuery = {
@@ -304,7 +305,7 @@ describe('Cron /api/cron/purge-trash route handler', () => {
       expect(json.success).toBe(true);
       expect(json.purgedTodos).toBe(1);
       expect(mockStorageFrom).toHaveBeenCalledWith('task-attachments');
-      expect(mockStorageRemove).toHaveBeenCalledWith(['failed-img.webp']);
+      expect(mockStorageRemove).toHaveBeenCalledWith(['user-A/failed-img.webp']);
     });
 
     it('gracefully handles thrown storage exceptions without failing DB deletion', async () => {
@@ -314,7 +315,7 @@ describe('Cron /api/cron/purge-trash route handler', () => {
       });
 
       const expiredTodos = [
-        { id: 'todo-1', image_path: 'failed-img.webp', image_thumb_path: null },
+        { id: 'todo-1', user_id: 'user-A', image_path: 'user-A/failed-img.webp', image_thumb_path: null },
       ];
 
       const todosQuery = {
@@ -351,6 +352,72 @@ describe('Cron /api/cron/purge-trash route handler', () => {
       const json = await res.json();
       expect(json.success).toBe(true);
       expect(json.purgedTodos).toBe(1);
+    });
+
+    it('skips storage paths not owned by the todo owner', async () => {
+      const expiredTodos = [
+        {
+          id: 'todo-victim',
+          user_id: 'user-A',
+          // attacker planted a path pointing into user-B folder in their own todo
+          image_path: 'user-B/stolen-photo.webp',
+          image_thumb_path: 'user-A/own-thumb.webp',
+        },
+        {
+          id: 'todo-owned',
+          user_id: 'user-A',
+          image_path: 'user-A/own-photo.webp',
+          image_thumb_path: null,
+        },
+      ];
+
+      const mockStorageRemove = vi.fn().mockResolvedValue({ data: [], error: null });
+      const mockStorageFrom = vi.fn().mockReturnValue({
+        remove: mockStorageRemove,
+      });
+
+      const todosQuery = {
+        select: vi.fn().mockReturnThis(),
+        not: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: expiredTodos, error: null }),
+        delete: vi.fn().mockReturnValue({
+          in: vi.fn().mockResolvedValue({ count: 2, error: null }),
+        }),
+      };
+
+      const notesQuery = {
+        select: vi.fn().mockReturnThis(),
+        not: vi.fn().mockReturnThis(),
+        lt: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+
+      const mockSupabase = {
+        from: vi.fn().mockImplementation((t) => (t === 'todos' ? todosQuery : notesQuery)),
+        storage: {
+          from: mockStorageFrom,
+        },
+      };
+      (createClient as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSupabase);
+
+      const req = new Request('http://localhost/api/cron/purge-trash', {
+        headers: { authorization: 'Bearer cron-secret-123' },
+      });
+
+      const res = await GET(req);
+      expect(res.status).toBe(200);
+      const json = await res.json();
+      expect(json.success).toBe(true);
+      // DB rows are still purged (fail-closed only for storage, never 500 the batch)
+      expect(json.purgedTodos).toBe(2);
+
+      // victim path must never reach service-role storage.remove
+      expect(mockStorageRemove).toHaveBeenCalledTimes(1);
+      const passedPaths = mockStorageRemove.mock.calls[0][0];
+      expect(passedPaths).not.toContain('user-B/stolen-photo.webp');
+      expect(passedPaths).toContain('user-A/own-thumb.webp');
+      expect(passedPaths).toContain('user-A/own-photo.webp');
     });
 
     it('returns 500 when todos query fails with a database error', async () => {
