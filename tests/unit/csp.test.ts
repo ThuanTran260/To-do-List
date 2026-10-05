@@ -23,9 +23,14 @@ describe('CSP nonce', () => {
     expect(styleSrc).not.toContain("'nonce-");
   });
 
-  it('allows Google OAuth avatars (I-2)', () => {
-    const header = buildCspHeader('xyz', false);
-    expect(header).toContain('https://*.googleusercontent.com');
+  it('prod CSP contains no dead origins (fonts self-hosted, OAuth off)', () => {
+    const header = buildCspHeader('testnonce', false);
+    // app/layout.tsx uses next/font/google (self-hosted) — never requests these.
+    expect(header).not.toContain('fonts.googleapis.com');
+    expect(header).not.toContain('fonts.gstatic.com');
+    // Google OAuth not enabled (app/auth/callback/route.ts: "if enabled in the
+    // future") — re-add the wildcard only when OAuth ships.
+    expect(header).not.toContain('googleusercontent.com');
   });
 
   it('includes hardening directives', () => {
