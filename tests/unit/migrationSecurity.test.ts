@@ -85,51 +85,59 @@ describe('migrations: RLS auto-enable trigger is codified', () => {
 describe('migrations: invariant against recurrence', () => {
   it('every CTAS/SELECT INTO table is locked by a migration (all lock files count)', () => {
     const all = readAllMigrations();
-    const lockSql = all
-      .filter((m) => m.sql.includes('REVOKE ALL ON TABLE'))
-      .map((m) => m.sql)
-      .join('\n');
-    expect(lockSql.length, 'missing backup lock migration').toBeGreaterThan(0);
+    const lockFiles = all
+      .map((m, idx) => ({ sql: m.sql, idx }))
+      .filter((m) => m.sql.includes('REVOKE ALL ON TABLE'));
+    expect(lockFiles.length, 'missing backup lock migration').toBeGreaterThan(0);
+    // Strip comment để mention tên bảng trong comment không pass giả.
+    const stripComments = (sql: string): string =>
+      sql
+        .replace(/--[^\n]*/g, '\n')
+        .replace(/\/\*[\s\S]*?\*\//g, '\n');
 
-    const isLocked = (table: string): boolean =>
-      new RegExp(`\\b${table}\\b`).test(lockSql);
+    const isLockedAtOrAfter = (table: string, createIdx: number): boolean =>
+      lockFiles.some(
+        (m) => m.idx >= createIdx && new RegExp(`\\b${table}\\b`).test(stripComments(m.sql)),
+      );
 
-    const ctasTables: string[] = [];
-    for (const m of all) {
+    const ctasTables: Array<{ table: string; idx: number }> = [];
+    all.forEach((m, idx) => {
       const re =
         /CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?(\w+)\s+AS\s+SELECT/gi;
       let match: RegExpExecArray | null;
       while ((match = re.exec(m.sql)) !== null) {
-        if (match[1]) ctasTables.push(match[1]);
+        if (match[1]) ctasTables.push({ table: match[1], idx });
       }
-    }
+    });
     expect(ctasTables.length).toBeGreaterThan(0);
-    for (const table of ctasTables) {
+    for (const { table, idx } of ctasTables) {
       expect(
-        isLocked(table),
-        `CTAS table ${table} is not locked by REVOKE`,
+        isLockedAtOrAfter(table, idx),
+        `CTAS table ${table} is not locked by REVOKE (at/after creation)`,
       ).toBe(true);
     }
 
     // SELECT INTO cũng tạo bảng (cùng họ với CTAS) nhưng cú pháp khác nên
-    // scanner CTAS không thấy. Strip $$...$$ (thân function plpgsql dùng
-    // SELECT...INTO <biến>, không phải tạo bảng) rồi mới quét DDL.
+    // scanner CTAS không thấy. Strip thân function (dollar-quoted $$ lẫn $tag$:
+    // plpgsql dùng SELECT...INTO <biến>, không phải tạo bảng) rồi mới quét DDL.
     // [^;]+? để không match xuyên qua dấu ; sang statement khác.
-    const selectIntoTables: string[] = [];
-    for (const m of all) {
-      const ddl = m.sql.replace(/\$\$[\s\S]*?\$\$/g, '\n');
+    const selectIntoTables: Array<{ table: string; idx: number }> = [];
+    all.forEach((m, idx) => {
+      const ddl = m.sql
+        .replace(/\$\$[\s\S]*?\$\$/g, '\n')
+        .replace(/\$[A-Za-z_]\w*\$[\s\S]*?\$[A-Za-z_]\w*\$/g, '\n');
       const re =
         /SELECT[^;]+?\bINTO\s+((?:(?:TEMP(?:ORARY)?|UNLOGGED|TABLE)\s+)*)(?:public\.)?(\w+)\s+FROM/gi;
       let match: RegExpExecArray | null;
       while ((match = re.exec(ddl)) !== null) {
         const modifiers = (match[1] ?? '').toUpperCase();
         if (/TEMP|UNLOGGED/.test(modifiers)) continue;
-        if (match[2]) selectIntoTables.push(match[2]);
+        if (match[2]) selectIntoTables.push({ table: match[2], idx });
       }
-    }
-    for (const table of selectIntoTables) {
+    });
+    for (const { table, idx } of selectIntoTables) {
       expect(
-        isLocked(table),
+        isLockedAtOrAfter(table, idx),
         `SELECT INTO table ${table} is not locked by REVOKE`,
       ).toBe(true);
     }
@@ -139,7 +147,7 @@ describe('migrations: invariant against recurrence', () => {
     const all = readAllMigrations();
     const lockSql = all
       .filter((m) => m.sql.includes('REVOKE ALL ON TABLE'))
-      .map((m) => m.sql)
+      .map((m) => m.sql.replace(/--[^\n]*/g, '\n').replace(/\/\*[\s\S]*?\*\//g, '\n'))
       .join('\n');
 
     const bareTables: Array<{ name: string; idx: number }> = [];
