@@ -76,14 +76,23 @@ describe('migrations: RLS auto-enable trigger is codified', () => {
     expect(sql).toMatch(/CREATE\s+OR\s+REPLACE\s+FUNCTION\s+public\.rls_auto_enable/i);
     expect(sql).toMatch(/CREATE\s+TABLE[\s\S]*CREATE TABLE AS[\s\S]*SELECT INTO/i);
     expect(sql).toMatch(/CREATE\s+EVENT\s+TRIGGER\s+ensure_rls/i);
+    expect(sql).toMatch(
+      /REVOKE\s+EXECUTE\s+ON\s+FUNCTION\s+public\.rls_auto_enable\(\)\s+FROM\s+public,\s*anon,\s*authenticated/i,
+    );
   });
 });
 
 describe('migrations: invariant against recurrence', () => {
-  it('every CTAS backup table is locked by a later migration', () => {
+  it('every CTAS/SELECT INTO table is locked by a migration (all lock files count)', () => {
     const all = readAllMigrations();
-    const locked = all.find((m) => m.sql.includes('REVOKE ALL ON TABLE'));
-    expect(locked, 'missing backup lock migration').toBeDefined();
+    const lockSql = all
+      .filter((m) => m.sql.includes('REVOKE ALL ON TABLE'))
+      .map((m) => m.sql)
+      .join('\n');
+    expect(lockSql.length, 'missing backup lock migration').toBeGreaterThan(0);
+
+    const isLocked = (table: string): boolean =>
+      new RegExp(`\\b${table}\\b`).test(lockSql);
 
     const ctasTables: string[] = [];
     for (const m of all) {
@@ -97,22 +106,44 @@ describe('migrations: invariant against recurrence', () => {
     expect(ctasTables.length).toBeGreaterThan(0);
     for (const table of ctasTables) {
       expect(
-        locked!.sql.includes(table),
+        isLocked(table),
         `CTAS table ${table} is not locked by REVOKE`,
+      ).toBe(true);
+    }
+
+    // SELECT INTO cũng tạo bảng (cùng họ với CTAS) nhưng cú pháp khác nên
+    // scanner CTAS không thấy. Strip $$...$$ (thân function plpgsql dùng
+    // SELECT...INTO <biến>, không phải tạo bảng) rồi mới quét DDL.
+    // [^;]+? để không match xuyên qua dấu ; sang statement khác.
+    const selectIntoTables: string[] = [];
+    for (const m of all) {
+      const ddl = m.sql.replace(/\$\$[\s\S]*?\$\$/g, '\n');
+      const re =
+        /SELECT[^;]+?\bINTO\s+((?:(?:TEMP(?:ORARY)?|UNLOGGED|TABLE)\s+)*)(?:public\.)?(\w+)\s+FROM/gi;
+      let match: RegExpExecArray | null;
+      while ((match = re.exec(ddl)) !== null) {
+        const modifiers = (match[1] ?? '').toUpperCase();
+        if (/TEMP|UNLOGGED/.test(modifiers)) continue;
+        if (match[2]) selectIntoTables.push(match[2]);
+      }
+    }
+    for (const table of selectIntoTables) {
+      expect(
+        isLocked(table),
+        `SELECT INTO table ${table} is not locked by REVOKE`,
       ).toBe(true);
     }
   });
 
-  it('every bare CREATE TABLE has RLS enabled or is explicitly locked', () => {
+  it('every bare CREATE TABLE has RLS enabled at or after creation, or is locked', () => {
     const all = readAllMigrations();
-    const joined = all.map((m) => m.sql).join('\n');
-    const lockedSql = all
+    const lockSql = all
       .filter((m) => m.sql.includes('REVOKE ALL ON TABLE'))
       .map((m) => m.sql)
       .join('\n');
 
-    const bareTables = new Set<string>();
-    for (const m of all) {
+    const bareTables: Array<{ name: string; idx: number }> = [];
+    all.forEach((m, idx) => {
       const re =
         /CREATE\s+(TEMP\s+|TEMPORARY\s+)?TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?(?:public\.)?(\w+)\s*\(/gi;
       let match: RegExpExecArray | null;
@@ -120,20 +151,36 @@ describe('migrations: invariant against recurrence', () => {
         if (match[1]) continue;
         const name = match[2];
         if (!name || /^pg_/i.test(name)) continue;
-        bareTables.add(name);
+        bareTables.push({ name, idx });
       }
-    }
-    expect(bareTables.size).toBeGreaterThan(0);
-    for (const name of bareTables) {
+    });
+    expect(bareTables.length).toBeGreaterThan(0);
+    for (const { name, idx } of bareTables) {
+      // Order-sensitive: RLS phải xuất hiện ở cùng hoặc SAU migration tạo bảng.
+      // Check gộp toàn bộ file sẽ pass giả khi bảng tạo ở N+1 mà RLS cùng tên
+      // đã có từ migration N, hoặc khi DROP + tạo lại không RLS.
+      const laterSql = all
+        .slice(idx)
+        .map((m) => m.sql)
+        .join('\n');
       const hasRls = new RegExp(
         `ALTER\\s+TABLE\\s+(?:public\\.)?${name}\\s+ENABLE\\s+ROW\\s+LEVEL\\s+SECURITY`,
         'i',
-      ).test(joined);
-      const isLocked = lockedSql.includes(name);
+      ).test(laterSql);
+      const isLocked = new RegExp(`\\b${name}\\b`).test(lockSql);
       expect(
         hasRls || isLocked,
-        `table ${name} has neither ENABLE RLS nor explicit lock`,
+        `table ${name} has neither ENABLE RLS (at/after creation) nor explicit lock`,
       ).toBe(true);
     }
+  });
+
+  it('default-privileges migration documents the supabase_admin residual', () => {
+    const sql = readFileSync(
+      'supabase/migrations/20261005000002_alter_default_privileges.sql',
+      'utf8',
+    );
+    expect(sql).toMatch(/supabase_admin/);
+    expect(sql).toMatch(/RESIDUAL/);
   });
 });

@@ -12,6 +12,15 @@
 -- Bảng mới vẫn dính default grant (kể cả TRUNCATE) nếu quên REVOKE tường minh —
 -- xem 20261005000002. Hai lớp bổ sung nhau, không thay thế nhau.
 --
+-- search_path = pg_catalog là CỐ Ý (hàm chỉ cần system catalogs + format()),
+-- hẹp hơn chuẩn search_path=public của docs/security.md §3.2 — không vi phạm.
+--
+-- Superuser: CREATE EVENT TRIGGER cần superuser. Trên production đã tồn tại nên
+-- guard IF NOT EXISTS làm no-op. Trên hosted mới chạy dưới postgres
+-- non-superuser, CREATE sẽ lỗi 42501 — EXCEPTION insufficient_privilege dưới đây
+-- biến thành NOTICE + bỏ qua thay vì fail cả migration (khi đó RLS auto-enable
+-- vắng mặt và CI invariant + REVOKE tường minh là lớp bù).
+--
 -- Chỉ superuser/postgres tạo được EVENT TRIGGER. Trên production đã tồn tại nên
 -- migration này là no-op (guard IF NOT EXISTS); tác dụng thật là cho
 -- `supabase db reset` / CI / env mới (hiện fail-open vì thiếu trigger).
@@ -47,8 +56,19 @@ $$;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_event_trigger WHERE evtname = 'ensure_rls') THEN
-    CREATE EVENT TRIGGER ensure_rls
-      ON ddl_command_end
-      EXECUTE FUNCTION public.rls_auto_enable();
+    BEGIN
+      CREATE EVENT TRIGGER ensure_rls
+        ON ddl_command_end
+        EXECUTE FUNCTION public.rls_auto_enable();
+    EXCEPTION
+      WHEN insufficient_privilege THEN
+        RAISE NOTICE 'ensure_rls: skipping event trigger (needs superuser); RLS auto-enable unavailable on this env';
+    END;
   END IF;
 END $$;
+
+-- Hàm event-trigger không gọi được qua RPC (trả về event_trigger), nhưng khoá
+-- EXECUTE cho chắc. Trigger firing không check EXECUTE của caller nên REVOKE
+-- này không ảnh hưởng trigger. Đặt SAU 20261005000002 nên default EXECUTE cho
+-- hàm mới đã bị revoke — dòng này là defense in depth cho apply sai thứ tự.
+REVOKE EXECUTE ON FUNCTION public.rls_auto_enable() FROM public, anon, authenticated;
