@@ -280,11 +280,16 @@ describe('todoCreateSchema & todoUpdateSchema image_path & image_url (Private St
   });
 
   it('accepts legacy full URL in image_url', () => {
+    // Fixture host phải là placeholder, KHÔNG phải project ref thật.
+    // Schema chỉ assert `z.string().url()` nên bất kỳ URL hợp lệ nào cũng
+    // đạt — hardcode host thật chỉ lộ identifier của project lên repo public.
+    const legacyUrl =
+      'https://xxx.supabase.co/storage/v1/object/public/task-attachments/user/task.webp';
     const result = todoCreateSchema.parse({
       title: 'Task with legacy url',
-      image_url: 'https://xxx.supabase.co/storage/v1/object/public/task-attachments/user/task.webp',
+      image_url: legacyUrl,
     });
-    expect(result.image_url).toBe('https://xxx.supabase.co/storage/v1/object/public/task-attachments/user/task.webp');
+    expect(result.image_url).toBe(legacyUrl);
   });
 
   it('rejects non-URL string in image_url', () => {
