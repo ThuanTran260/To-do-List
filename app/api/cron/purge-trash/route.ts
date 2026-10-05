@@ -4,10 +4,13 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 function timingSafeEqualStr(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  // Không return sớm khi length khác nhau — sẽ rò độ dài secret qua thời gian.
+  // Vẫn duyệt hết maxLength để mọi lần gọi tốn thời gian như nhau.
+  // (Thực tế là Info: secret là hex 64 ký tự, độ dài đã biết — sửa cho đúng chuẩn.)
+  let diff = a.length ^ b.length;
+  const maxLength = Math.max(a.length, b.length);
+  for (let i = 0; i < maxLength; i++) {
+    diff |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   }
   return diff === 0;
 }
